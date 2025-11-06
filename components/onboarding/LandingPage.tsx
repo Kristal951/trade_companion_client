@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plan, PlanName, Mentor, Review, FAQ } from '../../types';
 import Icon from '../ui/Icon';
+import { PLAN_FEATURES } from '../../config/plans';
 
 // FIX: Replaced `bio` with `strategy` and added the required `roi` property to match the Mentor type.
 const MOCK_MENTORS: Mentor[] = [
@@ -16,9 +17,10 @@ const MOCK_REVIEWS: Review[] = [
 ];
 
 const MOCK_PLANS: Plan[] = [
-    { name: PlanName.Basic, monthlyPrice: 29, yearlyPrice: 290, features: ['5 AI Signals per week', 'Telegram Notifications', 'Basic Analytics', 'Community Access'] },
-    { name: PlanName.Pro, monthlyPrice: 59, yearlyPrice: 590, features: ['Unlimited AI Signals', 'Advanced Analytics', '1 Mentor Subscription Included', 'Priority Support'] },
-    { name: PlanName.Premium, monthlyPrice: 99, yearlyPrice: 990, features: ['All Pro Features', 'Weekly Market Breakdown', 'Direct Access to Top Mentors', 'Personalized Strategy Session'] },
+    { name: PlanName.Free, monthlyPrice: 0, yearlyPrice: 0, features: PLAN_FEATURES.Free },
+    { name: PlanName.Basic, monthlyPrice: 29, yearlyPrice: 290, features: PLAN_FEATURES.Basic },
+    { name: PlanName.Pro, monthlyPrice: 59, yearlyPrice: 590, features: PLAN_FEATURES.Pro },
+    { name: PlanName.Premium, monthlyPrice: 99, yearlyPrice: 990, features: PLAN_FEATURES.Premium },
 ];
 
 const MOCK_FAQS: FAQ[] = [
@@ -42,20 +44,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="bg-background min-h-screen text-on-surface">
+    <div className="bg-light-bg min-h-screen text-dark-text">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-sm z-50">
+      <header className="fixed top-0 left-0 right-0 bg-light-surface/80 backdrop-blur-sm z-50 shadow-sm">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-primary">Trade Companion</h1>
           <nav className="hidden md:flex items-center space-x-6">
-            <a href="#features" className="hover:text-primary transition-colors">Features</a>
-            <a href="#education" className="hover:text-primary transition-colors">Education</a>
-            <a href="#mentors" className="hover:text-primary transition-colors">Mentors</a>
-            <a href="#pricing" className="hover:text-primary transition-colors">Pricing</a>
-            <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
+            <a href="#features" className="text-mid-text hover:text-primary transition-colors">Features</a>
+            <a href="#education" className="text-mid-text hover:text-primary transition-colors">Education</a>
+            <a href="#mentors" className="text-mid-text hover:text-primary transition-colors">Mentors</a>
+            <a href="#pricing" className="text-mid-text hover:text-primary transition-colors">Pricing</a>
+            <a href="#faq" className="text-mid-text hover:text-primary transition-colors">FAQ</a>
           </nav>
           <div className="flex items-center space-x-4">
-            <button onClick={onLogin} className="text-on-surface hover:text-primary transition-colors">Login</button>
+            <button onClick={onLogin} className="text-primary hover:text-primary-hover font-semibold transition-colors">Login</button>
             <button onClick={onLogin} className="bg-primary hover:bg-primary-hover text-white font-semibold py-2 px-4 rounded-lg transition-colors">
               Get Started
             </button>
@@ -65,10 +67,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
       <main>
         {/* Hero Section */}
-        <section className="pt-32 pb-20 text-center bg-gray-900">
+        <section className="pt-32 pb-20 text-center bg-light-hover">
           <div className="container mx-auto px-6">
-            <h2 className="text-5xl md:text-6xl font-extrabold leading-tight mb-4">Trade Smarter, Not Harder</h2>
-            <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-8">Leverage AI-powered signals and expert mentorship to elevate your Forex trading performance.</p>
+            <h2 className="text-5xl md:text-6xl font-extrabold leading-tight mb-4 text-dark-text">Trade Smarter, Not Harder</h2>
+            <p className="text-xl text-mid-text max-w-3xl mx-auto mb-8">Leverage AI-powered signals and expert mentorship to elevate your Forex trading performance.</p>
             <button onClick={onLogin} className="bg-primary hover:bg-primary-hover text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105">
               Start Your Free Trial
             </button>
@@ -76,50 +78,50 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="py-20">
+        <section id="features" className="py-20 bg-light-bg">
           <div className="container mx-auto px-6 text-center">
-            <h3 className="text-4xl font-bold mb-2">Why Choose Us?</h3>
-            <p className="text-gray-400 mb-12">The ultimate toolkit for the modern Forex trader.</p>
+            <h3 className="text-4xl font-bold mb-2 text-dark-text">Why Choose Us?</h3>
+            <p className="text-mid-text mb-12">The ultimate toolkit for the modern Forex trader.</p>
             <div className="grid md:grid-cols-3 gap-8">
-              <div className="bg-surface p-8 rounded-xl shadow-lg">
+              <div className="bg-light-surface p-8 rounded-xl shadow-md border border-light-gray">
                 <Icon name="signals" className="w-12 h-12 text-primary mx-auto mb-4"/>
-                <h4 className="text-2xl font-semibold mb-2">Custom AI Signals</h4>
-                <p className="text-gray-400">High-accuracy signals, tailored to your risk profile, delivered in real-time.</p>
+                <h4 className="text-2xl font-semibold mb-2 text-dark-text">Custom AI Signals</h4>
+                <p className="text-mid-text">High-accuracy signals, tailored to your risk profile, delivered in real-time.</p>
               </div>
-              <div className="bg-surface p-8 rounded-xl shadow-lg">
+              <div className="bg-light-surface p-8 rounded-xl shadow-md border border-light-gray">
                 <Icon name="mentors" className="w-12 h-12 text-primary mx-auto mb-4"/>
-                <h4 className="text-2xl font-semibold mb-2">Expert Mentors</h4>
-                <p className="text-gray-400">Learn from profitable traders and subscribe to their strategies.</p>
+                <h4 className="text-2xl font-semibold mb-2 text-dark-text">Expert Mentors</h4>
+                <p className="text-mid-text">Learn from profitable traders and subscribe to their strategies.</p>
               </div>
-              <div className="bg-surface p-8 rounded-xl shadow-lg">
+              <div className="bg-light-surface p-8 rounded-xl shadow-md border border-light-gray">
                 <Icon name="education" className="w-12 h-12 text-primary mx-auto mb-4"/>
-                <h4 className="text-2xl font-semibold mb-2">Education Hub</h4>
-                <p className="text-gray-400">Access exclusive articles and guides to sharpen your trading skills.</p>
+                <h4 className="text-2xl font-semibold mb-2 text-dark-text">Education Hub</h4>
+                <p className="text-mid-text">Access exclusive articles and guides to sharpen your trading skills.</p>
               </div>
             </div>
           </div>
         </section>
 
         {/* Education Section */}
-        <section id="education" className="py-20 bg-gray-900">
+        <section id="education" className="py-20 bg-light-hover">
             <div className="container mx-auto px-6 text-center">
-                <h3 className="text-4xl font-bold mb-2">Knowledge is Power</h3>
-                <p className="text-gray-400 mb-12">Our education hub is designed to help you grow, no matter your experience level.</p>
+                <h3 className="text-4xl font-bold mb-2 text-dark-text">Knowledge is Power</h3>
+                <p className="text-mid-text mb-12">Our education hub is designed to help you grow, no matter your experience level.</p>
                 <div className="grid md:grid-cols-3 gap-8">
-                    <div className="bg-surface p-8 rounded-xl shadow-lg text-center">
+                    <div className="bg-light-surface p-8 rounded-xl shadow-md border border-light-gray text-center">
                         <Icon name="education" className="w-12 h-12 text-primary mx-auto mb-4"/>
-                        <h4 className="text-2xl font-semibold mb-2">Forex 101</h4>
-                        <p className="text-gray-400">Master the basics, from pips and lots to market structure.</p>
+                        <h4 className="text-2xl font-semibold mb-2 text-dark-text">Forex 101</h4>
+                        <p className="text-mid-text">Master the basics, from pips and lots to market structure.</p>
                     </div>
-                    <div className="bg-surface p-8 rounded-xl shadow-lg text-center">
+                    <div className="bg-light-surface p-8 rounded-xl shadow-md border border-light-gray text-center">
                         <Icon name="analytics" className="w-12 h-12 text-primary mx-auto mb-4"/>
-                        <h4 className="text-2xl font-semibold mb-2">Technical Analysis</h4>
-                        <p className="text-gray-400">Learn to read charts, identify patterns, and use indicators.</p>
+                        <h4 className="text-2xl font-semibold mb-2 text-dark-text">Technical Analysis</h4>
+                        <p className="text-mid-text">Learn to read charts, identify patterns, and use indicators.</p>
                     </div>
-                    <div className="bg-surface p-8 rounded-xl shadow-lg text-center">
+                    <div className="bg-light-surface p-8 rounded-xl shadow-md border border-light-gray text-center">
                         <Icon name="billing" className="w-12 h-12 text-primary mx-auto mb-4"/>
-                        <h4 className="text-2xl font-semibold mb-2">Risk Management</h4>
-                        <p className="text-gray-400">Discover strategies to protect your capital and trade sustainably.</p>
+                        <h4 className="text-2xl font-semibold mb-2 text-dark-text">Risk Management</h4>
+                        <p className="text-mid-text">Discover strategies to protect your capital and trade sustainably.</p>
                     </div>
                 </div>
             </div>
@@ -127,21 +129,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
 
         {/* Top Mentors Section */}
-        <section id="mentors" className="py-20">
+        <section id="mentors" className="py-20 bg-light-bg">
           <div className="container mx-auto px-6">
-            <h3 className="text-4xl font-bold text-center mb-12">Meet Our Top Mentors</h3>
+            <h3 className="text-4xl font-bold text-center mb-12 text-dark-text">Meet Our Top Mentors</h3>
             <div className="grid md:grid-cols-3 gap-8">
               {MOCK_MENTORS.map(mentor => (
-                <div key={mentor.id} className="bg-surface rounded-lg overflow-hidden text-center p-6 transform hover:-translate-y-2 transition-transform duration-300">
+                <div key={mentor.id} className="bg-light-surface rounded-lg overflow-hidden text-center p-6 transform hover:-translate-y-2 transition-transform duration-300 shadow-md border border-light-gray">
                   <img src={mentor.avatar} alt={mentor.name} className="w-32 h-32 rounded-full mx-auto mb-4 border-4 border-primary" />
-                  <h4 className="text-xl font-bold">{mentor.name}</h4>
+                  <h4 className="text-xl font-bold text-dark-text">{mentor.name}</h4>
                   <p className="text-primary mb-2">{mentor.experience} Years Experience</p>
                   <div className="flex justify-around text-sm my-4">
-                    <span><strong className="text-green-400">{mentor.profitRatio}%</strong> Profit Ratio</span>
-                    <span><strong className="text-blue-400">${mentor.price}</strong>/month</span>
+                    <span><strong className="text-success">{mentor.profitRatio}%</strong> Profit Ratio</span>
+                    <span><strong className="text-primary">${mentor.price}</strong>/month</span>
                   </div>
-                  <p className="text-gray-400 text-sm mb-4">Trades: {mentor.instruments.join(', ')}</p>
-                  <button className="w-full bg-primary/20 text-primary hover:bg-primary hover:text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                  <p className="text-mid-text text-sm mb-4">Trades: {mentor.instruments.join(', ')}</p>
+                  <button className="w-full bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold py-2 px-4 rounded-lg transition-colors">
                     View Profile
                   </button>
                 </div>
@@ -151,39 +153,44 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         </section>
 
         {/* Pricing Section */}
-        <section id="pricing" className="py-20 bg-gray-900">
+        <section id="pricing" className="py-20 bg-light-hover">
           <div className="container mx-auto px-6 text-center">
-            <h3 className="text-4xl font-bold mb-4">Flexible Plans for Everyone</h3>
-            <p className="text-gray-400 mb-8">Choose the plan that's right for your trading journey.</p>
-            <div className="flex justify-center items-center space-x-4 mb-10">
+            <h3 className="text-4xl font-bold mb-4 text-dark-text">Flexible Plans for Everyone</h3>
+            <p className="text-mid-text mb-8">Choose the plan that's right for your trading journey.</p>
+            <div className="flex justify-center items-center space-x-4 mb-10 text-dark-text">
               <span>Monthly</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" checked={isYearly} onChange={() => setIsYearly(!isYearly)} className="sr-only peer" />
-                <div className="w-14 h-7 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+                <div className="w-14 h-7 bg-light-gray peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-light-gray after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
               </label>
               <span className="flex items-center">
-                Yearly <span className="ml-2 text-xs bg-green-500 text-white font-bold px-2 py-0.5 rounded-full">Save 20%</span>
+                Yearly <span className="ml-2 text-xs bg-success text-white font-bold px-2 py-0.5 rounded-full">Save 20%</span>
               </span>
             </div>
-            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
               {MOCK_PLANS.map(plan => (
-                <div key={plan.name} className={`bg-surface p-8 rounded-xl shadow-lg border-2 ${plan.name === PlanName.Pro ? 'border-primary' : 'border-transparent'}`}>
+                <div key={plan.name} className={`bg-light-surface p-8 rounded-xl shadow-md border-2 flex flex-col ${plan.name === PlanName.Pro ? 'border-primary' : 'border-light-gray'}`}>
                   <h4 className="text-2xl font-bold text-primary">{plan.name}</h4>
-                  <p className="text-4xl font-extrabold my-4">
-                    ${isYearly ? plan.yearlyPrice / 12 : plan.monthlyPrice}
-                    <span className="text-base font-normal text-gray-400">/month</span>
-                  </p>
-                  {isYearly && <p className="text-gray-400 text-sm -mt-4 mb-4">Billed as ${plan.yearlyPrice} per year</p>}
-                  <ul className="text-left space-y-3 my-8">
+                  {plan.monthlyPrice > 0 ? (
+                    <p className="text-4xl font-extrabold my-4 text-dark-text">
+                        ${isYearly ? Math.round(plan.yearlyPrice / 12) : plan.monthlyPrice}
+                        <span className="text-base font-normal text-mid-text">/month</span>
+                    </p>
+                  ) : (
+                    <p className="text-4xl font-extrabold my-4 text-dark-text">Free</p>
+                  )}
+                  {isYearly && plan.monthlyPrice > 0 && <p className="text-mid-text text-sm -mt-4 mb-4">Billed as ${plan.yearlyPrice} per year</p>}
+                  
+                  <ul className="text-left space-y-3 my-8 flex-grow">
                     {plan.features.map(feature => (
                       <li key={feature} className="flex items-start">
-                        <Icon name="check" className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-1" />
-                        <span>{feature}</span>
+                        <Icon name="check" className="w-5 h-5 text-success mr-2 flex-shrink-0 mt-1" />
+                        <span className="text-dark-text">{feature}</span>
                       </li>
                     ))}
                   </ul>
-                  <button className={`w-full font-bold py-3 px-6 rounded-lg transition-colors ${plan.name === PlanName.Pro ? 'bg-primary text-white hover:bg-primary-hover' : 'bg-primary/20 text-primary hover:bg-primary hover:text-white'}`}>
-                    Choose Plan
+                  <button className={`w-full font-bold py-3 px-6 rounded-lg transition-colors mt-auto ${plan.name === PlanName.Pro ? 'bg-primary text-white hover:bg-primary-hover' : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'}`}>
+                    {plan.monthlyPrice > 0 ? 'Choose Plan' : 'Start for Free'}
                   </button>
                 </div>
               ))}
@@ -192,22 +199,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         </section>
 
         {/* Reviews Section */}
-        <section id="reviews" className="py-20">
+        <section id="reviews" className="py-20 bg-light-bg">
           <div className="container mx-auto px-6">
-            <h3 className="text-4xl font-bold text-center mb-12">What Our Users Say</h3>
+            <h3 className="text-4xl font-bold text-center mb-12 text-dark-text">What Our Users Say</h3>
             <div className="grid md:grid-cols-3 gap-8">
               {MOCK_REVIEWS.map(review => (
-                <div key={review.id} className="bg-surface p-6 rounded-lg">
+                <div key={review.id} className="bg-light-surface p-6 rounded-lg shadow-md border border-light-gray">
                   <div className="flex items-center mb-4">
                     <img src={review.avatar} alt={review.name} className="w-12 h-12 rounded-full mr-4" />
                     <div>
-                      <p className="font-semibold">{review.name}</p>
-                      <div className="flex text-yellow-400">
+                      <p className="font-semibold text-dark-text">{review.name}</p>
+                      <div className="flex text-warning">
                         {[...Array(5)].map((_, i) => <Icon key={i} name="star" className="w-4 h-4 fill-current" />)}
                       </div>
                     </div>
                   </div>
-                  <p className="text-gray-400">"{review.text}"</p>
+                  <p className="text-mid-text">"{review.text}"</p>
                 </div>
               ))}
             </div>
@@ -215,18 +222,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         </section>
 
         {/* FAQ Section */}
-        <section id="faq" className="py-20 bg-gray-900">
+        <section id="faq" className="py-20 bg-light-hover">
           <div className="container mx-auto px-6 max-w-3xl">
-            <h3 className="text-4xl font-bold text-center mb-12">Frequently Asked Questions</h3>
+            <h3 className="text-4xl font-bold text-center mb-12 text-dark-text">Frequently Asked Questions</h3>
             <div className="space-y-4">
               {MOCK_FAQS.map((faq, index) => (
-                <div key={index} className="bg-surface rounded-lg">
-                  <button onClick={() => toggleFaq(index)} className="w-full flex justify-between items-center text-left p-5 font-semibold">
+                <div key={index} className="bg-light-surface rounded-lg shadow-md border border-light-gray">
+                  <button onClick={() => toggleFaq(index)} className="w-full flex justify-between items-center text-left p-5 font-semibold text-dark-text">
                     <span>{faq.question}</span>
                     <Icon name="chevronDown" className={`w-6 h-6 transform transition-transform ${openFaq === index ? 'rotate-180' : ''}`} />
                   </button>
                   {openFaq === index && (
-                    <div className="px-5 pb-5 text-gray-400">
+                    <div className="px-5 pb-5 text-mid-text">
                       <p>{faq.answer}</p>
                     </div>
                   )}
@@ -238,8 +245,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-surface border-t border-gray-800 py-8">
-        <div className="container mx-auto px-6 text-center text-gray-400">
+      <footer className="bg-light-surface border-t border-light-gray py-8">
+        <div className="container mx-auto px-6 text-center text-mid-text">
           <p>&copy; {new Date().getFullYear()} Trade Companion. All Rights Reserved.</p>
           <p className="text-sm mt-2">Trading Forex involves significant risk. This is not financial advice.</p>
         </div>
