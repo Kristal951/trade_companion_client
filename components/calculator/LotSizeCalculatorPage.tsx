@@ -1,44 +1,13 @@
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import { getTradeAnalysis } from '../../services/geminiService';
 import { User } from '../../types';
 import Icon from '../ui/Icon';
 import SecureContent from '../ui/SecureContent';
 import { useUsageTracker } from '../../hooks/useUsageTracker';
-
-const instrumentDefinitions: { [key: string]: any } = {
-    'EUR/USD': { pipStep: 0.0001, quoteCurrency: 'USD', isForex: true, contractSize: 100000, currentPrice: null, symbol: 'EUR/USD', mockPrice: 1.08500 },
-    'USD/JPY': { pipStep: 0.01, quoteCurrency: 'JPY', isForex: true, contractSize: 100000, currentPrice: null, symbol: 'USD/JPY', mockPrice: 155.00 },
-    'GBP/USD': { pipStep: 0.0001, quoteCurrency: 'USD', isForex: true, contractSize: 100000, currentPrice: null, symbol: 'GBP/USD', mockPrice: 1.25000 },
-    'USD/CAD': { pipStep: 0.0001, quoteCurrency: 'CAD', isForex: true, contractSize: 100000, currentPrice: null, symbol: 'USD/CAD', mockPrice: 1.36500 },
-    'AUD/USD': { pipStep: 0.0001, quoteCurrency: 'USD', isForex: true, contractSize: 100000, currentPrice: null, symbol: 'AUD/USD', mockPrice: 0.65500 },
-    'USD/CHF': { pipStep: 0.0001, quoteCurrency: 'CHF', isForex: true, contractSize: 100000, currentPrice: null, symbol: 'USD/CHF', mockPrice: 0.91500 },
-    'NZD/USD': { pipStep: 0.0001, quoteCurrency: 'USD', isForex: true, contractSize: 100000, currentPrice: null, symbol: 'NZD/USD', mockPrice: 0.60500 },
-    'EUR/GBP': { pipStep: 0.0001, quoteCurrency: 'GBP', isForex: true, contractSize: 100000, currentPrice: null, symbol: 'EUR/GBP', mockPrice: 0.85500 },
-    'AUD/CAD': { pipStep: 0.0001, quoteCurrency: 'CAD', isForex: true, contractSize: 100000, currentPrice: null, symbol: 'AUD/CAD', mockPrice: 0.90000 },
-    'GBP/JPY': { pipStep: 0.01, quoteCurrency: 'JPY', isForex: true, contractSize: 100000, currentPrice: null, symbol: 'GBP/JPY', mockPrice: 185.00 },
-    'EUR/JPY': { pipStep: 0.01, quoteCurrency: 'JPY', isForex: true, contractSize: 100000, currentPrice: null, symbol: 'EUR/JPY', mockPrice: 167.00 },
-    'XAU/USD': { pipStep: 0.01, quoteCurrency: 'USD', isForex: false, contractSize: 100, currentPrice: null, symbol: 'XAU/USD', mockPrice: 2300.00 },
-    'XAG/USD': { pipStep: 0.01, quoteCurrency: 'USD', isForex: false, contractSize: 5000, currentPrice: null, symbol: 'XAG/USD', mockPrice: 27.00 },
-    'BTC/USD': { pipStep: 1, quoteCurrency: 'USD', isForex: false, contractSize: 1, currentPrice: null, symbol: 'BTC/USD', mockPrice: 65000.00 },
-};
-
-const forexAPIs = [
-    { 
-        name: 'Twelvedata', 
-        id: 'twelvedata',
-        url: (symbol: string) => `https://api.twelvedata.com/price?symbol=${symbol}&apikey=demo`, 
-        parser: (data: any) => data?.price ? parseFloat(data.price) : null 
-    },
-    { 
-        name: 'Alpha Vantage', 
-        id: 'alphavantage',
-        url: (symbol: string) => {
-            const [from, to] = symbol.split('/');
-            return `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${from}&to_currency=${to}&apikey=demo`;
-        }, 
-        parser: (data: any) => data?.['Realtime Currency Exchange Rate']?.['5. Exchange Rate'] ? parseFloat(data['Realtime Currency Exchange Rate']['5. Exchange Rate']) : null
-    }
-];
+import { instrumentDefinitions } from '../../config/instruments';
+import { getLivePrice } from '../../services/marketDataService';
 
 interface LotSizeCalculatorPageProps {
     user: User;
@@ -152,30 +121,11 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
     const fetchLivePrice = async () => {
         const instrumentData = instrumentDefinitions[instrument];
         if (!instrumentData) return;
-
-        let price: number | null = null;
-
-        for (const api of forexAPIs) {
-            if (api.id === 'alphavantage' && !instrumentData.isForex) {
-                continue;
-            }
-            try {
-                const response = await fetch(api.url(instrumentData.symbol));
-                if (!response.ok) continue;
-                const data = await response.json();
-                const parsedPrice = api.parser(data);
-
-                if (parsedPrice && !isNaN(parsedPrice)) {
-                    price = parsedPrice;
-                    break;
-                }
-            } catch (error) {
-                console.error(`Error fetching price from ${api.name}:`, error);
-            }
-        }
-
+    
+        const { price, isMock } = await getLivePrice(instrument);
+    
         const decimalPlaces = Math.ceil(-Math.log10(instrumentData.pipStep));
-
+    
         if (price !== null) {
             currentLivePrice.current = price;
             let change = "0.0";
@@ -185,9 +135,10 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
                 change = diff.toFixed(decimalPlaces);
                 changeClass = diff > 0 ? "text-success" : "text-danger";
             }
-            setLivePriceInfo({ price: price.toFixed(decimalPlaces), change, changeClass, isMock: false });
+            setLivePriceInfo({ price: price.toFixed(decimalPlaces), change, changeClass, isMock });
             lastPrice.current = price;
         } else {
+            // This case should be rare now as getLivePrice has a fallback
             setLivePriceInfo({ price: instrumentData.mockPrice.toFixed(decimalPlaces), change: 'N/A', changeClass: 'text-mid-text', isMock: true });
             currentLivePrice.current = instrumentData.mockPrice;
         }
@@ -418,7 +369,8 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
                          <div className="flex justify-between items-center flex-wrap gap-2">
                             <h3 className="text-lg font-bold text-accent">Ask Olapete</h3>
                             <div className="text-sm bg-light-surface px-3 py-1 rounded-full border border-light-gray">
-                               Daily Analyses Left: <span className="font-bold text-primary">{usageInfo.limit === 'unlimited' ? 'Unlimited' : `${Math.max(0, usageInfo.limit - usageInfo.count)} / ${usageInfo.limit}`}</span>
+                               {/* FIX: The expression `usageInfo.limit - usageInfo.count` can cause a TypeScript error because `usageInfo.limit` can be the string 'unlimited'. This fix ensures the arithmetic operation is only performed on numbers. */}
+                               Daily Analyses Left: <span className="font-bold text-primary">{typeof usageInfo.limit === 'number' ? `${Math.max(0, usageInfo.limit - usageInfo.count)} / ${usageInfo.limit}` : 'Unlimited'}</span>
                             </div>
                         </div>
                         <div>

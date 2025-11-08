@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Signal, User, TradeRecord, PlanName } from '../../types';
+import { Signal, User, TradeRecord, PlanName, DashboardView } from '../../types';
 import Icon from '../ui/Icon';
 import { useUsageTracker } from '../../hooks/useUsageTracker';
 
@@ -25,10 +25,25 @@ const TradeCard: React.FC<{ trade: TradeRecord; }> = ({ trade }) => {
                     <span className="text-sm font-semibold text-info bg-info/10 px-2 py-1 rounded-full">Monitoring...</span>
                 )}
             </div>
-             <div className="grid grid-cols-3 gap-2 text-center my-3 text-sm">
-                <div><p className="text-mid-text">Entry</p><p className="font-semibold text-dark-text">{trade.entryPrice.toFixed(5)}</p></div>
-                <div><p className="text-mid-text">Stop Loss</p><p className="font-semibold text-dark-text">{trade.stopLoss.toFixed(5)}</p></div>
-                <div><p className="text-mid-text">Take Profit</p><p className="font-semibold text-dark-text">{trade.takeProfit.toFixed(5)}</p></div>
+             <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-light-gray text-sm">
+                <div className="text-center bg-light-hover p-2 rounded-md">
+                    <p className="text-xs text-mid-text">Entry</p>
+                    <p className="font-semibold text-dark-text">{trade.entryPrice.toFixed(5)}</p>
+                </div>
+                <div className="text-center bg-light-hover p-2 rounded-md">
+                    <p className="text-xs text-mid-text">Stop Loss</p>
+                    <p className="font-semibold text-danger">{trade.stopLoss.toFixed(5)}</p>
+                </div>
+                <div className="text-center bg-light-hover p-2 rounded-md">
+                    <p className="text-xs text-mid-text">Take Profit</p>
+                    <p className="font-semibold text-success">{trade.takeProfit.toFixed(5)}</p>
+                </div>
+                {trade.lotSize && (
+                    <div className="text-center bg-primary/10 p-2 rounded-md">
+                        <p className="text-xs text-primary/80">Lot Size</p>
+                        <p className="font-semibold text-primary">{trade.lotSize.toFixed(2)}</p>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -40,12 +55,14 @@ interface AISignalsPageProps {
     showToast: (message: string, type?: 'success' | 'info' | 'error') => void;
     activeTrades: TradeRecord[];
     tradeHistory: TradeRecord[];
+    onViewChange: (view: DashboardView) => void;
 }
 
 
-const AISignalsPage: React.FC<AISignalsPageProps> = ({ user, showToast, activeTrades, tradeHistory }) => {
+const AISignalsPage: React.FC<AISignalsPageProps> = ({ user, showToast, activeTrades, tradeHistory, onViewChange }) => {
     const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
     const [areSettingsLocked, setAreSettingsLocked] = useState(false);
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
     const { getUsageInfo } = useUsageTracker(user);
     const signalUsage = getUsageInfo('aiSignal');
@@ -72,17 +89,22 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({ user, showToast, activeTr
         setSettings((prev: any) => ({ ...prev, [field]: value }));
     };
 
-    const saveSettings = () => {
+    const handleSaveClick = () => {
+        if (areSettingsLocked) {
+            showToast('Settings are already locked for this subscription period.', 'info');
+            return;
+        }
+        setIsConfirmModalOpen(true);
+    };
+
+    const handleConfirmSave = () => {
         const EQUITY_KEY = `currentEquity_${user.email}`;
         localStorage.setItem(`tradeSettings_${user.email}`, JSON.stringify(settings));
-        if (!localStorage.getItem(`initialEquity_${user.email}`)) {
-            localStorage.setItem(EQUITY_KEY, settings.balance);
-            localStorage.setItem(`initialEquity_${user.email}`, settings.balance);
-            setAreSettingsLocked(true);
-            showToast('Initial trade settings saved and locked!', 'success');
-        } else {
-            showToast('Settings are already locked for this subscription period.', 'info');
-        }
+        localStorage.setItem(EQUITY_KEY, settings.balance);
+        localStorage.setItem(`initialEquity_${user.email}`, settings.balance);
+        setAreSettingsLocked(true);
+        showToast('Initial trade settings saved and locked!', 'success');
+        setIsConfirmModalOpen(false); // Close modal after saving
     };
     
     // --- Filtering & Memoization ---
@@ -111,6 +133,65 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({ user, showToast, activeTr
     const instrumentOptions = useMemo(() => ['all', ...new Set(tradeHistory.map(t => t.instrument))], [tradeHistory]);
 
     // --- Render Logic ---
+    const CTraderStatus = () => {
+        const isProOrPremium = user.subscribedPlan === PlanName.Pro || user.subscribedPlan === PlanName.Premium;
+        const isConnected = user.cTraderConfig?.isConnected;
+        const isAutoEnabled = user.cTraderConfig?.autoTradeEnabled;
+
+        if (!isProOrPremium) {
+            return (
+                 <div className="mb-6 p-4 bg-accent/10 rounded-lg border border-accent/20 flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                        <h3 className="font-bold text-accent">Unlock Auto-Trading with cTrader</h3>
+                        <p className="text-sm text-accent/80">Upgrade to Pro or Premium to automatically execute AI signals on your cTrader account.</p>
+                    </div>
+                    <button onClick={() => onViewChange('settings')} className="bg-accent text-white font-semibold py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
+                        View Plans
+                    </button>
+                </div>
+            );
+        }
+    
+        if (!isConnected) {
+            return (
+                <div className="mb-6 p-4 bg-info/10 rounded-lg border border-info/20 flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                        <h3 className="font-bold text-info">Automate Your Trading</h3>
+                        <p className="text-sm text-info/80">Connect your cTrader account to have AI signals executed automatically.</p>
+                    </div>
+                    <button onClick={() => onViewChange('settings')} className="bg-info text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
+                        Connect to cTrader
+                    </button>
+                </div>
+            );
+        }
+    
+        if (isConnected && !isAutoEnabled) {
+             return (
+                <div className="mb-6 p-4 bg-warning/10 rounded-lg border border-warning/20 flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                        <h3 className="font-bold text-warning">Auto-Trading is Disabled</h3>
+                        <p className="text-sm text-warning/80">Your cTrader account is connected but auto-trading is turned off.</p>
+                    </div>
+                    <button onClick={() => onViewChange('settings')} className="bg-warning text-white font-semibold py-2 px-4 rounded-lg hover:bg-yellow-600 transition-colors">
+                        Enable in Settings
+                    </button>
+                </div>
+            );
+        }
+        
+        return (
+            <div className="mb-6 p-4 bg-success/10 rounded-lg border border-success/20 flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <h3 className="font-bold text-success flex items-center"><Icon name="check" className="w-5 h-5 mr-2"/> cTrader Connected & Auto-Trading Active</h3>
+                    <p className="text-sm text-success/80">AI signals will be automatically executed on account: {user.cTraderConfig?.accountId}.</p>
+                </div>
+                <button onClick={() => onViewChange('settings')} className="text-sm text-primary hover:underline font-semibold">
+                    Manage Settings
+                </button>
+            </div>
+        );
+    };
 
     const renderContent = () => {
         if (user.subscribedPlan === PlanName.Free) {
@@ -170,6 +251,43 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({ user, showToast, activeTr
 
     return (
         <div className="p-4 sm:p-8 bg-light-bg min-h-screen">
+            {isConfirmModalOpen && (
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fade-in-right">
+                    <div className="bg-light-surface rounded-lg shadow-xl p-6 max-w-md w-full m-4">
+                        <div className="flex items-start">
+                            <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-warning/10 sm:mx-0 sm:h-10 sm:w-10">
+                                <Icon name="danger" className="h-6 w-6 text-warning" />
+                            </div>
+                            <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                <h3 className="text-lg leading-6 font-bold text-dark-text">Confirm & Lock Settings</h3>
+                                <div className="mt-2">
+                                    <p className="text-sm text-mid-text">
+                                        Are you sure? The AI will use this balance and risk profile to calculate all signals and analytics for your current subscription period.
+                                        <strong className="block mt-2 text-dark-text">This cannot be changed later.</strong>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse gap-3">
+                            <button
+                                type="button"
+                                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:w-auto sm:text-sm"
+                                onClick={handleConfirmSave}
+                            >
+                                Confirm & Lock
+                            </button>
+                            <button
+                                type="button"
+                                className="mt-3 w-full inline-flex justify-center rounded-md border border-light-gray shadow-sm px-4 py-2 bg-light-surface text-base font-medium text-mid-text hover:bg-light-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:mt-0 sm:w-auto sm:text-sm"
+                                onClick={() => setIsConfirmModalOpen(false)}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="mb-8 p-6 bg-light-surface rounded-xl shadow-sm border border-light-gray">
                 <h2 className="text-xl font-semibold mb-4 text-primary">Your Trade Settings</h2>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -187,7 +305,7 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({ user, showToast, activeTr
                         <label className="block text-sm font-medium text-dark-text mb-1">Risk per Trade (%)</label>
                         <input type="number" step="0.1" value={settings.risk} onChange={(e) => handleSettingsChange('risk', e.target.value)} disabled={areSettingsLocked} className="w-full bg-light-hover border-light-gray rounded-md p-2 focus:ring-primary focus:border-primary text-dark-text disabled:bg-light-gray/50 disabled:cursor-not-allowed" />
                     </div>
-                    <button onClick={saveSettings} disabled={areSettingsLocked} className="bg-primary hover:bg-primary-hover text-white font-bold py-2 px-4 rounded-md disabled:bg-light-gray disabled:cursor-not-allowed">
+                    <button onClick={handleSaveClick} disabled={areSettingsLocked} className="bg-primary hover:bg-primary-hover text-white font-bold py-2 px-4 rounded-md disabled:bg-light-gray disabled:cursor-not-allowed">
                         {areSettingsLocked ? 'Settings Locked' : 'Save Settings'}
                     </button>
                     {areSettingsLocked && (
@@ -199,6 +317,8 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({ user, showToast, activeTr
                 </div>
             </div>
             
+            <CTraderStatus />
+
             <div className="flex justify-between items-center mb-4 border-b border-light-gray flex-wrap">
                  <div className="flex">
                     <TabButton tabName="active" label="Active Trades" count={activeTrades.length} />

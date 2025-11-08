@@ -1,5 +1,7 @@
 {
   "name": "Copy of Trade Companion",
   "description": "An AI-powered Forex signal generation and mentorship platform. Get customizable, real-time trading signals, connect with expert mentors, and learn with our comprehensive education hub. Features include an AI support agent and a lot size calculator.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "camera"
+  ]
 }

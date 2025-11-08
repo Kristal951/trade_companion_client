@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { Signal, PlanName } from "../types";
+import { instrumentDefinitions } from '../config/instruments';
 
 const API_KEY = process.env.API_KEY;
 
@@ -53,72 +54,170 @@ export const classifyQuery = async (query: string): Promise<'IN_DEPTH_ANALYSIS' 
   }
 };
 
-export const scanForSignals = async (userPlan: PlanName): Promise<any> => {
+export const scanForSignals = async (userPlan: PlanName, userSettings: { balance: string; risk: string; currency: string; }): Promise<any> => {
     const instrumentsToScan = userPlan === PlanName.Basic ? BASIC_INSTRUMENTS_TO_SCAN : FULL_INSTRUMENTS_TO_SCAN;
-    const priorityInstruction = (userPlan === PlanName.Pro || userPlan === PlanName.Premium) 
-      ? "Give priority to finding a valid setup on XAU/USD. If a high-probability XAU/USD setup exists, return it. Otherwise, check the other instruments." 
-      : "";
+    
+    // --- UTILITY TO CLEAN JSON FROM MODEL ---
+    const cleanJsonString = (rawText: string): string => {
+        let text = rawText.trim();
+        if (text.startsWith('```json')) {
+            text = text.substring(7, text.length - 3).trim();
+        } else if (text.startsWith('```')) {
+            text = text.substring(3, text.length - 3).trim();
+        }
+        return text;
+    };
 
-    const systemInstruction = `You are an elite, automated trading analyst AI. Your core programming is modeled on specialized financial LLMs like FinGPT, focusing on high-potential intraday setups. You operate silently and your sole output is a single, structured JSON object.
+    // --- MODEL 1: PATTERN CLASSIFIER ---
+    const patternClassifierPrompt = `You are a deterministic technical pattern classifier. Your job is to scan a list of financial instruments using real-time data from Google Search. You must identify ONE single high-probability setup based on Smart Money Concepts (SMC) and Institutional order flow (e.g., order blocks, liquidity grabs, market structure shifts).
 
-**STRATEGY & ANALYSIS PROTOCOL (APPLY TO ALL INSTRUMENTS):**
+    **Instructions:**
+    1.  Use the search tool to get current market data for this list: ${instrumentsToScan.join(', ')}.
+    2.  Find the single best intraday setup that matches the SMC criteria AND the following MANDATORY risk parameters:
+        - The Risk-to-Reward ratio (distance to Take Profit / distance to Stop Loss) MUST be between 1.5 and 4.0.
+        - For volatile pairs ('XAU/USD', 'BTC/USD'), the Take Profit distance MUST be at least 150 pips and the Stop Loss distance MUST be less than 100 pips.
+        - For all other pairs, the Stop Loss distance MUST be less than 100 pips.
+    3.  **Market Hours Check:** You MUST verify that the market for the instrument you select is currently open before providing a setup. Do not generate signals for closed markets (e.g., Forex and commodities like XAU/USD are closed on weekends). Use the current UTC time to determine market status.
+    4.  If a valid setup is found, you MUST return a single JSON object with the exact following structure.
+    5.  If NO setup meets all criteria (including market hours), you MUST return the JSON object: \`{"pass": false}\`.
+    6.  Your entire response must be only the raw JSON. No markdown, no text before or after.
+    
+    **Pip Calculation Rules for Risk Parameters:**
+    - Forex (4 decimals, e.g., EUR/USD): pips = ABS(price1 - price2) / 0.0001
+    - Forex (2 decimals, e.g., USD/JPY): pips = ABS(price1 - price2) / 0.01
+    - XAU/USD (Gold): pips = ABS(price1 - price2) / 0.1
+    - BTC/USD (Bitcoin): pips = ABS(price1 - price2) / 10
+    
+    **Valid Setup JSON Schema:**
+    \`\`\`json
+    {
+      "pass": true,
+      "instrument": "XAU/USD",
+      "type": "BUY",
+      "entryPrice": 1985.2,
+      "stopLoss": 1976.0,
+      "takeProfit1": 2005.2,
+      "pattern_score": 0.85,
+      "tags": ["order-block", "liquidity-grab"],
+      "reason_short": "Price reacted to a 4H order block after sweeping liquidity, showing a 15M market structure shift."
+    }
+    \`\`\``;
 
-1.  **INSTITUTIONAL BIAS (4H):**
-    *   Identify the primary "Point of Interest" (POI) on the 4-hour chart. This will be a significant Support/Resistance level, a high-volume Order Block (OB), or a Fair Value Gap (FVG). This determines the institutional bias.
-    *   Look for a recent "liquidity grab" (e.g., a sweep of previous highs/lows) near this POI.
+    // --- MODEL 2: FINANCIAL ANALYST ---
+    const financialAnalystPrompt = `You are a senior financial analyst. You will be given a trade setup candidate that has already passed a technical pattern check. Your task is to provide a deeper analysis, consider market context using Google Search, and return a confidence score and detailed reasoning in a specific JSON format.
 
-2.  **TREND CONFIRMATION (1H):**
-    *   Confirm the trend using a 21-period and 50-period Exponential Moving Average (EMA) cross on the 1-hour chart.
-    *   For buys, price must be above the 50 EMA, and the 21 EMA must be above the 50 EMA.
-    *   For sells, price must be below the 50 EMA, and the 21 EMA must be below the 50 EMA.
+    **Instructions:**
+    1.  Analyze the provided trade candidate.
+    2.  Use the search tool to check for relevant high-impact news (e.g., FOMC, CPI, NFP) or market sentiment that could affect this trade.
+    3.  Return a single JSON object with your findings.
+    4.  Your entire response must be only the raw JSON. No markdown, no text before or after.
 
-3.  **ENTRY TRIGGER (15M):**
-    *   Price must show a "market structure shift" (e.g., breaking a recent swing high in a downtrend for a buy signal) on the 15M chart after reacting to the 4H POI. This is the primary confirmation for entry.
-
-4.  **TRADE PARAMETERS & PRIORITIZATION:**
-    *   **Priority:** Prioritize setups with the potential for Take Profit 1 (TP1) to be **at least 60 pips** from the entry. The ideal range for a full move is 60-200 pips.
-    *   **Stop Loss (SL):** The SL must be placed logically. For a BUY, it should be placed below the low of the 4H POI. For a SELL, it should be placed above the high of the 4H POI.
-    *   **Take Profit (TP):** TP1 should target the next significant liquidity level or structure point that is at least 60 pips away.
-
-5.  **CRITICAL FILTERS (APPLY ALL):**
-    *   **Session:** ONLY generate signals during active London or New York sessions (07:00 to 17:00 UTC).
-    *   **DXY Correlation:** Must be logical for USD pairs & XAU/USD (inverse correlation for XAU).
-    *   **RSI Filter:** Do NOT issue a BUY if 15M RSI is above 70 (overbought). Do NOT issue a SELL if 15M RSI is below 30 (oversold).
-
-6.  **CONFIDENCE SCORE:** Calculate a score from 70-95% based on the confluence of these factors, with a higher weight given to setups meeting the 60+ pip potential.
-
-**EXECUTION INSTRUCTIONS (MANDATORY):**
-1.  **Analyze all instruments:** Use the Google Search tool to get real-time data for every instrument in this list: ${instrumentsToScan.join(', ')}.
-2.  **Find the BEST setup:** ${priorityInstruction} Identify if ANY of these instruments currently present a high-probability trade setup that meets ALL the core conditions, trade parameters, and critical filters of the strategy. **Crucially, prioritize setups that offer a 60-200 pip potential.**
-3.  **MANDATORY JSON OUTPUT:**
-    *   **If you find ONE clear, high-probability setup:** Respond ONLY with a single JSON object for that instrument, setting "signalFound" to true.
-    *   **If MULTIPLE setups exist:** Choose the one with the highest confidence (or the prioritized instrument if it's a valid setup) and return its JSON object. DO NOT return multiple signals.
-    *   **If NO setup meets ALL criteria on ANY instrument:** Respond ONLY with the JSON object: \`{"signalFound": false}\`. Do not provide reasons or analysis in this case.
-4.  **DO NOT add any text, explanation, or markdown formatting outside the final JSON object.** Your entire response must be a single, valid JSON object matching the provided schema.`;
+    **JSON Schema:**
+    \`\`\`json
+    {
+      "confidence": 88,
+      "reason": "The technical setup is strong due to the clear market structure shift at a key demand zone. However, be mindful of upcoming CPI data which could introduce volatility. The risk/reward to TP1 is favorable.",
+      "adjustment": { "sl_adjust_points": 0.0, "comment": "SL is well-placed below the structural low." }
+    }
+    \`\`\``;
 
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-pro',
-            contents: `Scan the predefined list of instruments and return a result according to your instructions. Current time is ${new Date().toUTCString()}.`,
+        // --- STEP 1: Call Pattern Classifier Model ---
+        const patternResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `Scan the predefined list of instruments and return a result according to your instructions. Current UTC time is ${new Date().toUTCString()}.`,
             config: {
-                systemInstruction,
+                systemInstruction: patternClassifierPrompt,
                 tools: [{ googleSearch: {} }],
             }
         });
+        
+        const patternResult = JSON.parse(cleanJsonString(patternResponse.text));
 
-        // The model is heavily prompted to return only JSON, but it might be wrapped in markdown.
-        // We'll clean it up before parsing to be safe.
-        let jsonString = response.text.trim();
-        if (jsonString.startsWith('```json')) {
-            jsonString = jsonString.substring(7, jsonString.length - 3).trim();
-        } else if (jsonString.startsWith('```')) {
-            jsonString = jsonString.substring(3, jsonString.length - 3).trim();
+        // --- STEP 2: Check if a setup was found ---
+        if (!patternResult.pass) {
+            console.log("Pattern Classifier found no valid setup.");
+            return { signalFound: false };
         }
 
-        return JSON.parse(jsonString);
+        // --- STEP 3: Call Financial Analyst Model ---
+        const analystContent = `Analyze the following trade candidate:\n${JSON.stringify(patternResult, null, 2)}`;
+        const analystResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: analystContent,
+            config: {
+                systemInstruction: financialAnalystPrompt,
+                tools: [{ googleSearch: {} }],
+            }
+        });
+        const analystResult = JSON.parse(cleanJsonString(analystResponse.text));
+
+        // --- STEP 4: Decision Layer ---
+        const patternScore = (patternResult.pattern_score || 0) * 60; // 60% weight
+        const analystScore = (analystResult.confidence || 0) * 0.30; // 30% weight
+        
+        // Simple rule-based score (10% weight)
+        let rules_score = 0;
+        if (patternResult.tags?.includes('order-block')) rules_score += 5;
+        if (patternResult.tags?.includes('liquidity-grab')) rules_score += 5;
+        
+        const finalConfidence = Math.min(100, patternScore + analystScore + rules_score);
+        
+        const ACCEPTANCE_THRESHOLD = 70;
+        if (finalConfidence < ACCEPTANCE_THRESHOLD) {
+            console.log(`Signal for ${patternResult.instrument} rejected. Final confidence ${finalConfidence.toFixed(2)} is below threshold.`);
+            return { signalFound: false };
+        }
+
+        // --- STEP 5: Calculate Lot Size based on User Settings ---
+        const account_size = parseFloat(userSettings.balance);
+        const risk_pct = parseFloat(userSettings.risk);
+        const risk_amount = account_size * (risk_pct / 100);
+
+        const entryPrice = parseFloat(patternResult.entryPrice);
+        const stopLoss = parseFloat(patternResult.stopLoss);
+        const stop_dist = Math.abs(entryPrice - stopLoss);
+        
+        const instrumentProps = instrumentDefinitions[patternResult.instrument];
+        const pip_step = instrumentProps.pipStep;
+        
+        const stopLossInPips = stop_dist / pip_step;
+        
+        let pipValueInUSDForOneLot: number;
+        
+        if (instrumentProps.quoteCurrency === 'USD') {
+            pipValueInUSDForOneLot = instrumentProps.contractSize * pip_step;
+        } else if (instrumentProps.quoteCurrency === 'JPY') {
+            // This is an approximation and would need a live USD/JPY rate for full accuracy
+            pipValueInUSDForOneLot = (instrumentProps.contractSize * pip_step) / 150; 
+        } else {
+             // For non-USD pairs, this is a simplification. A live cross-rate is needed for accuracy.
+             // We assume a rough value of $10 per pip for a standard lot for simplification.
+            pipValueInUSDForOneLot = 10;
+        }
+        
+        const totalRiskInUSDPerLot = stopLossInPips * pipValueInUSDForOneLot;
+        const lotSize = totalRiskInUSDPerLot > 0 ? risk_amount / totalRiskInUSDPerLot : 0;
+        
+        // --- STEP 6: Format and Return Final Signal ---
+        const finalSignal = {
+            signalFound: true,
+            instrument: patternResult.instrument,
+            type: patternResult.type,
+            entryPrice: parseFloat(patternResult.entryPrice),
+            stopLoss: parseFloat(patternResult.stopLoss),
+            takeProfit1: parseFloat(patternResult.takeProfit1),
+            confidence: parseFloat(finalConfidence.toFixed(2)),
+            reasoning: analystResult.reason,
+            technicalReasoning: patternResult.reason_short,
+            lotSize: parseFloat(lotSize.toFixed(2)),
+            riskAmount: parseFloat(risk_amount.toFixed(2)),
+        };
+        
+        return finalSignal;
 
     } catch (error) {
-        console.error("Error scanning for signals:", error);
+        console.error("Error during the new signal generation pipeline:", error);
         return { signalFound: false }; // Return a safe default on error
     }
 };

@@ -1,3 +1,5 @@
+
+
 export interface User {
   name: string;
   email: string;
@@ -5,6 +7,12 @@ export interface User {
   telegramNumber?: string;
   subscribedPlan?: PlanName;
   isMentor: boolean;
+  cTraderConfig?: {
+    accountId: string;
+    accessToken: string;
+    isConnected: boolean;
+    autoTradeEnabled: boolean;
+  };
 }
 
 export enum PlanName {
@@ -21,6 +29,15 @@ export interface Plan {
   features: string[];
 }
 
+export interface Payout {
+  id: string;
+  amount: number;
+  dateRequested: string;
+  dateCompleted?: string;
+  status: 'Pending' | 'Completed' | 'Failed';
+  method: string;
+}
+
 // FIX: Export the Mentor interface
 export interface Mentor {
   id: number;
@@ -32,9 +49,54 @@ export interface Mentor {
   price: number;
   roi: number; // Return on Investment
   strategy: string; // Formerly 'bio'
+  rating?: number; // Average rating out of 5
+  reviewsCount?: number; // Total number of reviews
   posts?: MentorPost[]; // Optional: list of posts by the mentor
   certifications?: { name: string; url: string; }[]; // Optional: certifications or proof
+  recentSignals?: RecentSignal[]; // NEW: Added recent signals for performance tracking
+  subscriberGrowth?: { month: string; subscribers: number }[];
+  earnings?: {
+    currentBalance: number;
+    lifetime: number;
+  };
+  payoutHistory?: Payout[];
+  identity?: {
+    idDocument: {
+        status: 'Not Submitted' | 'Pending' | 'Verified' | 'Rejected';
+        type?: "Driver's License" | 'International Passport' | 'National ID' | 'NIN Slip';
+        fileName?: string;
+    };
+    addressDocument: {
+        status: 'Not Submitted' | 'Pending' | 'Verified' | 'Rejected';
+        type?: 'Utility Bill' | 'Bank Statement';
+        fileName?: string;
+    };
+    livenessCheck: {
+        status: 'Not Submitted' | 'Pending' | 'Verified' | 'Rejected';
+    };
+    overallStatus: 'Not Submitted' | 'Pending' | 'Verified' | 'Rejected';
+    rejectionReason?: string;
+  };
+  analytics?: {
+    earningsData: { month: string; earnings: number }[];
+    subscriberData: { month: string; new: number; churned: number }[];
+    ratingDistribution: { rating: number; count: number }[];
+    topSignals: RecentSignal[];
+  };
 }
+
+export interface RecentSignal {
+  id: string;
+  instrument: string;
+  direction: 'BUY' | 'SELL';
+  entry: string;
+  stopLoss: string;
+  takeProfit: string;
+  outcome: 'win' | 'loss';
+  timestamp: string;
+  pnl?: number;
+}
+
 
 export interface MentorPost {
   id: number;
@@ -58,6 +120,7 @@ export interface MentorSubscriber {
   avatar: string;
   subscribedDate: string;
   status: 'Active' | 'Cancelled';
+  ratingGiven?: number; // Rating from 1 to 5 given by this subscriber
 }
 
 export interface Signal {
@@ -77,7 +140,8 @@ export interface Signal {
 }
 
 
-export interface TradeRecord extends Omit<Signal, 'takeProfit2' | 'takeProfit3' | 'confidence' | 'technicalReasoning'> {
+// FIX: Removed 'confidence' from Omit to make it available in the TradeRecord type for analytics.
+export interface TradeRecord extends Omit<Signal, 'takeProfit2' | 'takeProfit3' | 'technicalReasoning'> {
   id: string; // Unique ID for the trade
   status: 'active' | 'win' | 'loss';
   pnl?: number; // Profit or Loss amount
@@ -112,7 +176,9 @@ export type DashboardView =
   | "lot_size_calculator"
   | "market_chart"
   | "mentor_dashboard"
-  | "mentor_profile";
+  | "mentor_profile"
+  | "followers"
+  | "contact_us";
 
 export interface ChatMessage {
   role: "user" | "model";

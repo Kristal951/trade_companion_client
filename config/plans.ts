@@ -50,6 +50,7 @@ export const PLAN_FEATURES: Record<PlanName, string[]> = {
         '7 AI chart analyses per day',
         '5 In-depth AI analyses per day',
         'Telegram Notifications',
+        'cTrader Automated Trading',
         'Advanced Analytics',
     ],
     [PlanName.Premium]: [
@@ -58,6 +59,7 @@ export const PLAN_FEATURES: Record<PlanName, string[]> = {
         'Unlimited AI chart analyses',
         'Unlimited in-depth AI analyses',
         'Telegram Notifications',
+        'cTrader Automated Trading',
         '1 Free Mentor for a month',
     ],
 };

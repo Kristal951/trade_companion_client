@@ -32,16 +32,24 @@ const MOCK_FAQS: FAQ[] = [
 
 
 interface LandingPageProps {
-  onLogin: () => void;
+  onLoginRequest: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
   const [isYearly, setIsYearly] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [mentorSearchQuery, setMentorSearchQuery] = useState('');
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
   };
+
+  const filteredMentors = MOCK_MENTORS.filter(mentor =>
+    mentor.name.toLowerCase().includes(mentorSearchQuery.toLowerCase()) ||
+    mentor.instruments.some(instrument =>
+      instrument.toLowerCase().includes(mentorSearchQuery.toLowerCase())
+    )
+  );
 
   return (
     <div className="bg-light-bg min-h-screen text-dark-text">
@@ -57,8 +65,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             <a href="#faq" className="text-mid-text hover:text-primary transition-colors">FAQ</a>
           </nav>
           <div className="flex items-center space-x-4">
-            <button onClick={onLogin} className="text-primary hover:text-primary-hover font-semibold transition-colors">Login</button>
-            <button onClick={onLogin} className="bg-primary hover:bg-primary-hover text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+            <button onClick={onLoginRequest} className="text-primary hover:text-primary-hover font-semibold transition-colors">Login</button>
+            <button onClick={onLoginRequest} className="bg-primary hover:bg-primary-hover text-white font-semibold py-2 px-4 rounded-lg transition-colors">
               Get Started
             </button>
           </div>
@@ -71,7 +79,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           <div className="container mx-auto px-6">
             <h2 className="text-5xl md:text-6xl font-extrabold leading-tight mb-4 text-dark-text">Trade Smarter, Not Harder</h2>
             <p className="text-xl text-mid-text max-w-3xl mx-auto mb-8">Leverage AI-powered signals and expert mentorship to elevate your Forex trading performance.</p>
-            <button onClick={onLogin} className="bg-primary hover:bg-primary-hover text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105">
+            <button onClick={onLoginRequest} className="bg-primary hover:bg-primary-hover text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105">
               Start Your Free Trial
             </button>
           </div>
@@ -131,24 +139,37 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         {/* Top Mentors Section */}
         <section id="mentors" className="py-20 bg-light-bg">
           <div className="container mx-auto px-6">
-            <h3 className="text-4xl font-bold text-center mb-12 text-dark-text">Meet Our Top Mentors</h3>
-            <div className="grid md:grid-cols-3 gap-8">
-              {MOCK_MENTORS.map(mentor => (
-                <div key={mentor.id} className="bg-light-surface rounded-lg overflow-hidden text-center p-6 transform hover:-translate-y-2 transition-transform duration-300 shadow-md border border-light-gray">
-                  <img src={mentor.avatar} alt={mentor.name} className="w-32 h-32 rounded-full mx-auto mb-4 border-4 border-primary" />
-                  <h4 className="text-xl font-bold text-dark-text">{mentor.name}</h4>
-                  <p className="text-primary mb-2">{mentor.experience} Years Experience</p>
-                  <div className="flex justify-around text-sm my-4">
-                    <span><strong className="text-success">{mentor.profitRatio}%</strong> Profit Ratio</span>
-                    <span><strong className="text-primary">${mentor.price}</strong>/month</span>
-                  </div>
-                  <p className="text-mid-text text-sm mb-4">Trades: {mentor.instruments.join(', ')}</p>
-                  <button className="w-full bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold py-2 px-4 rounded-lg transition-colors">
-                    View Profile
-                  </button>
-                </div>
-              ))}
+            <h3 className="text-4xl font-bold text-center mb-4 text-dark-text">Meet Our Top Mentors</h3>
+            <div className="max-w-xl mx-auto mb-12">
+                <input
+                  type="text"
+                  placeholder="Search by name or instrument (e.g., John, EUR/USD)..."
+                  value={mentorSearchQuery}
+                  onChange={(e) => setMentorSearchQuery(e.target.value)}
+                  className="w-full px-5 py-3 bg-light-surface border border-light-gray rounded-full focus:ring-2 focus:ring-primary focus:outline-none transition-shadow text-dark-text shadow-sm"
+                />
             </div>
+            {filteredMentors.length > 0 ? (
+                <div className="grid md:grid-cols-3 gap-8">
+                {filteredMentors.map(mentor => (
+                    <div key={mentor.id} className="bg-light-surface rounded-lg overflow-hidden text-center p-6 transform hover:-translate-y-2 transition-transform duration-300 shadow-md border border-light-gray">
+                    <img src={mentor.avatar} alt={mentor.name} className="w-32 h-32 rounded-full mx-auto mb-4 border-4 border-primary" />
+                    <h4 className="text-xl font-bold text-dark-text">{mentor.name}</h4>
+                    <p className="text-primary mb-2">{mentor.experience} Years Experience</p>
+                    <div className="flex justify-around text-sm my-4">
+                        <span><strong className="text-success">{mentor.profitRatio}%</strong> Profit Ratio</span>
+                        <span><strong className="text-primary">${mentor.price}</strong>/month</span>
+                    </div>
+                    <p className="text-mid-text text-sm mb-4">Trades: {mentor.instruments.join(', ')}</p>
+                    <button className="w-full bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                        View Profile
+                    </button>
+                    </div>
+                ))}
+                </div>
+            ) : (
+                <p className="text-center text-mid-text mt-8">No mentors found matching your search.</p>
+            )}
           </div>
         </section>
 
