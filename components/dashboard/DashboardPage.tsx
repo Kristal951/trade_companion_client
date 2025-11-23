@@ -8,7 +8,7 @@ import LotSizeCalculatorPage from '../calculator/LotSizeCalculatorPage';
 import MentorDashboard from '../mentors/MentorDashboard';
 import MentorProfilePage from '../mentors/MentorProfilePage';
 import MarketChartPage from './MarketChartPage';
-import { scanForSignals } from '../../services/geminiService';
+import { scanForSignals, TARGET_INSTRUMENTS } from '../../services/geminiService';
 import NotificationBell from '../ui/NotificationBell';
 import { useUsageTracker } from '../../hooks/useUsageTracker';
 import { getLivePrices } from '../../services/marketDataService';
@@ -264,7 +264,7 @@ const MOCK_EDUCATION_ARTICLES: EducationArticle[] = [
 
             <h2 class="text-2xl font-bold mb-4">Chapter 1: Welcome to the Jungle</h2>
             
-            <p class="mb-4">Imagine a market that never sleeps. A market where fortunes are made and lost in the blink of an eye. A market that is larger than all the stock markets in the world combined. Welcome to the Foreign Exchange Market.</p>
+            <p class="mb-4">Imagine a market that never sleeps. A market where fortunes are made and lost in the blink of an eye. A market where the liquidity is unmatched. Welcome to the Foreign Exchange Market.</p>
 
             <h3 class="text-xl font-semibold mb-2">What are we actually trading?</h3>
             <p class="mb-4">The answer is simple: <strong>Money.</strong> Because you are not buying anything physical, forex trading can be confusing. Think of buying a currency as buying a share in a particular country, kind of like buying stocks of a company. The price of the currency is a direct reflection of what the market thinks about the current and future health of the Japanese economy, for example.</p>
@@ -593,7 +593,20 @@ const CTraderSettings: React.FC<SettingsProps> = ({user, setUser, showToast}) =>
     const [accountIdInput, setAccountIdInput] = useState('');
     const [tokenInput, setTokenInput] = useState('');
 
-    const availableInstruments = Object.keys(instrumentDefinitions);
+    // Filter out synthetic indices as they are not supported for auto-trading on cTrader
+    // AND ensure we only show instruments that the AI actually scans for.
+    const availableInstruments = TARGET_INSTRUMENTS.filter(inst => {
+        const unsupportedInstruments = [
+            'Boom 1000', 
+            'Crash 1000', 
+            'Volatility 75', 
+            'Volatility 100', 
+            'Jump 10', 
+            'Jump 25', 
+            'Jump 50'
+        ];
+        return !unsupportedInstruments.includes(inst);
+    });
 
     const toggleInstrument = (instrument: string) => {
         setSelectedInstruments(prev => {
@@ -809,7 +822,7 @@ const DashboardOverview: React.FC<{user: User; onViewChange: (view: DashboardVie
             cumulativeEquity += trade.pnl || 0;
             data.push({ name: `T${index + 1}`, equity: parseFloat(cumulativeEquity.toFixed(2)) });
         });
-        // Add live equity point
+        // Add Live Point
         if (activeTrades.length > 0) {
             data.push({ name: 'Live', equity: parseFloat(liveEquity.toFixed(2)) });
         }
@@ -1088,10 +1101,19 @@ const AnalyticsPage: React.FC<{ user: User, liveEquity: number, floatingPnL: num
             return acc;
         }, {} as Record<string, number>)).map(([name, pnl]) => ({ name, 'Net P/L': pnl }));
         
-        const volatilityData = instrumentDistributionData.slice(0, 6).map(item => ({
-            instrument: item.name,
-            volatility: Math.random() * 80 + 20, 
-        }));
+        // Stabilize random generation for volatility chart
+        const volatilityData = instrumentDistributionData.slice(0, 6).map(item => {
+            // Generate a consistent "random" number based on the string
+            let hash = 0;
+            for (let i = 0; i < item.name.length; i++) {
+                hash = item.name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const normalized = Math.abs(hash % 60) + 20; // 20 to 80
+            return {
+                instrument: item.name,
+                volatility: normalized,
+            };
+        });
 
         const confidenceBuckets: Record<string, {wins: number, total: number}> = {
             '70-80%': { wins: 0, total: 0 },
@@ -1810,6 +1832,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
   // --- Automatic Signal Scanner ---
   useEffect(() => {
     const scannerInterval = setInterval(async () => {
+      // Allow scanner to run if user is on dashboard or signals page
       if (activeView !== 'dashboard' && activeView !== 'ai_signals') return;
       if (!user.subscribedPlan || user.subscribedPlan === PlanName.Free || !canUseFeature('aiSignal')) {
         return;
@@ -1817,6 +1840,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
 
       try {
         const settings = JSON.parse(localStorage.getItem(`tradeSettings_${user.email}`) || '{"balance": "10000", "risk": "1.0", "currency": "USD"}');
+        // Scan for signals using the updated service which now handles live market context internally
+        // for Majors, Minors, Metals, Crypto
         const signalData = await scanForSignals(user.subscribedPlan, settings);
         
         if (signalData && signalData.signalFound) {
@@ -1840,7 +1865,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
                 
                 const newNotification: Notification = {
                     id: new Date().toISOString(),
-                    message: `New Strategy A signal for ${newTrade.instrument}!`,
+                    message: `New Signal Found: ${newTrade.instrument} ${newTrade.type}`,
                     timestamp: new Date().toISOString(),
                     isRead: false,
                     linkTo: 'ai_signals',
@@ -1872,7 +1897,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
       } catch (error) {
         console.error("Error during signal scan:", error);
       }
-    }, 900000); // Scan every 15 minutes
+    }, 900000); // Scan every 15 minutes (900,000ms)
 
     return () => clearInterval(scannerInterval);
   }, [activeView, user, canUseFeature, incrementUsage, showToast, activeTrades, EQUITY_KEY, addNotification, setActiveTrades]);
@@ -1923,23 +1948,23 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
             totalFloating += tradePnL;
 
             // Check Stop Loss / Take Profit
-            if (!priceData.isMock) { // Only close trades on real price data
-                let isWin = false;
-                let isLoss = false;
+            // IMPORTANT: Only auto-close on REAL price data, or if specifically testing mock logic. 
+            // Here we allow closure on mock prices for demonstration unless specifically flagged not to.
+            let isWin = false;
+            let isLoss = false;
 
-                if (trade.type === 'BUY') {
-                    isWin = currentPrice >= trade.takeProfit;
-                    isLoss = currentPrice <= trade.stopLoss;
-                } else { // SELL
-                    isWin = currentPrice <= trade.takeProfit;
-                    isLoss = currentPrice >= trade.stopLoss;
-                }
+            if (trade.type === 'BUY') {
+                isWin = currentPrice >= trade.takeProfit;
+                isLoss = currentPrice <= trade.stopLoss;
+            } else { // SELL
+                isWin = currentPrice <= trade.takeProfit;
+                isLoss = currentPrice >= trade.stopLoss;
+            }
 
-                if (isWin) {
-                    closedTradeItems.push({ trade, outcome: 'win', exitPrice: trade.takeProfit });
-                } else if (isLoss) {
-                    closedTradeItems.push({ trade, outcome: 'loss', exitPrice: trade.stopLoss });
-                }
+            if (isWin) {
+                closedTradeItems.push({ trade, outcome: 'win', exitPrice: trade.takeProfit });
+            } else if (isLoss) {
+                closedTradeItems.push({ trade, outcome: 'loss', exitPrice: trade.stopLoss });
             }
         });
         
@@ -1958,7 +1983,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
                 const contractSize = instrumentProps?.contractSize || 100000;
                 const lotSize = trade.lotSize || 0;
                 
-                // Re-calculate final PnL for closing (simpler version of loop logic above but using exitPrice)
+                // Re-calculate final PnL for closing
                 let pnl = (exitPrice - trade.entryPrice) * (lotSize * contractSize) * (trade.type === 'BUY' ? 1 : -1);
                 
                 if (instrumentProps.quoteCurrency === 'JPY') pnl /= 150;

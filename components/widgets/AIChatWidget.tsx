@@ -1,11 +1,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Icon from '../ui/Icon';
-import { DashboardView, PlanName, User } from '../../types';
+import { DashboardView, User } from '../../types';
 import { GoogleGenAI } from '@google/genai';
 import SecureContent from '../ui/SecureContent';
 import { useUsageTracker } from '../../hooks/useUsageTracker';
 import { classifyQuery } from '../../services/geminiService';
+import { fetchMarketContext } from '../../services/marketDataService';
+import { instrumentDefinitions } from '../../config/instruments';
 
 interface AIChatbotProps {
     user: User;
@@ -36,87 +38,81 @@ interface ChatMessage {
     isTradeExecuted?: boolean;
 }
 
-const API_KEY = process.env.API_KEY;
-if (!API_KEY) {
-  console.warn("API_KEY environment variable not set for chatbot");
-}
-const ai = new GoogleGenAI({ apiKey: API_KEY! });
+const STRATEGY_CONTEXT = `
+1. Major FX Pairs (EUR/USD, GBP/USD, USD/JPY)
+   Strategy: Session Overlap & Liquidity Grab (SMC)
+   - Core Logic: 70–80% of daily volume occurs during the London–New York overlap.
+   - Setup: Look for a "Judas Swing" (fake breakout) followed by aggressive displacement.
+   - Entry: Retracement into a Fair Value Gap (FVG) or 62–79% Fibonacci zone on the M15 chart.
 
-// Updated System Prompt to include Instrument in parameters
-const systemPrompt = `You are "Olapete" - a highly knowledgeable trading and support expert. Your answers should be **direct and expert**, adjusting detail based on the user's request. Access real-time data using the search tool for market analysis and current events.
+2. Metals (XAU/USD, XAG/USD)
+   Strategy: Macro-Driven Supply & Demand Zoning
+   - Core Logic: Reacts to US Yields and Geopolitics.
+   - Setup: Price approaching a fresh 4H/Daily Supply or Demand zone.
+   - Confirmation: M15 rejection wick or engulfing candle at the zone.
 
-## CORE TRADING LOGIC: INSTRUMENT-BASED STRATEGY SELECTION
+3. Crypto (BTC/USD, ETH/USD)
+   Strategy: Trend Following & Breakout
+   - Core Logic: Momentum-heavy assets.
+   - Setup: Price above 20-period Moving Average (Bullish) or below (Bearish).
+   - Entry: Breakout of consolidation patterns (Flags, Pennants) on M15/H1.
 
-You must dynamically select the trading strategy based on the instrument the user asks about.
+4. Boom & Crash Indices (Synthetics)
+   Strategy A: 'Spike Catching' (Sniper)
+   - Direction: Buy Boom, Sell Crash.
+   - Setup: Price touching a previous spike zone + RSI extreme.
+   Strategy B: 'Tick Scalping'
+   - Direction: Sell Boom, Buy Crash (Trend following only).
 
-### 1. FOR STANDARD MARKETS (Forex, Metals, Crypto)
-**Pairs:** EUR/USD, GBP/JPY, XAU/USD (Gold), BTC/USD, etc.
-**STRATEGY TO USE: "Strategy A"**
-You must look for this specific confluence:
-1.  **Liquidity Sweep:** Price taking out a previous high/low.
-2.  **Market Structure Shift (MSS):** A strong reversal breaking recent structure.
-3.  **Return to Origin:** Entry at the Order Block or Fair Value Gap (FVG) created by the shift.
+5. Volatility Indices (V75, V100)
+   Strategy: Market Structure Shifts (MSS)
+   - Setup: Break of Market Structure (BMS) on M15.
+   - Entry: Retest of the Order Block that caused the break.
 
-### 2. FOR SYNTHETIC INDICES (Deriv/Binary)
-**Pairs:** Boom 1000, Crash 500, Volatility 75 (V75), Step Index, Jump Index.
-**STRATEGY TO USE: "Synthetic Specialist"**
-You must apply strategies unique to these algorithmic markets:
-*   **Boom/Crash:** Use "Spike Catching" strategy. Look for demand zones (Boom) or supply zones (Crash) aligning with higher timeframe trend. Do not trade against the spikes unless specifically asked for scalping.
-*   **Volatility/Jump:** Use "Pure Price Action" + "Trend Following". Focus on break-and-retest of key psychological levels.
+6. Jump Indices & Minor FX
+   Strategy: Gap Recovery & Cross-Pair Strength
+   - Setup: Fade huge gaps (Jump) or trade major strength divergence (Minors).
+`;
 
-## COMMUNICATION PROTOCOL (MANDATORY):
+// Updated System Prompt to include Instrument in parameters and Data Priority instructions
+const systemPrompt = `You are "Olapete" - a highly knowledgeable trading and support expert. Your answers should be **direct and expert**.
 
-1.  **Confidence & Consistency:** You MUST be "Very Sure." Provide only ONE, non-contradictory, optimal trade setup based on the market conditions you analyze. Do not hallucinate data or setups. If no clear, low-risk setup exists, state that the market is too volatile or range-bound for a high-confidence trade and suggest waiting.
+**CRITICAL INSTRUCTION ON MARKET DATA:**
+- You will often receive **[LIVE MARKET DATA INJECTION]** in the user's message.
+- You **MUST** prioritize this injected data (Current Price, Trend, Candles) over any external information found via Google Search or your internal knowledge.
+- Google Search results for "current price" are often outdated. **Trust the injected data implicitly** for defining Entry, Stop Loss, and Take Profit levels.
+- Use Google Search ONLY for finding news, fundamental events, or sentiment analysis.
 
-2.  **Setup Format (NEW - HARD REQUIREMENT):** When a trade setup is requested and given, it MUST follow this strict order and formatting.
+${STRATEGY_CONTEXT}
 
-    **TRADE SETUP ([Strategy Name])**
-    
-    **Parameters:**
-    -   Instrument: [Pair Name e.g., EUR/USD]
-    -   Action: [BUY or SELL]
-    -   Entry: [Price or Level]
-    -   Stop Loss (SL): [Price or Level]
-    -   Take Profit (TP): [Price or Level]
-    
-    **Reasoning:**
-    [Explain the technical reason based on Strategy A or Synthetic Strategy]
-    _Trade Stamp: [Use the current context time/date]_
-    
-3.  **Detail Level:** Respond concisely (1-3 sentences) for simple facts/definitions, but provide more comprehensive analysis (up to 2-3 paragraphs) when the user asks for detailed analysis, market outlook, or context. Always prioritize value and directness.
+## CORE INSTRUCTIONS:
 
-4.  **Yes/No:** If the user's question is a simple query, start the response with a direct "Yes" or "No," followed by a brief, expert justification.
+1.  **Analyze based on the Instrument:**
+    - If user asks about XAUUSD or XAGUSD, check US Yields and Supply/Demand zones.
+    - If user asks about EURUSD, look for Liquidity Grabs and Session times.
+    - If user asks about Boom/Crash, look for Spikes and Zones.
 
-5.  **Usage & Subscriptions:** Your primary function is to provide support and analysis. Do not deny requests based on subscription status; the system manages usage limits automatically.
+2.  **Trade Setup Format (Strict):**
+    When providing a trade, use this format:
+    **TRADE SETUP**
+    -   Instrument: [Name]
+    -   Action: [BUY/SELL]
+    -   Entry: [Price]
+    -   Stop Loss (SL): [Price]
+    -   Take Profit (TP): [Price]
+    **Reasoning:** [Brief strategy-based reason]
 
-6.  **Disclaimer:** Only append the following disclaimer if the response contains market analysis, trading signals, financial opinion, or investment advice. For non-financial support queries, omit the disclaimer.
+3.  **Communication:**
+    -   Be "Very Sure". No wishy-washy language.
+    -   If market conditions are bad, say "No clear setup".
+    -   For general questions, be concise.
 
-    _Disclaimer: This information is for educational purposes only and does not constitute financial or trading advice. Trading involves risk._
+4.  **Platform Support:**
+    -   Guide users to "Settings" for cTrader linking.
+    -   Explain features like Lot Size Calculator.
 
-## EXPERTISE & SUPPORT CAPABILITIES:
-
-You have deep knowledge in the following areas:
-
-1.  **General Trading Knowledge:** You can define trading concepts (pips, leverage, order types), explain market dynamics, and discuss fundamental and technical analysis.
-
-2.  **Platform Support:** You can guide users on how to use the Trade Companion platform, including navigating pages, setting up their profile, and using tools like the Lot Size Calculator.
-
-3.  **cTrader Account Linking:** Explain how to link accounts via Settings -> cTrader Linking -> Enter ID & Token -> Enable Auto-Trade.
-
-4.  **Analytics Page Expertise:** Explain the charts (Area Chart for equity, Pie Chart for instrument distribution, etc.) and how they help improve performance.
-
-## MENTOR-SPECIFIC EXPERTISE (FOR MENTOR ROLE ONLY)
-
-If the user's role is "Mentor," you possess additional expertise on the mentor-specific pages.
-
-1.  **Content Publisher:** Explain how to publish signals vs analysis.
-2.  **Profile & Settings:** Explain how to update bio, instruments, and upload certs.
-3.  **Payouts:** Explain the 70% win rate requirement and ID verification steps.
-4.  **Followers:** Explain subscriber tracking and ratings.
-
-## CONTACT & SUPPORT
-
-If a user wants to provide feedback, make a complaint, or contact the support team, guide them to the "Contact Us" page (Sidebar -> Tools -> Contact Us).
+5.  **Disclaimer:**
+    -   Include a brief disclaimer for financial advice.
 `;
 
 
@@ -148,7 +144,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ user, activeView, onExecuteTrade 
         const welcomeMessage = {
             id: 'welcome',
             role: 'model' as const,
-            text: `Welcome! I'm Olapete, your Trade Support Bot. I specialize in Strategy A for FX/Crypto and custom strategies for Synthetics. How can I help?`
+            text: `Welcome! I'm Olapete, your Trade Support Bot. I can analyze Majors, Minors, Crypto, Metals, and Synthetics using our proven strategies. How can I help?`
         };
         setMessages([welcomeMessage]);
         chatHistoryRef.current = [{ role: "model", parts: [{ text: welcomeMessage.text }] }];
@@ -172,7 +168,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ user, activeView, onExecuteTrade 
 
     const parseTradeData = (text: string) => {
         // Regex to extract parameters more robustly
-        const instrumentMatch = text.match(/Instrument:\s*([A-Z0-9\/\.]+)/i);
+        const instrumentMatch = text.match(/Instrument:\s*([A-Z0-9\/\.\s]+)/i);
         const actionMatch = text.match(/Action:\s*(BUY|SELL)/i);
         const entryMatch = text.match(/Entry:\s*([\d\.]+)/i);
         const slMatch = text.match(/Stop Loss.*:\s*([\d\.]+)/i);
@@ -204,6 +200,38 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ user, activeView, onExecuteTrade 
         setMessages(prev => prev.map(m => m.id === msgId ? { ...m, isTradeExecuted: true } : m));
     };
 
+    // Helper to find instrument in query to fetch live data
+    const findInstrumentInQuery = (text: string): string | null => {
+        const lowerText = text.toLowerCase();
+        
+        // Check aliases first
+        const aliases: {[key: string]: string} = {
+            'gold': 'XAU/USD', 'xau': 'XAU/USD',
+            'silver': 'XAG/USD', 'xag': 'XAG/USD',
+            'btc': 'BTC/USD', 'bitcoin': 'BTC/USD',
+            'eth': 'ETH/USD', 'ethereum': 'ETH/USD',
+            'eu': 'EUR/USD', 'gu': 'GBP/USD',
+            'uj': 'USD/JPY', 'gj': 'GBP/JPY',
+            'nasdaq': 'NASDAQ', 'us30': 'US30',
+            'v75': 'Volatility 75', 'boom': 'Boom 1000', 'crash': 'Crash 1000'
+        };
+        
+        for (const [alias, canonical] of Object.entries(aliases)) {
+            if (lowerText.includes(alias)) return canonical;
+        }
+
+        // Check defined instruments
+        const instruments = Object.keys(instrumentDefinitions);
+        for (const inst of instruments) {
+             const cleanInst = inst.toLowerCase();
+             const noSlash = cleanInst.replace('/', '');
+             if (lowerText.includes(cleanInst) || lowerText.includes(noSlash)) {
+                 return inst;
+             }
+        }
+        return null;
+    };
+
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         if ((userInput.trim() === '' && !uploadedImage) || isLoading) return;
@@ -225,6 +253,10 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ user, activeView, onExecuteTrade 
         setIsLoading(true);
         
         try {
+            const API_KEY = process.env.API_KEY;
+            if (!API_KEY) throw new Error("API Key missing");
+            const ai = new GoogleGenAI({ apiKey: API_KEY });
+
             let isPaidFeature = false;
             let analysisType: 'chartAnalysis' | 'inDepthAnalysis' | null = null;
             
@@ -252,8 +284,30 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ user, activeView, onExecuteTrade 
                 incrementUsage(analysisType);
             }
 
+            // --- LIVE DATA INJECTION LOGIC ---
+            let liveContextMsg = "";
+            const detectedInst = findInstrumentInQuery(userQuery);
+            
+            if (detectedInst && !imageToProcess) {
+                // Only inject for text queries to prevent conflict with chart image interpretation
+                try {
+                    const marketData = await fetchMarketContext(detectedInst);
+                    liveContextMsg = `
+\n\n*** [LIVE MARKET DATA INJECTION] ***
+Instrument: ${marketData.instrument}
+Current Live Price: ${marketData.currentPrice}
+Current Trend (M15): ${marketData.trend}
+Recent Candle History (Last 5 M15): ${JSON.stringify(marketData.candles)}
+TIMESTAMP: ${new Date().toISOString()}
+INSTRUCTION: You MUST use the 'Current Live Price' provided above for calculating Entry, Stop Loss, and Take Profit. Do NOT use old data from search results.
+*** END DATA ***`;
+                } catch (err) {
+                    console.error("Error fetching live context for chat:", err);
+                }
+            }
+
             // --- Main Gemini Call ---
-            const contextString = `\n\n[CONTEXT: User: ${user.name} (${user.email}), Role: ${user.isMentor ? 'Mentor' : 'User'}, Current Page: '${activeView}', Time: ${new Date().toLocaleString()}]`;
+            const contextString = `\n\n[CONTEXT: User: ${user.name} (${user.email}), Role: ${user.isMentor ? 'Mentor' : 'User'}, Current Page: '${activeView}', Time: ${new Date().toLocaleString()}]` + liveContextMsg;
 
             const userParts: any[] = [{ text: userQuery + contextString }];
             if (imageToProcess) {

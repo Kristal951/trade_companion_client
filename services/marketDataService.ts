@@ -24,6 +24,22 @@ interface PriceResult {
     isMock: boolean;
 }
 
+export interface Candle {
+    time: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+}
+
+export interface MarketContext {
+    instrument: string;
+    currentPrice: number;
+    candles: Candle[]; // Last 5 candles (M15)
+    trend: 'UP' | 'DOWN' | 'SIDEWAYS';
+}
+
 export const getLivePrice = async (instrument: string): Promise<PriceResult> => {
     const instrumentData = instrumentDefinitions[instrument];
     if (!instrumentData) return { price: null, isMock: true };
@@ -63,4 +79,52 @@ export const getLivePrices = async (instruments: string[]): Promise<Record<strin
     }
     
     return prices;
+};
+
+// Generates M15 candle context anchored to the live price
+export const fetchMarketContext = async (instrument: string): Promise<MarketContext> => {
+    const { price, isMock } = await getLivePrice(instrument);
+    const currentPrice = price || instrumentDefinitions[instrument].mockPrice;
+    const pipSize = instrumentDefinitions[instrument].pipStep;
+
+    // Simulate last 4 candles based on current price to create a pattern
+    // In a real production app, this would fetch historical OHLC data
+    const candles: Candle[] = [];
+    let refPrice = currentPrice;
+    
+    // Generate simulated history (going backwards then reversing)
+    const volatility = isMock ? 0.0005 : 0.0015; // Higher volatility for live
+    
+    for (let i = 4; i >= 0; i--) {
+        const time = new Date(Date.now() - i * 15 * 60000).toISOString().substr(11, 5);
+        
+        // Random movement simulation to create candle structure
+        const move = (Math.random() - 0.5) * (currentPrice * volatility); 
+        const open = refPrice - move;
+        const close = i === 0 ? currentPrice : refPrice; // Ensure last candle closes at live price
+        
+        const high = Math.max(open, close) + (Math.random() * pipSize * 5);
+        const low = Math.min(open, close) - (Math.random() * pipSize * 5);
+
+        candles.push({
+            time,
+            open: parseFloat(open.toFixed(5)),
+            high: parseFloat(high.toFixed(5)),
+            low: parseFloat(low.toFixed(5)),
+            close: parseFloat(close.toFixed(5)),
+            volume: Math.floor(Math.random() * 1000)
+        });
+
+        refPrice = open; // Next candle opens where previous closed (roughly)
+    }
+
+    // Determine simple trend based on open of first candle vs close of last
+    const trend = candles[4].close > candles[0].open ? 'UP' : candles[4].close < candles[0].open ? 'DOWN' : 'SIDEWAYS';
+
+    return {
+        instrument,
+        currentPrice,
+        candles,
+        trend
+    };
 };

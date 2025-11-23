@@ -41,6 +41,7 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
     const [livePriceInfo, setLivePriceInfo] = useState<{ price: string; change: string; changeClass: string; isMock: boolean } | null>(null);
     const [isAILoading, setIsAILoading] = useState(false);
     const [aiInsight, setAiInsight] = useState<any>(null);
+    const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
 
     const usageInfo = getUsageInfo('entryAnalysis');
     const canUseAiAnalysis = canUseFeature('entryAnalysis');
@@ -117,14 +118,73 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
         }
     };
 
-    const fetchLivePrice = async () => {
-        const instrumentData = instrumentDefinitions[instrument];
-        if (!instrumentData) return;
-    
+    // Auto-update price and cross rate when instrument/currency changes
+    const updateLiveValues = async () => {
+        setIsUpdatingPrice(true);
+        try {
+            // 1. Fetch Main Instrument Price
+            const { price, isMock } = await getLivePrice(instrument);
+            if (price !== null) {
+                const instrumentProps = instrumentDefinitions[instrument];
+                const decimalPlaces = Math.ceil(-Math.log10(instrumentProps.pipStep));
+                const formattedPrice = price.toFixed(decimalPlaces);
+
+                setEntryPrice(formattedPrice);
+                // Auto-set a default SL 30 pips away
+                const slPrice = price - (30 * instrumentProps.pipStep);
+                setStopLossPrice(slPrice.toFixed(decimalPlaces));
+
+                setLivePriceInfo({ 
+                    price: formattedPrice, 
+                    change: "0.0", 
+                    changeClass: "text-mid-text", 
+                    isMock 
+                });
+                currentLivePrice.current = price;
+            }
+
+            // 2. Fetch Cross Rate if Needed
+            if (isCrossRateVisible) {
+                const instProps = instrumentDefinitions[instrument];
+                const quote = instProps.quoteCurrency;
+                const acc = accountCurrency;
+                
+                // Logic: We need the value of Quote currency in Account terms. (QUOTE/ACC rate)
+                // e.g. Quote=JPY, Acc=USD. Need JPY/USD.
+                
+                // Try Pair: QUOTE/ACC (e.g. EUR/USD)
+                let pairToFetch = `${quote}/${acc}`;
+                let invert = false;
+
+                if (!instrumentDefinitions[pairToFetch]) {
+                     // Try Pair: ACC/QUOTE (e.g. USD/JPY)
+                     pairToFetch = `${acc}/${quote}`;
+                     invert = true;
+                }
+
+                if (instrumentDefinitions[pairToFetch]) {
+                    const { price: crossPrice } = await getLivePrice(pairToFetch);
+                    if (crossPrice) {
+                         const rate = invert ? (1 / crossPrice) : crossPrice;
+                         setCrossRate(rate.toFixed(5));
+                    }
+                }
+            }
+        } catch (err) {
+            console.error("Failed to update live values", err);
+        } finally {
+            setIsUpdatingPrice(false);
+        }
+    };
+
+    // Periodic ticker update (only updates display, not inputs, to prevent overwriting user typing)
+    const fetchTickerUpdate = async () => {
         const { price, isMock } = await getLivePrice(instrument);
-    
-        const decimalPlaces = Math.ceil(-Math.log10(instrumentData.pipStep));
-    
+        const instrumentProps = instrumentDefinitions[instrument];
+        if (!instrumentProps) return;
+        
+        const decimalPlaces = Math.ceil(-Math.log10(instrumentProps.pipStep));
+
         if (price !== null) {
             currentLivePrice.current = price;
             let change = "0.0";
@@ -136,35 +196,22 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
             }
             setLivePriceInfo({ price: price.toFixed(decimalPlaces), change, changeClass, isMock });
             lastPrice.current = price;
-        } else {
-            // This case should be rare now as getLivePrice has a fallback
-            setLivePriceInfo({ price: instrumentData.mockPrice.toFixed(decimalPlaces), change: 'N/A', changeClass: 'text-mid-text', isMock: true });
-            currentLivePrice.current = instrumentData.mockPrice;
         }
     };
     
-    const handleInstrumentChange = (newInstrument: string) => {
-        setInstrument(newInstrument);
-        const instrumentProps = instrumentDefinitions[newInstrument];
-        const decimalPlaces = Math.ceil(-Math.log10(instrumentProps.pipStep));
-        const price = instrumentProps.mockPrice;
-        const slPrice = price - (instrumentProps.pipStep * 50);
-
-        setEntryPrice(price.toFixed(decimalPlaces));
-        setStopLossPrice(slPrice.toFixed(decimalPlaces));
+    // Initial fetch and input population on instrument change
+    useEffect(() => {
+        updateLiveValues();
         setLivePriceInfo(null);
         lastPrice.current = null;
-    };
+    }, [instrument, accountCurrency]);
 
-    const useCurrentPriceFor = (field: 'entry' | 'sl') => {
-        if (currentLivePrice.current) {
-            const instrumentProps = instrumentDefinitions[instrument];
-            const decimalPlaces = Math.ceil(-Math.log10(instrumentProps.pipStep));
-            const priceStr = currentLivePrice.current.toFixed(decimalPlaces);
-            if(field === 'entry') setEntryPrice(priceStr);
-            else setStopLossPrice(priceStr);
-        }
-    };
+    // Interval for ticker
+    useEffect(() => {
+        const intervalId = setInterval(fetchTickerUpdate, 15000); // 15s updates
+        return () => clearInterval(intervalId);
+    }, [instrument]);
+
     
     const calculateAutoSL = (pipDistance: number) => {
         const entry = parseFloat(entryPrice);
@@ -204,17 +251,8 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
             setIsAILoading(false);
         }
     };
-
-    useEffect(() => {
-        handleInstrumentChange('EUR/USD');
-    }, []);
-
-    useEffect(() => {
-        const intervalId = setInterval(fetchLivePrice, 30000);
-        fetchLivePrice();
-        return () => clearInterval(intervalId);
-    }, [instrument]);
     
+    // Auto-calculate results when inputs change
     useEffect(() => {
         const handler = setTimeout(() => calculateLotSize(), 200);
         return () => clearTimeout(handler);
@@ -277,7 +315,7 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
                         <div>
                             <label className="block text-xs font-medium mb-1 text-dark-text">Trading Instrument</label>
                             <div className="flex space-x-2">
-                                <select value={instrument} onChange={e => handleInstrumentChange(e.target.value)} className="flex-1 p-2 rounded-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary text-sm">
+                                <select value={instrument} onChange={e => setInstrument(e.target.value)} className="flex-1 p-2 rounded-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary text-sm">
                                     <optgroup label="Major Forex Pairs">
                                         {Object.keys(instrumentDefinitions).filter(k => instrumentDefinitions[k].isForex).slice(0, 7).map(key => <option key={key} value={key}>{key}</option>)}
                                     </optgroup>
@@ -285,15 +323,19 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
                                          {Object.keys(instrumentDefinitions).filter(k => instrumentDefinitions[k].isForex).slice(7).map(key => <option key={key} value={key}>{key}</option>)}
                                     </optgroup>
                                     <optgroup label="Metals & Crypto">
-                                        {Object.keys(instrumentDefinitions).filter(k => !instrumentDefinitions[k].isForex).map(key => <option key={key} value={key}>{key}</option>)}
+                                        {Object.keys(instrumentDefinitions)
+                                            .filter(k => !instrumentDefinitions[k].isForex)
+                                            .filter(k => !['Boom', 'Crash', 'Jump', 'Volatility'].some(prefix => k.startsWith(prefix)))
+                                            .map(key => <option key={key} value={key}>{key}</option>)}
                                     </optgroup>
                                 </select>
                             </div>
                             {livePriceInfo && (
-                                <div className="text-xs text-mid-text mt-1">
-                                    {livePriceInfo.isMock ? 'Mock: ' : 'Live: '} 
+                                <div className="text-xs text-mid-text mt-1 flex items-center">
+                                    {livePriceInfo.isMock ? 'Mock: ' : <span className="text-success font-bold mr-1">● Live: </span>} 
                                     <span className="font-semibold text-dark-text">{livePriceInfo.price}</span>
                                     <span className={`ml-2 ${livePriceInfo.changeClass}`}>{livePriceInfo.change !== 'N/A' && (parseFloat(livePriceInfo.change) >= 0 ? '↗' : '↘')} {livePriceInfo.change}</span>
+                                    {isUpdatingPrice && <span className="ml-2 animate-pulse text-primary">Updating...</span>}
                                 </div>
                             )}
                         </div>
@@ -304,20 +346,15 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
                     <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-medium mb-1 text-dark-text">Entry Price</label>
-                            <div className="flex">
-                                <input type="number" value={entryPrice} step={instrumentDefinitions[instrument]?.pipStep} onChange={e => setEntryPrice(e.target.value)} className="w-full p-2 rounded-l-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary text-sm" required />
-                                <button onClick={() => useCurrentPriceFor('entry')} className="text-xs bg-success text-white px-3 py-1 rounded-r-lg hover:bg-green-600 font-semibold">
-                                    LIVE
-                                </button>
+                            <div className="relative">
+                                <input type="number" value={entryPrice} step={instrumentDefinitions[instrument]?.pipStep} onChange={e => setEntryPrice(e.target.value)} className="w-full p-2 rounded-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary text-sm" required />
+                                {isUpdatingPrice && <div className="absolute right-2 top-2"><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div></div>}
                             </div>
                         </div>
                         <div>
                             <label className="block text-xs font-medium mb-1 text-dark-text">Stop-Loss Price</label>
-                            <div className="flex">
-                                <input type="number" value={stopLossPrice} step={instrumentDefinitions[instrument]?.pipStep} onChange={e => setStopLossPrice(e.target.value)} className="w-full p-2 rounded-l-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary text-sm" required />
-                                <button onClick={() => useCurrentPriceFor('sl')} className="text-xs bg-danger text-white px-3 py-1 rounded-r-lg hover:bg-red-600 font-semibold">
-                                    LIVE
-                                </button>
+                            <div className="relative">
+                                <input type="number" value={stopLossPrice} step={instrumentDefinitions[instrument]?.pipStep} onChange={e => setStopLossPrice(e.target.value)} className="w-full p-2 rounded-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary text-sm" required />
                             </div>
                         </div>
                         <div className="sm:col-span-2 bg-light-hover p-3 rounded-lg border border-light-gray">
@@ -335,7 +372,10 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
                                 <label className="block text-xs font-medium text-dark-text">
                                     Conversion Rate ({`${instrumentDefinitions[instrument]?.quoteCurrency}/${accountCurrency}`})
                                 </label>
-                                <input type="number" value={crossRate} onChange={e => setCrossRate(e.target.value)} className="mt-1 block w-full bg-light-hover border-accent text-accent rounded-md shadow-sm p-2 focus:ring-accent focus:border-accent text-sm" />
+                                <div className="relative">
+                                    <input type="number" value={crossRate} onChange={e => setCrossRate(e.target.value)} className="mt-1 block w-full bg-light-hover border-accent text-accent rounded-md shadow-sm p-2 focus:ring-accent focus:border-accent text-sm" />
+                                    {isUpdatingPrice && <span className="absolute right-2 top-3 text-xs text-mid-text">Fetching live rate...</span>}
+                                </div>
                             </div>
                         )}
                     </section>
