@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
 import { getTradeAnalysis } from '../../services/geminiService';
 import { User } from '../../types';
@@ -246,21 +245,21 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
     };
 
     return (
-        <div className="p-4 sm:p-8 bg-light-bg min-h-screen flex items-center justify-center font-sans">
-            <div className="w-full max-w-2xl">
-                <header className="text-center mb-8">
-                    <h1 className="text-4xl font-extrabold text-primary tracking-tight">Trade Companion</h1>
-                    <h2 className="text-2xl font-semibold mt-1 text-dark-text">Position & Lot Size Calculator</h2>
-                    <p className="text-sm text-mid-text mt-2">Accurate risk management with live market data</p>
-                    <p className="text-lg font-semibold text-primary mt-4">{getGreeting(user.name)}</p>
+        <div className="h-full w-full overflow-y-auto bg-light-bg p-4 flex flex-col items-center">
+            <div className="w-full max-w-3xl">
+                <header className="text-center mb-6">
+                    <h1 className="text-3xl font-extrabold text-primary tracking-tight">Trade Companion</h1>
+                    <h2 className="text-xl font-semibold mt-1 text-dark-text">Position & Lot Size Calculator</h2>
+                    <p className="text-xs text-mid-text mt-1">Accurate risk management with live market data</p>
+                    <p className="text-md font-semibold text-primary mt-2">{getGreeting(user.name)}</p>
                 </header>
                 
                 <div className="bg-light-surface p-6 rounded-xl space-y-6 shadow-sm border border-light-gray">
 
                     <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-dark-text">Account Currency</label>
-                            <select value={accountCurrency} onChange={e => setAccountCurrency(e.target.value)} className="w-full p-2.5 rounded-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary">
+                            <label className="block text-xs font-medium mb-1 text-dark-text">Account Currency</label>
+                            <select value={accountCurrency} onChange={e => setAccountCurrency(e.target.value)} className="w-full p-2 rounded-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary text-sm">
                                 <option value="USD">USD - US Dollar</option>
                                 <option value="EUR">EUR - Euro</option>
                                 <option value="GBP">GBP - British Pound</option>
@@ -268,17 +267,17 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-dark-text">Account Balance</label>
-                            <input type="number" value={accountBalance} onChange={e => setAccountBalance(e.target.value)} className="w-full p-2.5 rounded-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary" required />
+                            <label className="block text-xs font-medium mb-1 text-dark-text">Account Balance</label>
+                            <input type="number" value={accountBalance} onChange={e => setAccountBalance(e.target.value)} className="w-full p-2 rounded-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary text-sm" required />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-dark-text">Risk Percentage (%)</label>
-                            <input type="number" value={riskPercentage} step="0.1" min="0.1" onChange={e => setRiskPercentage(e.target.value)} className="w-full p-2.5 rounded-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary" required />
+                            <label className="block text-xs font-medium mb-1 text-dark-text">Risk Percentage (%)</label>
+                            <input type="number" value={riskPercentage} step="0.1" min="0.1" onChange={e => setRiskPercentage(e.target.value)} className="w-full p-2 rounded-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary text-sm" required />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-dark-text">Trading Instrument</label>
+                            <label className="block text-xs font-medium mb-1 text-dark-text">Trading Instrument</label>
                             <div className="flex space-x-2">
-                                <select value={instrument} onChange={e => handleInstrumentChange(e.target.value)} className="flex-1 p-2.5 rounded-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary">
+                                <select value={instrument} onChange={e => handleInstrumentChange(e.target.value)} className="flex-1 p-2 rounded-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary text-sm">
                                     <optgroup label="Major Forex Pairs">
                                         {Object.keys(instrumentDefinitions).filter(k => instrumentDefinitions[k].isForex).slice(0, 7).map(key => <option key={key} value={key}>{key}</option>)}
                                     </optgroup>
@@ -304,28 +303,28 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
 
                     <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-dark-text">Entry Price</label>
+                            <label className="block text-xs font-medium mb-1 text-dark-text">Entry Price</label>
                             <div className="flex">
-                                <input type="number" value={entryPrice} step={instrumentDefinitions[instrument]?.pipStep} onChange={e => setEntryPrice(e.target.value)} className="w-full p-2.5 rounded-l-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary" required />
+                                <input type="number" value={entryPrice} step={instrumentDefinitions[instrument]?.pipStep} onChange={e => setEntryPrice(e.target.value)} className="w-full p-2 rounded-l-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary text-sm" required />
                                 <button onClick={() => useCurrentPriceFor('entry')} className="text-xs bg-success text-white px-3 py-1 rounded-r-lg hover:bg-green-600 font-semibold">
                                     LIVE
                                 </button>
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-dark-text">Stop-Loss Price</label>
+                            <label className="block text-xs font-medium mb-1 text-dark-text">Stop-Loss Price</label>
                             <div className="flex">
-                                <input type="number" value={stopLossPrice} step={instrumentDefinitions[instrument]?.pipStep} onChange={e => setStopLossPrice(e.target.value)} className="w-full p-2.5 rounded-l-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary" required />
+                                <input type="number" value={stopLossPrice} step={instrumentDefinitions[instrument]?.pipStep} onChange={e => setStopLossPrice(e.target.value)} className="w-full p-2 rounded-l-lg bg-light-hover border-light-gray text-dark-text focus:ring-primary focus:border-primary text-sm" required />
                                 <button onClick={() => useCurrentPriceFor('sl')} className="text-xs bg-danger text-white px-3 py-1 rounded-r-lg hover:bg-red-600 font-semibold">
                                     LIVE
                                 </button>
                             </div>
                         </div>
                         <div className="sm:col-span-2 bg-light-hover p-3 rounded-lg border border-light-gray">
-                            <label className="block text-sm font-medium mb-2 text-dark-text">Auto Stop-Loss (pips from entry)</label>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <label className="block text-xs font-medium mb-2 text-dark-text">Auto Stop-Loss (pips from entry)</label>
+                            <div className="grid grid-cols-4 gap-2">
                                 {[10, 20, 30, 50].map(pips => (
-                                    <button key={pips} onClick={() => calculateAutoSL(pips)} className="bg-secondary/80 text-white py-1 px-3 rounded text-sm hover:bg-secondary">
+                                    <button key={pips} onClick={() => calculateAutoSL(pips)} className="bg-secondary/80 text-white py-1 px-2 rounded text-xs hover:bg-secondary">
                                         {pips} pips
                                     </button>
                                 ))}
@@ -333,10 +332,10 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
                         </div>
                         {isCrossRateVisible && (
                              <div className="sm:col-span-2">
-                                <label className="block text-sm font-medium text-dark-text">
+                                <label className="block text-xs font-medium text-dark-text">
                                     Conversion Rate ({`${instrumentDefinitions[instrument]?.quoteCurrency}/${accountCurrency}`})
                                 </label>
-                                <input type="number" value={crossRate} onChange={e => setCrossRate(e.target.value)} className="mt-1 block w-full bg-light-hover border-accent text-accent rounded-md shadow-sm p-2 focus:ring-accent focus:border-accent" />
+                                <input type="number" value={crossRate} onChange={e => setCrossRate(e.target.value)} className="mt-1 block w-full bg-light-hover border-accent text-accent rounded-md shadow-sm p-2 focus:ring-accent focus:border-accent text-sm" />
                             </div>
                         )}
                     </section>
@@ -344,7 +343,7 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
                     <hr className="border-light-gray"/>
                     
                     <section className="space-y-4">
-                        <h3 className="text-lg font-bold text-primary">Calculation Results</h3>
+                        <h3 className="text-md font-bold text-primary">Calculation Results</h3>
                         {error && <div className="bg-danger/10 text-danger p-3 rounded-lg text-sm border border-danger/20 text-center">{error}</div>}
                         {results && !error && (
                              <div className="grid grid-cols-2 gap-4">
@@ -357,9 +356,9 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
                                     <p className="text-lg font-bold text-dark-text">{results.stopLossPips} pips</p>
                                 </div>
                                  <div className="p-3 rounded-lg col-span-2 bg-primary/10 border-l-4 border-primary">
-                                    <p className="text-sm text-mid-text">Required Lot Size</p>
+                                    <p className="text-xs text-mid-text">Required Lot Size</p>
                                     <p className="text-3xl font-extrabold text-primary">{results.standardLots} lots</p>
-                                    <p className="text-sm mt-1 text-mid-text">({results.positionSizeUnits} units)</p>
+                                    <p className="text-xs mt-1 text-mid-text">({results.positionSizeUnits} units)</p>
                                 </div>
                             </div>
                         )}
@@ -367,25 +366,24 @@ const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) =
 
                     <section className="space-y-3 bg-light-hover p-4 rounded-xl border border-light-gray">
                          <div className="flex justify-between items-center flex-wrap gap-2">
-                            <h3 className="text-lg font-bold text-accent">Ask Olapete</h3>
-                            <div className="text-sm bg-light-surface px-3 py-1 rounded-full border border-light-gray">
-                               {/* FIX: The expression `usageInfo.limit - usageInfo.count` can cause a TypeScript error because `usageInfo.limit` can be the string 'unlimited'. This fix ensures the arithmetic operation is only performed on numbers. */}
-                               Daily Analyses Left: <span className="font-bold text-primary">{typeof usageInfo.limit === 'number' ? `${Math.max(0, usageInfo.limit - usageInfo.count)} / ${usageInfo.limit}` : 'Unlimited'}</span>
+                            <h3 className="text-md font-bold text-accent">Ask Olapete</h3>
+                            <div className="text-xs bg-light-surface px-3 py-1 rounded-full border border-light-gray">
+                               Analyses: <span className="font-bold text-primary">{typeof usageInfo.limit === 'number' ? `${Math.max(0, usageInfo.limit - usageInfo.count)} / ${usageInfo.limit}` : 'Unlimited'}</span>
                             </div>
                         </div>
                         <div>
-                             <label className="block text-sm font-medium mb-1 text-dark-text">Target Analysis Time Frame</label>
-                             <select value={timeFrame} onChange={e => setTimeFrame(e.target.value)} className="w-full p-2.5 rounded-lg bg-light-surface border-light-gray text-dark-text focus:ring-primary focus:border-primary">
+                             <label className="block text-xs font-medium mb-1 text-dark-text">Target Analysis Time Frame</label>
+                             <select value={timeFrame} onChange={e => setTimeFrame(e.target.value)} className="w-full p-2 rounded-lg bg-light-surface border-light-gray text-dark-text focus:ring-primary focus:border-primary text-sm">
                                 <option>Daily</option><option>4 Hours</option><option>1 Hour</option><option>15 Minutes</option><option>5 Minutes</option><option>1 Minute</option>
                              </select>
                         </div>
-                        <button onClick={handleAiAnalysis} disabled={isAILoading || !canUseAiAnalysis || !results || error !== null} className="w-full py-2.5 px-4 bg-primary text-white font-bold rounded-lg hover:bg-primary-hover transition duration-150 flex items-center justify-center disabled:bg-light-gray disabled:text-mid-text disabled:cursor-not-allowed">
+                        <button onClick={handleAiAnalysis} disabled={isAILoading || !canUseAiAnalysis || !results || error !== null} className="w-full py-2 px-4 bg-primary text-white font-bold rounded-lg hover:bg-primary-hover transition duration-150 flex items-center justify-center disabled:bg-light-gray disabled:text-mid-text disabled:cursor-not-allowed text-sm">
                             {isAILoading ? (
                                 <>
                                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                    {`Analyzing on ${timeFrame}...`}
+                                    {`Analyzing...`}
                                 </>
-                            ) : "Get In-depth Analysis on your entry"}
+                            ) : "Get In-depth Analysis"}
                         </button>
                         <div className="text-mid-text text-sm mt-2 mb-4 min-h-[8rem] bg-light-surface p-3 rounded-lg border border-light-gray">
                            {renderAiInsight()}

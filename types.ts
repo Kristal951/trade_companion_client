@@ -141,7 +141,8 @@ export interface Signal {
 
 
 // FIX: Removed 'confidence' from Omit to make it available in the TradeRecord type for analytics.
-export interface TradeRecord extends Omit<Signal, 'takeProfit2' | 'takeProfit3' | 'technicalReasoning'> {
+// FIX: Removed 'technicalReasoning' from Omit to allow inclusion in TradeRecord (App.tsx uses it).
+export interface TradeRecord extends Omit<Signal, 'takeProfit2' | 'takeProfit3'> {
   id: string; // Unique ID for the trade
   status: 'active' | 'win' | 'loss';
   pnl?: number; // Profit or Loss amount

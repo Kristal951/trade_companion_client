@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { Signal, PlanName } from "../types";
 import { instrumentDefinitions } from '../config/instruments';
@@ -9,6 +10,9 @@ if (!API_KEY) {
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY });
+
+// Upgraded to the latest requested model
+const GENERATION_MODEL = 'gemini-3-pro-preview';
 
 const FULL_INSTRUMENTS_TO_SCAN = [
     'EUR/USD', 'USD/JPY', 'GBP/USD', 'USD/CHF', 'AUD/USD', 'USD/CAD', 'NZD/USD', // Majors
@@ -24,18 +28,30 @@ const BASIC_INSTRUMENTS_TO_SCAN = [
 
 
 export const classifyQuery = async (query: string): Promise<'IN_DEPTH_ANALYSIS' | 'GENERAL_SUPPORT'> => {
-  const systemInstruction = `You are a query classifier. Your only job is to determine if a user's query is asking for financial/market analysis or general support.
+  const systemInstruction = `You are a query classifier. Your job is to determine if a user's request requires a "Trade Setup" with specific parameters.
 
-  RULES:
-  1.  **Analyze the query:** Determine if the user is asking for market analysis, financial advice, trade setups, economic predictions, or specific instrument analysis (e.g., "What's your outlook on EUR/USD?").
-  2.  **Respond with ONE of two exact strings:**
-      - If it IS an analysis/financial query, respond ONLY with the string "IN_DEPTH_ANALYSIS".
-      - If it is NOT an analysis/financial query (e.g., it's a greeting, a question about the platform, a general knowledge question), respond ONLY with the string "GENERAL_SUPPORT".
-  3.  **DO NOT add any other text, explanation, or punctuation.** Your entire response must be either "IN_DEPTH_ANALYSIS" or "GENERAL_SUPPORT".`;
+  CLASSIFICATION RULES:
+
+  1. **IN_DEPTH_ANALYSIS** (Counted Usage):
+     Return this ONLY if the user is asking for:
+     - A specific **Trade Setup** (Entry, Stop Loss, Take Profit).
+     - A **Signal** (Buy/Sell recommendation).
+     - **Live Market Analysis** that implies a trade direction (e.g., "Analyze XAUUSD now", "What is the trend for BTC?").
+     - A specific strategy scan (e.g., "Find me a Strategy A setup").
+
+  2. **GENERAL_SUPPORT** (Free Usage):
+     Return this for ALL other queries, including:
+     - Definitions (e.g., "What is a pip?", "Explain RSI").
+     - Educational questions (e.g., "How does Strategy A work?").
+     - Platform support (e.g., "How do I change settings?").
+     - General sentiment without trade parameters (e.g., "How is the market today?").
+     - Greetings or casual chat.
+
+  **OUTPUT:** Respond ONLY with the exact string "IN_DEPTH_ANALYSIS" or "GENERAL_SUPPORT". Do not add punctuation or explanation.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: GENERATION_MODEL,
       contents: query,
       config: {
         systemInstruction,
@@ -68,26 +84,36 @@ export const scanForSignals = async (userPlan: PlanName, userSettings: { balance
         return text;
     };
 
-    // --- MODEL 1: PATTERN CLASSIFIER ---
-    const patternClassifierPrompt = `You are a deterministic technical pattern classifier. Your job is to scan a list of financial instruments using real-time data from Google Search. You must identify ONE single high-probability setup based on Smart Money Concepts (SMC) and Institutional order flow (e.g., order blocks, liquidity grabs, market structure shifts).
+    // --- MODEL 1: STRATEGY 'A' PATTERN CLASSIFIER ---
+    // STRICT implementation of the user's requested strategy.
+    const patternClassifierPrompt = `You are an elite algorithmic trading engine using "Strategy A". Your job is to scan a list of financial instruments using real-time data via Google Search and identify ONE high-probability trade setup.
+
+    **STRATEGY A DEFINITION (MANDATORY):**
+    A valid "Strategy A" setup MUST contain these three specific confluences:
+    1.  **Liquidity Sweep:** Price has recently taken out a key High or Low (sweeping stop losses).
+    2.  **Market Structure Shift (MSS):** Immediately after the sweep, price aggressively reverses and breaks structure in the opposite direction.
+    3.  **Return to Origin:** Price is currently retracing into a Fair Value Gap (FVG) or Order Block created by the MSS move.
 
     **Instructions:**
-    1.  Use the search tool to get current market data for this list: ${instrumentsToScan.join(', ')}.
-    2.  Find the single best intraday setup that matches the SMC criteria AND the following MANDATORY risk parameters:
-        - The Risk-to-Reward ratio (distance to Take Profit / distance to Stop Loss) MUST be between 1.5 and 4.0.
-        - For volatile pairs ('XAU/USD', 'BTC/USD'), the Take Profit distance MUST be at least 150 pips and the Stop Loss distance MUST be less than 100 pips.
-        - For all other pairs, the Stop Loss distance MUST be less than 100 pips.
-    3.  **Market Hours Check:** You MUST verify that the market for the instrument you select is currently open before providing a setup. Do not generate signals for closed markets (e.g., Forex and commodities like XAU/USD are closed on weekends). Use the current UTC time to determine market status.
-    4.  If a valid setup is found, you MUST return a single JSON object with the exact following structure.
-    5.  If NO setup meets all criteria (including market hours), you MUST return the JSON object: \`{"pass": false}\`.
-    6.  Your entire response must be only the raw JSON. No markdown, no text before or after.
-    
-    **Pip Calculation Rules for Risk Parameters:**
+    1.  Use the search tool to get current live price data and chart context for: ${instrumentsToScan.join(', ')}.
+    2.  Find the single best intraday setup that strictly matches "Strategy A".
+    3.  **Risk Management Check:**
+        -   Risk-to-Reward MUST be between 1.5 and 4.0.
+        -   Stop Loss must be placed logically beyond the swing point formed by the Liquidity Sweep.
+        -   For XAU/USD and BTC/USD: Min TP distance 150 pips, Max SL distance 100 pips.
+        -   For Forex Pairs: Max SL distance 60 pips.
+    4.  **Market Hours Check:** Verify the market is currently OPEN. Do not signal on weekends.
+    5.  **Output:**
+        -   If a valid "Strategy A" setup is found, return the JSON object below.
+        -   If NO setup matches all criteria, return \`{"pass": false}\`.
+        -   Return ONLY raw JSON.
+
+    **Pip Calculation Rules:**
     - Forex (4 decimals, e.g., EUR/USD): pips = ABS(price1 - price2) / 0.0001
-    - Forex (2 decimals, e.g., USD/JPY): pips = ABS(price1 - price2) / 0.01
-    - XAU/USD (Gold): pips = ABS(price1 - price2) / 0.1
-    - BTC/USD (Bitcoin): pips = ABS(price1 - price2) / 10
-    
+    - JPY Pairs (2 decimals): pips = ABS(price1 - price2) / 0.01
+    - XAU/USD: pips = ABS(price1 - price2) / 0.1
+    - BTC/USD: pips = ABS(price1 - price2) / 10
+
     **Valid Setup JSON Schema:**
     \`\`\`json
     {
@@ -97,35 +123,35 @@ export const scanForSignals = async (userPlan: PlanName, userSettings: { balance
       "entryPrice": 1985.2,
       "stopLoss": 1976.0,
       "takeProfit1": 2005.2,
-      "pattern_score": 0.85,
-      "tags": ["order-block", "liquidity-grab"],
-      "reason_short": "Price reacted to a 4H order block after sweeping liquidity, showing a 15M market structure shift."
+      "pattern_score": 0.92,
+      "tags": ["Strategy A", "Liquidity Sweep", "MSS", "FVG-Retest"],
+      "reason_short": "Strategy A Validated: Price swept previous daily low liquidity, shifted structure to the upside on 15M, and is now retesting the bullish order block."
     }
     \`\`\``;
 
     // --- MODEL 2: FINANCIAL ANALYST ---
-    const financialAnalystPrompt = `You are a senior financial analyst. You will be given a trade setup candidate that has already passed a technical pattern check. Your task is to provide a deeper analysis, consider market context using Google Search, and return a confidence score and detailed reasoning in a specific JSON format.
-
-    **Instructions:**
-    1.  Analyze the provided trade candidate.
-    2.  Use the search tool to check for relevant high-impact news (e.g., FOMC, CPI, NFP) or market sentiment that could affect this trade.
-    3.  Return a single JSON object with your findings.
-    4.  Your entire response must be only the raw JSON. No markdown, no text before or after.
+    const financialAnalystPrompt = `You are a senior financial analyst validating an algorithmic trade signal.
+    
+    **Task:**
+    1.  Analyze the provided trade candidate which was generated using "Strategy A".
+    2.  Use Google Search to check for **High Impact News** (Red Folder events like NFP, CPI, FOMC) scheduled for the next 4 hours.
+    3.  If high-impact news is imminent (within 1 hour), LOWER the confidence score significantly or reject the trade.
+    4.  Return a JSON object with your confidence assessment.
 
     **JSON Schema:**
     \`\`\`json
     {
       "confidence": 88,
-      "reason": "The technical setup is strong due to the clear market structure shift at a key demand zone. However, be mindful of upcoming CPI data which could introduce volatility. The risk/reward to TP1 is favorable.",
-      "adjustment": { "sl_adjust_points": 0.0, "comment": "SL is well-placed below the structural low." }
+      "reason": "Strategy A confluence is strong. Market sentiment aligns with a bullish reversal. No high-impact news scheduled for the next 4 hours.",
+      "adjustment": { "sl_adjust_points": 0.0, "comment": "SL placement is safe below the swing low." }
     }
     \`\`\``;
 
     try {
         // --- STEP 1: Call Pattern Classifier Model ---
         const patternResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `Scan the predefined list of instruments and return a result according to your instructions. Current UTC time is ${new Date().toUTCString()}.`,
+            model: GENERATION_MODEL,
+            contents: `Scan the instruments. Current UTC time is ${new Date().toUTCString()}. Find the best Strategy A setup.`,
             config: {
                 systemInstruction: patternClassifierPrompt,
                 tools: [{ googleSearch: {} }],
@@ -136,14 +162,20 @@ export const scanForSignals = async (userPlan: PlanName, userSettings: { balance
 
         // --- STEP 2: Check if a setup was found ---
         if (!patternResult.pass) {
-            console.log("Pattern Classifier found no valid setup.");
+            console.log("Pattern Classifier found no valid Strategy A setup.");
+            return { signalFound: false };
+        }
+        
+        const instrumentProps = instrumentDefinitions[patternResult.instrument];
+        if (!instrumentProps) {
+            console.warn(`Instrument definition not found for: ${patternResult.instrument}`);
             return { signalFound: false };
         }
 
         // --- STEP 3: Call Financial Analyst Model ---
-        const analystContent = `Analyze the following trade candidate:\n${JSON.stringify(patternResult, null, 2)}`;
+        const analystContent = `Analyze this Strategy A setup:\n${JSON.stringify(patternResult, null, 2)}`;
         const analystResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: GENERATION_MODEL,
             contents: analystContent,
             config: {
                 systemInstruction: financialAnalystPrompt,
@@ -156,48 +188,62 @@ export const scanForSignals = async (userPlan: PlanName, userSettings: { balance
         const patternScore = (patternResult.pattern_score || 0) * 60; // 60% weight
         const analystScore = (analystResult.confidence || 0) * 0.30; // 30% weight
         
-        // Simple rule-based score (10% weight)
+        // Strategy A Bonus (10% weight) - Verify tags
         let rules_score = 0;
-        if (patternResult.tags?.includes('order-block')) rules_score += 5;
-        if (patternResult.tags?.includes('liquidity-grab')) rules_score += 5;
+        if (patternResult.tags?.includes('Strategy A')) rules_score += 10;
         
         const finalConfidence = Math.min(100, patternScore + analystScore + rules_score);
         
-        const ACCEPTANCE_THRESHOLD = 70;
+        const ACCEPTANCE_THRESHOLD = 75; // Stricter threshold for Strategy A
         if (finalConfidence < ACCEPTANCE_THRESHOLD) {
             console.log(`Signal for ${patternResult.instrument} rejected. Final confidence ${finalConfidence.toFixed(2)} is below threshold.`);
             return { signalFound: false };
         }
 
-        // --- STEP 5: Calculate Lot Size based on User Settings ---
-        const account_size = parseFloat(userSettings.balance);
+        // --- STEP 5: Equity-Based Lot Size Calculation ---
+        // User's actual balance from settings is key here
+        const currentEquity = parseFloat(userSettings.balance);
         const risk_pct = parseFloat(userSettings.risk);
-        const risk_amount = account_size * (risk_pct / 100);
+        
+        // 1. Calculate exact Risk Amount based on Equity
+        const risk_amount = currentEquity * (risk_pct / 100);
 
         const entryPrice = parseFloat(patternResult.entryPrice);
         const stopLoss = parseFloat(patternResult.stopLoss);
-        const stop_dist = Math.abs(entryPrice - stopLoss);
         
-        const instrumentProps = instrumentDefinitions[patternResult.instrument];
+        // 2. Calculate Stop Distance in Pips
+        const stop_dist_price = Math.abs(entryPrice - stopLoss);
         const pip_step = instrumentProps.pipStep;
+        const stopLossInPips = stop_dist_price / pip_step;
         
-        const stopLossInPips = stop_dist / pip_step;
-        
+        // 3. Calculate Pip Value per Lot
         let pipValueInUSDForOneLot: number;
         
+        // Standard contract size (e.g. 100,000 for FX, 100 for Gold)
+        const contractSize = instrumentProps.contractSize;
+
         if (instrumentProps.quoteCurrency === 'USD') {
-            pipValueInUSDForOneLot = instrumentProps.contractSize * pip_step;
+            // e.g. EUR/USD: 0.0001 * 100,000 = $10 per pip
+            pipValueInUSDForOneLot = pip_step * contractSize;
         } else if (instrumentProps.quoteCurrency === 'JPY') {
-            // This is an approximation and would need a live USD/JPY rate for full accuracy
-            pipValueInUSDForOneLot = (instrumentProps.contractSize * pip_step) / 150; 
+            // e.g. USD/JPY: (0.01 * 100,000) / 150 (approx rate) = ~$6.66
+            pipValueInUSDForOneLot = (pip_step * contractSize) / 150; 
         } else {
-             // For non-USD pairs, this is a simplification. A live cross-rate is needed for accuracy.
-             // We assume a rough value of $10 per pip for a standard lot for simplification.
-            pipValueInUSDForOneLot = 10;
+            // Fallback for other crosses, using an approximation
+             pipValueInUSDForOneLot = 10; 
         }
         
-        const totalRiskInUSDPerLot = stopLossInPips * pipValueInUSDForOneLot;
-        const lotSize = totalRiskInUSDPerLot > 0 ? risk_amount / totalRiskInUSDPerLot : 0;
+        // 4. Calculate Lot Size
+        // Formula: LotSize = RiskAmount / (StopLossPips * PipValuePerLot)
+        let lotSize = 0;
+        const totalRiskPerLot = stopLossInPips * pipValueInUSDForOneLot;
+        
+        if (totalRiskPerLot > 0) {
+            lotSize = risk_amount / totalRiskPerLot;
+        }
+
+        // Normalize lot size (usually 2 decimals, min 0.01)
+        lotSize = Math.max(0.01, parseFloat(lotSize.toFixed(2)));
         
         // --- STEP 6: Format and Return Final Signal ---
         const finalSignal = {
@@ -209,8 +255,8 @@ export const scanForSignals = async (userPlan: PlanName, userSettings: { balance
             takeProfit1: parseFloat(patternResult.takeProfit1),
             confidence: parseFloat(finalConfidence.toFixed(2)),
             reasoning: analystResult.reason,
-            technicalReasoning: patternResult.reason_short,
-            lotSize: parseFloat(lotSize.toFixed(2)),
+            technicalReasoning: patternResult.reason_short, // Should mention Strategy A
+            lotSize: lotSize,
             riskAmount: parseFloat(risk_amount.toFixed(2)),
         };
         
@@ -237,13 +283,13 @@ export const getTradeAnalysis = async (tradeDetails: {
 Analyze ${instrument} on the ${timeFrame} chart. The trade is a ${tradeDirection} from Entry ${entryPrice} with a Stop Loss at ${stopLossPrice} and a 1:2 Take-Profit at ${tpPrice}.
 
 Provide a brief and actionable summary in three short, direct sections:
-1. TECHNICAL OUTLOOK (Current trend & key levels)
+1. TECHNICAL OUTLOOK (Check for Strategy A confluence: Sweep + MSS)
 2. MARKET CONTEXT (Top relevant fundamental factor)
 3. CONCLUSION (Actionable trade advice for this entry/SL/TP setup)`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: GENERATION_MODEL,
       contents: userPrompt,
       config: {
         systemInstruction: systemPrompt,

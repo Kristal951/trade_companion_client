@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Signal, User, TradeRecord, PlanName, DashboardView } from '../../types';
 import Icon from '../ui/Icon';
@@ -8,12 +9,25 @@ import { useUsageTracker } from '../../hooks/useUsageTracker';
 const TradeCard: React.FC<{ trade: TradeRecord; }> = ({ trade }) => {
     const isBuy = trade.type === 'BUY';
     const pnlColor = trade.status === 'win' ? 'text-success' : 'text-danger';
+    
+    // Determine confidence color
+    let confColor = 'text-mid-text';
+    if (trade.confidence >= 85) confColor = 'text-success';
+    else if (trade.confidence >= 75) confColor = 'text-info';
+    else confColor = 'text-warning';
+
     return (
         <div className={`bg-light-surface p-4 rounded-xl shadow-sm border border-l-4 ${trade.status === 'active' ? 'border-info' : trade.status === 'win' ? 'border-success' : 'border-danger'} animate-fade-in-right`}>
             <div className="flex justify-between items-start">
                 <div>
                     <h4 className="font-bold text-dark-text">{trade.instrument} - <span className={isBuy ? 'text-success' : 'text-danger'}>{trade.type}</span></h4>
-                    <p className="text-xs text-mid-text">Taken: {new Date(trade.dateTaken).toLocaleString()}</p>
+                    <div className="flex items-center gap-3 mt-1">
+                        <p className="text-xs text-mid-text">Taken: {new Date(trade.dateTaken).toLocaleString()}</p>
+                        {/* REQUIREMENT: Display Signal Confidence */}
+                        <span className={`text-xs font-bold border px-1.5 rounded ${confColor} border-current opacity-80`}>
+                            {trade.confidence}% Conf.
+                        </span>
+                    </div>
                     {trade.status !== 'active' && <p className="text-xs text-mid-text">Closed: {new Date(trade.dateClosed!).toLocaleString()}</p>}
                 </div>
                 {trade.status !== 'active' && trade.pnl !== undefined ? (
@@ -72,8 +86,10 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({ user, showToast, activeTr
         return saved ? JSON.parse(saved) : { balance: '10000', risk: '1.0', currency: 'USD' };
     });
     
+    // --- FILTERS ---
     const [filterInstrument, setFilterInstrument] = useState('all');
     const [filterTime, setFilterTime] = useState('all');
+    const [filterStatus, setFilterStatus] = useState('all'); // NEW: Status Filter
     
     useEffect(() => {
         const initialEquity = localStorage.getItem(`initialEquity_${user.email}`);
@@ -116,6 +132,10 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({ user, showToast, activeTr
                 return trade.instrument === filterInstrument;
             })
             .filter(trade => {
+                if (filterStatus === 'all') return true;
+                return trade.status === filterStatus;
+            })
+            .filter(trade => {
                 if (filterTime === 'all') return true;
                 const tradeDate = new Date(trade.dateClosed!);
                 const now = new Date();
@@ -126,9 +146,13 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({ user, showToast, activeTr
                     const sevenDaysAgo = new Date(now.setDate(now.getDate() - 7));
                     return tradeDate > sevenDaysAgo;
                 }
+                if (filterTime === '30d') {
+                    const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30));
+                    return tradeDate > thirtyDaysAgo;
+                }
                 return true;
             });
-    }, [tradeHistory, filterInstrument, filterTime]);
+    }, [tradeHistory, filterInstrument, filterTime, filterStatus]);
 
     const instrumentOptions = useMemo(() => ['all', ...new Set(tradeHistory.map(t => t.instrument))], [tradeHistory]);
 
@@ -206,17 +230,35 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({ user, showToast, activeTr
             case 'history':
                 return (
                     <>
-                        <div className="flex gap-4 mb-4">
-                            <select value={filterInstrument} onChange={e => setFilterInstrument(e.target.value)} className="bg-light-surface border-light-gray rounded-md p-2 focus:ring-primary focus:border-primary text-dark-text">
-                                {instrumentOptions.map(opt => <option key={opt} value={opt}>{opt === 'all' ? 'All Instruments' : opt}</option>)}
-                            </select>
-                            <select value={filterTime} onChange={e => setFilterTime(e.target.value)} className="bg-light-surface border-light-gray rounded-md p-2 focus:ring-primary focus:border-primary text-dark-text">
-                                <option value="all">All Time</option><option value="today">Today</option><option value="7d">Last 7 Days</option>
-                            </select>
+                        <div className="flex flex-wrap gap-4 mb-4 bg-light-surface p-4 rounded-lg border border-light-gray shadow-sm">
+                            <div className="flex flex-col">
+                                <label className="text-xs text-mid-text mb-1">Instrument</label>
+                                <select value={filterInstrument} onChange={e => setFilterInstrument(e.target.value)} className="bg-light-hover border border-light-gray rounded-md p-2 focus:ring-primary focus:border-primary text-dark-text text-sm">
+                                    <option value="all">All Instruments</option>
+                                    {instrumentOptions.filter(o => o !== 'all').map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                </select>
+                            </div>
+                            <div className="flex flex-col">
+                                <label className="text-xs text-mid-text mb-1">Status</label>
+                                <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-light-hover border border-light-gray rounded-md p-2 focus:ring-primary focus:border-primary text-dark-text text-sm">
+                                    <option value="all">All Outcomes</option>
+                                    <option value="win">Wins</option>
+                                    <option value="loss">Losses</option>
+                                </select>
+                            </div>
+                            <div className="flex flex-col">
+                                <label className="text-xs text-mid-text mb-1">Date Range</label>
+                                <select value={filterTime} onChange={e => setFilterTime(e.target.value)} className="bg-light-hover border border-light-gray rounded-md p-2 focus:ring-primary focus:border-primary text-dark-text text-sm">
+                                    <option value="all">All Time</option>
+                                    <option value="today">Today</option>
+                                    <option value="7d">Last 7 Days</option>
+                                    <option value="30d">Last 30 Days</option>
+                                </select>
+                            </div>
                         </div>
                         {filteredHistory.length > 0 ? (
                             <div className="space-y-4">{filteredHistory.map(t => <TradeCard key={t.id} trade={t} />)}</div>
-                        ) : <EmptyState icon="history" title="No Trades in History" message="Your closed trades will be journaled here." />}
+                        ) : <EmptyState icon="history" title="No Trades Found" message="No trades match your current filters." />}
                     </>
                 );
             default:
@@ -322,7 +364,7 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({ user, showToast, activeTr
             <div className="flex justify-between items-center mb-4 border-b border-light-gray flex-wrap">
                  <div className="flex">
                     <TabButton tabName="active" label="Active Trades" count={activeTrades.length} />
-                    <TabButton tabName="history" label="Trade History" count={tradeHistory.length} />
+                    <TabButton tabName="history" label="Trade History" count={filteredHistory.length} />
                  </div>
                 <div className="flex items-center space-x-4 p-2">
                     {user.subscribedPlan !== PlanName.Free && (

@@ -1,11 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import LandingPage from './components/onboarding/LandingPage';
-// FIX: Changed to a named import to match the export in DashboardPage.tsx.
-import { DashboardPage } from './components/dashboard/DashboardPage';
+import DashboardPage from './components/dashboard/DashboardPage';
 import AIChatbot from './components/widgets/AIChatWidget';
 import Toast from './components/ui/Toast';
-import { User, PlanName, DashboardView } from './types';
+import { User, PlanName, DashboardView, TradeRecord } from './types';
 import ScreenshotDetector from './components/ui/ScreenshotDetector';
+import { instrumentDefinitions } from './config/instruments';
 
 // This would typically come from an auth service
 const MOCK_USER_BASE: Omit<User, 'isMentor'> = { 
@@ -24,7 +25,6 @@ const MOCK_USER_BASE: Omit<User, 'isMentor'> = {
 
 export const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [activeRole, setActiveRole] = useState<'user' | 'mentor'>('user');
   const [activeView, setActiveView] = useState<DashboardView>('dashboard');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -35,6 +35,13 @@ export const App: React.FC = () => {
       return 'dark';
     }
     return 'light';
+  });
+  
+  // Lifted activeTrades state from DashboardPage to App
+  const [activeTrades, setActiveTrades] = useState<TradeRecord[]>(() => {
+     if (!user) return [];
+     const saved = localStorage.getItem(`active_trades_${user.email}`);
+     return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
@@ -48,43 +55,43 @@ export const App: React.FC = () => {
     }
   }, [theme]);
 
+  // Persist activeTrades whenever they change
+  useEffect(() => {
+      if (user) {
+        localStorage.setItem(`active_trades_${user.email}`, JSON.stringify(activeTrades));
+      }
+  }, [activeTrades, user]);
+
   const toggleTheme = () => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
   };
 
-  const handleLogin = (isMentorUser = true) => {
-    setUser({
+  const handleLoginRequest = () => {
+    // Single login flow: Automatically logs in as a user who has mentor capabilities enabled
+    // to demonstrate the switching feature.
+    const newUser = {
       ...MOCK_USER_BASE,
-      isMentor: isMentorUser,
-    });
-    setActiveRole('user'); // Always start in user view
+      isMentor: true, 
+    };
+    setUser(newUser);
+    
+    // Initialize trades for this user
+    const savedTrades = localStorage.getItem(`active_trades_${newUser.email}`);
+    if (savedTrades) {
+        setActiveTrades(JSON.parse(savedTrades));
+    } else {
+        setActiveTrades([]);
+    }
+    
     setActiveView('dashboard');
   };
-
-  const handleLoginRequest = () => {
-    // For demonstration, logging in as a mentor user by default to show the switch functionality.
-    // To see a regular user flow, you could call handleLogin(false)
-    handleLogin(true);
-  };
-
+  
   const handleLogout = () => {
     setUser(null);
   };
   
   const handleViewChange = (view: DashboardView) => {
     setActiveView(view);
-  };
-  
-  const handleRoleSwitch = () => {
-    if (user?.isMentor) {
-      setActiveRole(prev => {
-        const newRole = prev === 'user' ? 'mentor' : 'user';
-        // When switching, always go back to the dashboard for that role
-        setActiveView('dashboard');
-        showToast(`Switched to ${newRole} view.`, 'info');
-        return newRole;
-      });
-    }
   };
 
   const showToast = (message: string, type: 'success' | 'info' | 'error' = 'info') => {
@@ -98,6 +105,81 @@ export const App: React.FC = () => {
   const handleScreenshotAttempt = () => {
     showToast("Screenshot attempt detected. Repeated attempts may lead to account suspension.", 'error');
     console.warn(`[SYSTEM LOG] Screenshot attempt by user: ${user?.email}`);
+  };
+
+  const handleExecuteTrade = (tradeDetails: {
+      instrument: string;
+      type: 'BUY' | 'SELL';
+      entryPrice: number;
+      stopLoss: number;
+      takeProfit: number;
+      confidence: number;
+      reasoning: string;
+  }) => {
+      if (!user) return;
+
+      // Check for duplicate trade
+      const alreadyExists = activeTrades.some(t => t.instrument === tradeDetails.instrument);
+      if (alreadyExists) {
+          showToast(`You already have an active trade for ${tradeDetails.instrument}`, 'error');
+          return;
+      }
+
+      // Retrieve user settings for lot size calc
+      const settings = JSON.parse(localStorage.getItem(`tradeSettings_${user.email}`) || '{"balance": "10000", "risk": "1.0", "currency": "USD"}');
+      const currentEquity = parseFloat(localStorage.getItem(`currentEquity_${user.email}`) || settings.balance);
+      const riskPct = parseFloat(settings.risk);
+      
+      // Calculate Lot Size
+      let lotSize = 0.01; // Default
+      let riskAmount = 0;
+
+      try {
+          const instrumentProps = instrumentDefinitions[tradeDetails.instrument];
+          if (instrumentProps) {
+              riskAmount = currentEquity * (riskPct / 100);
+              const stopDistPrice = Math.abs(tradeDetails.entryPrice - tradeDetails.stopLoss);
+              const stopLossPips = stopDistPrice / instrumentProps.pipStep;
+              const contractSize = instrumentProps.contractSize;
+              
+              let pipValueInUSDForOneLot = 10; // Default approx
+              if (instrumentProps.quoteCurrency === 'USD') {
+                   pipValueInUSDForOneLot = instrumentProps.pipStep * contractSize;
+              } else if (instrumentProps.quoteCurrency === 'JPY') {
+                   pipValueInUSDForOneLot = (instrumentProps.pipStep * contractSize) / 150; 
+              }
+
+              const totalRiskPerLot = stopLossPips * pipValueInUSDForOneLot;
+              if (totalRiskPerLot > 0) {
+                  lotSize = riskAmount / totalRiskPerLot;
+                  lotSize = Math.max(0.01, parseFloat(lotSize.toFixed(2)));
+              }
+          }
+      } catch (err) {
+          console.error("Lot calculation failed, using default 0.01", err);
+      }
+
+      const newTrade: TradeRecord = {
+          id: new Date().toISOString(),
+          status: 'active',
+          dateTaken: new Date().toISOString(),
+          initialEquity: currentEquity,
+          instrument: tradeDetails.instrument,
+          type: tradeDetails.type,
+          entryPrice: tradeDetails.entryPrice,
+          stopLoss: tradeDetails.stopLoss,
+          takeProfit: tradeDetails.takeProfit,
+          confidence: tradeDetails.confidence,
+          reasoning: tradeDetails.reasoning,
+          lotSize: lotSize,
+          riskAmount: parseFloat(riskAmount.toFixed(2)),
+          technicalReasoning: "Manual AI Execution from Chat",
+          takeProfit1: tradeDetails.takeProfit, // Mapped from takeProfit for TradeRecord compatibility
+          timestamp: new Date().toISOString(), // Required by Signal/TradeRecord interface
+      };
+
+      setActiveTrades(prev => [newTrade, ...prev]);
+      showToast(`${tradeDetails.instrument} ${tradeDetails.type} executed successfully!`, 'success');
   };
 
   if (!user) {
@@ -120,11 +202,11 @@ export const App: React.FC = () => {
           showToast={showToast}
           theme={theme}
           toggleTheme={toggleTheme}
-          activeRole={activeRole}
-          handleRoleSwitch={handleRoleSwitch}
+          activeTrades={activeTrades}
+          setActiveTrades={setActiveTrades}
         />
       </ScreenshotDetector>
-      <AIChatbot user={user} activeView={activeView} />
+      <AIChatbot user={user} activeView={activeView} onExecuteTrade={handleExecuteTrade} />
       {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
     </>
   );
