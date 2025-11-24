@@ -1,6 +1,7 @@
 
-import React, { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, CrosshairMode, IChartApi, ISeriesApi, LineStyle, IPriceLine } from 'lightweight-charts';
+
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { createChart, ColorType, CrosshairMode, IChartApi, ISeriesApi, LineStyle, IPriceLine, MouseEventParams } from 'lightweight-charts';
 import Icon from '../ui/Icon';
 
 const WS_URL = 'wss://ws.binaryws.com/websockets/v3?app_id=1089';
@@ -60,14 +61,16 @@ interface PositionParams {
 
 const DerivChart: React.FC<DerivChartProps> = ({ theme }) => {
     const chartContainerRef = useRef<HTMLDivElement>(null);
+    const legendRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<IChartApi | null>(null);
     const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
-    const lastBarsCache = useRef<any[]>([]);
+    const lastBarRef = useRef<{ open: number; high: number; low: number; close: number; time: number } | null>(null);
     const positionLinesRef = useRef<IPriceLine[]>([]);
 
     const [symbol, setSymbol] = useState('R_100');
     const [interval, setInterval] = useState('15');
+    // State kept for logic if needed, but display removed as requested
     const [connectionStatus, setConnectionStatus] = useState<'Connecting' | 'Connected' | 'Disconnected'>('Disconnected');
     
     // Tools State
@@ -131,6 +134,107 @@ const DerivChart: React.FC<DerivChartProps> = ({ theme }) => {
         };
     }, [theme]);
 
+    // Update Legend HTML content
+    const updateLegend = useCallback((bar: { open: number; high: number; low: number; close: number } | undefined | null) => {
+        if (!legendRef.current) return;
+        
+        const validBar = bar || lastBarRef.current;
+        
+        const allAssets = Object.values(DERIV_ASSETS).reduce((acc, group) => [...acc, ...group], []);
+        const symbolLabel = allAssets.find(a => a.value === symbol)?.label || symbol;
+        const intervalLabel = INTERVALS.find(i => i.value === interval)?.label || interval;
+        
+        const textColor = theme === 'dark' ? '#e5e7eb' : '#1f2937';
+        const labelColor = theme === 'dark' ? '#9ca3af' : '#6b7280';
+
+        if (!validBar) {
+            legendRef.current.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <div style="display: flex; align-items: baseline; gap: 6px;">
+                        <span style="font-size: 1.125rem; font-weight: 700; color: ${textColor};">${symbolLabel}</span>
+                        <span style="font-size: 0.75rem; font-weight: 500; color: ${labelColor};">•</span>
+                        <span style="font-size: 0.875rem; font-weight: 600; color: ${textColor};">${intervalLabel}</span>
+                        <span style="font-size: 0.75rem; font-weight: 500; color: ${labelColor};">•</span>
+                        <span style="font-size: 0.75rem; font-weight: 600; color: ${labelColor};">Deriv</span>
+                    </div>
+                    <div style="font-size: 0.875rem; color: ${labelColor};">Loading data...</div>
+                </div>
+            `;
+            return;
+        }
+
+        const { open, high, low, close } = validBar;
+        const change = close - open;
+        const changePercent = (change / open) * 100;
+        const isUp = change >= 0;
+        const valueColor = isUp ? '#22c55e' : '#ef4444';
+        
+        // Simple heuristic for decimals: symbols with '100' or 'J' usually have 2, others might need more.
+        const decimals = 2; 
+        const fmt = (n: number) => n.toFixed(decimals);
+
+        legendRef.current.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+                <div style="display: flex; align-items: baseline; gap: 6px;">
+                    <span style="font-size: 1.125rem; font-weight: 700; color: ${textColor};">${symbolLabel}</span>
+                    <span style="font-size: 0.75rem; font-weight: 500; color: ${labelColor};">•</span>
+                    <span style="font-size: 0.875rem; font-weight: 600; color: ${textColor};">${intervalLabel}</span>
+                    <span style="font-size: 0.75rem; font-weight: 500; color: ${labelColor};">•</span>
+                    <span style="font-size: 0.75rem; font-weight: 600; color: ${labelColor};">Deriv</span>
+                    <span style="font-size: 0.75rem; font-weight: 400; color: ${isUp ? '#22c55e' : '#ef4444'}; margin-left: 8px;">
+                        ${isUp ? '●' : '●'} Market Open
+                    </span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.9rem; font-family: 'Roboto Mono', monospace;">
+                    <span><span style="color: ${labelColor};">O</span> <span style="color: ${valueColor}; font-weight: 500;">${fmt(open)}</span></span>
+                    <span><span style="color: ${labelColor};">H</span> <span style="color: ${valueColor}; font-weight: 500;">${fmt(high)}</span></span>
+                    <span><span style="color: ${labelColor};">L</span> <span style="color: ${valueColor}; font-weight: 500;">${fmt(low)}</span></span>
+                    <span><span style="color: ${labelColor};">C</span> <span style="color: ${valueColor}; font-weight: 500;">${fmt(close)}</span></span>
+                    <span style="color: ${valueColor}; font-weight: 500;">
+                        ${change >= 0 ? '+' : ''}${fmt(change)} (${change >= 0 ? '+' : ''}${changePercent.toFixed(2)}%)
+                    </span>
+                </div>
+            </div>
+        `;
+    }, [symbol, interval, theme]);
+
+    // Attach Crosshair listener to update legend on hover
+    useEffect(() => {
+        if (!chartRef.current || !seriesRef.current) return;
+        
+        // Initial update
+        updateLegend(lastBarRef.current);
+
+        const handleCrosshair = (param: MouseEventParams) => {
+            if (
+                param.point === undefined ||
+                !param.time ||
+                param.point.x < 0 ||
+                param.point.x > chartContainerRef.current!.clientWidth ||
+                param.point.y < 0 ||
+                param.point.y > chartContainerRef.current!.clientHeight
+            ) {
+                // Revert to last live bar
+                updateLegend(null); 
+            } else {
+                const data = param.seriesData.get(seriesRef.current!) as any;
+                if (data) updateLegend(data);
+            }
+        };
+
+        chartRef.current.subscribeCrosshairMove(handleCrosshair);
+
+        // Hide native watermark if we are using custom legend
+        chartRef.current.applyOptions({
+            watermark: { visible: false }
+        });
+
+        return () => {
+            chartRef.current?.unsubscribeCrosshairMove(handleCrosshair);
+        };
+    }, [updateLegend]);
+
+
     // WebSocket Data Logic
     useEffect(() => {
         if (wsRef.current) {
@@ -175,9 +279,13 @@ const DerivChart: React.FC<DerivChartProps> = ({ theme }) => {
                     close: parseFloat(c.close),
                 }));
                 
-                lastBarsCache.current = bars;
                 seriesRef.current?.setData(bars);
-                if (bars.length > 0) setCurrentPrice(bars[bars.length - 1].close);
+                if (bars.length > 0) {
+                    const last = bars[bars.length - 1];
+                    lastBarRef.current = last;
+                    setCurrentPrice(last.close);
+                    updateLegend(last);
+                }
             }
 
             if (data.msg_type === 'ohlc') {
@@ -190,7 +298,9 @@ const DerivChart: React.FC<DerivChartProps> = ({ theme }) => {
                     close: parseFloat(c.close),
                 };
                 seriesRef.current?.update(bar);
+                lastBarRef.current = bar;
                 setCurrentPrice(bar.close);
+                updateLegend(bar);
             }
         };
 
@@ -201,7 +311,7 @@ const DerivChart: React.FC<DerivChartProps> = ({ theme }) => {
         return () => {
             ws.close();
         };
-    }, [symbol, interval]);
+    }, [symbol, interval, updateLegend]);
 
     // --- Tool Functions ---
 
@@ -338,16 +448,16 @@ const DerivChart: React.FC<DerivChartProps> = ({ theme }) => {
                     <button 
                         onClick={() => activateTool('long')} 
                         title="Long Position"
-                        className={`p-1.5 rounded transition-colors ${activeTool === 'long' ? 'bg-success/20 text-success' : 'text-mid-text hover:bg-light-hover hover:text-success'}`}
+                        className={`px-3 py-1.5 rounded transition-colors font-bold text-sm shadow-sm ${activeTool === 'long' ? 'bg-success text-white ring-2 ring-offset-1 ring-success' : 'bg-success text-white hover:bg-green-600'}`}
                     >
-                        <Icon name="long" className="w-5 h-5" />
+                        BUY
                     </button>
                     <button 
                         onClick={() => activateTool('short')} 
                         title="Short Position"
-                        className={`p-1.5 rounded transition-colors ${activeTool === 'short' ? 'bg-danger/20 text-danger' : 'text-mid-text hover:bg-light-hover hover:text-danger'}`}
+                        className={`px-3 py-1.5 rounded transition-colors font-bold text-sm shadow-sm ${activeTool === 'short' ? 'bg-danger text-white ring-2 ring-offset-1 ring-danger' : 'bg-danger text-white hover:bg-red-600'}`}
                     >
-                        <Icon name="short" className="w-5 h-5" />
+                        SELL
                     </button>
                     {activeTool !== 'none' && (
                         <button 
@@ -371,18 +481,21 @@ const DerivChart: React.FC<DerivChartProps> = ({ theme }) => {
                     >
                         <Icon name="camera" className="w-5 h-5" />
                     </button>
-                    <div className="flex items-center gap-1.5 px-2 py-1 bg-light-hover rounded border border-light-gray">
-                         <span className={`w-2 h-2 rounded-full ${connectionStatus === 'Connected' ? 'bg-success animate-pulse' : 'bg-danger'}`}></span>
-                         <span className="text-[10px] text-mid-text font-mono uppercase">{connectionStatus}</span>
-                    </div>
+                    {/* Connection Status Removed as per request */}
                 </div>
             </div>
 
             {/* Chart Area */}
             <div className="flex-1 relative bg-light-bg overflow-hidden" ref={chartContainerRef}>
+                 {/* Legend Overlay */}
+                 <div 
+                    ref={legendRef} 
+                    className="absolute top-4 left-4 z-10 font-sans pointer-events-none select-none bg-transparent"
+                 ></div>
+
                  {/* Floating Trade Panel */}
                  {activeTool !== 'none' && (
-                    <div className="absolute top-4 left-4 z-10 bg-light-surface/90 backdrop-blur-md p-4 rounded-lg shadow-lg border border-light-gray w-64 animate-fade-in-right">
+                    <div className="absolute top-4 right-16 z-10 bg-light-surface/90 backdrop-blur-md p-4 rounded-lg shadow-lg border border-light-gray w-64 animate-fade-in-right">
                         <div className="flex justify-between items-center mb-3">
                             <h4 className={`font-bold ${activeTool === 'long' ? 'text-success' : 'text-danger'}`}>
                                 {activeTool === 'long' ? 'Long Position' : 'Short Position'}

@@ -178,6 +178,7 @@ export type DashboardView =
   | "market_chart"
   | "mentor_dashboard"
   | "mentor_profile"
+  | "mentor_payouts"
   | "followers"
   | "contact_us";
 

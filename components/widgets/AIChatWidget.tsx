@@ -2,10 +2,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Icon from '../ui/Icon';
 import { DashboardView, User } from '../../types';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, GenerateContentResponse } from '@google/genai';
 import SecureContent from '../ui/SecureContent';
 import { useUsageTracker } from '../../hooks/useUsageTracker';
-import { classifyQuery } from '../../services/geminiService';
+import { classifyQuery, withRetry } from '../../services/geminiService';
 import { fetchMarketContext } from '../../services/marketDataService';
 import { instrumentDefinitions } from '../../config/instruments';
 
@@ -57,61 +57,86 @@ const STRATEGY_CONTEXT = `
    - Setup: Price above 20-period Moving Average (Bullish) or below (Bearish).
    - Entry: Breakout of consolidation patterns (Flags, Pennants) on M15/H1.
 
-4. Boom & Crash Indices (Synthetics)
-   Strategy A: 'Spike Catching' (Sniper)
-   - Direction: Buy Boom, Sell Crash.
-   - Setup: Price touching a previous spike zone + RSI extreme.
-   Strategy B: 'Tick Scalping'
-   - Direction: Sell Boom, Buy Crash (Trend following only).
+4. Minor FX Pairs & Crosses
+   Strategy: Trend Continuation & Cross-Pair Correlation
+   - Core Logic: Trade based on currency strength divergence.
+   - Setup: Break and retest of key consolidation zones.
 
-5. Volatility Indices (V75, V100)
-   Strategy: Market Structure Shifts (MSS)
-   - Setup: Break of Market Structure (BMS) on M15.
-   - Entry: Retest of the Order Block that caused the break.
+5. Synthetic Indices (Deriv: Volatility, Crash, Boom)
+   Strategy: Algorithmic Price Action & Spike Catching
+   - **CRITICAL**: Real-time structure is provided via "Details" injection. Do NOT use Google Search for price.
+   - Volatility Indices (V75, V10): Respects support/resistance strictly. Trend following on M15/H1.
+   - Crash (500/1000): "Crash" implies sharp drops. Trend trading: Sell the trend. Reversal: Buy ONLY on confirmed structure shift.
+   - Boom (500/1000): "Boom" implies sharp spikes UP. Trend trading: Buy the trend.
 
-6. Jump Indices & Minor FX
-   Strategy: Gap Recovery & Cross-Pair Strength
-   - Setup: Fade huge gaps (Jump) or trade major strength divergence (Minors).
+6. **Trading Analysis (Adaptive Strategy):** 
+   Your expertise is comprehensive across all technical disciplines. You can fluidly apply and combine: **SMC** (Order Blocks, FVG, Liquidity, BOS, CHoCH), **Market Structure & Pullback**, **Support/Resistance**, **Trendlines**, **Candlestick Patterns** (e.g., Engulfing, Hammer), **Chart Patterns** (e.g., Head & Shoulders, Flags), and **Mean Reversion / Scalping**. Your goal is always to provide the **most effective, adaptive analysis** for any pair or timeframe to maximize profitability, based on the current chart condition. You will select the optimal concept (including Strategy A through K below) for the situation.
+
+   **Core Strategy A: Market Structure & Pullback Trading (Best for Trend Continuation)**
+   * **Concept:** Patiently wait for the price to "pull back" to a logical area of support or resistance in an established trend. This approach relies on momentum continuation.
+   * **Execution:**
+     1. **Identify Trend:** Confirm a clear trend on a Daily or 4-Hour chart.
+     2. **Identify Key Level:** Find a clear old **resistance turned new support** (or vice versa), or a strong Moving Average (like the 50-day EMA).
+     3. **Entry:** Wait for the price to test this level and show a clear sign of rejection (e.g., a bullish engulfing or hammer candle).
+     4. **Risk Management:** Place a tight **Stop-Loss** just outside the key level. Target a **Take-Profit** at a 1:2 or 1:3 Risk/Reward ratio.
 `;
 
-// Updated System Prompt to include Instrument in parameters and Data Priority instructions
-const systemPrompt = `You are "Olapete" - a highly knowledgeable trading and support expert. Your answers should be **direct and expert**.
+// Updated System Prompt to prioritize Injected Data for Synthetics
+const systemPrompt = `You are "Olapete" - a highly knowledgeable trading and support expert. 
 
-**CRITICAL INSTRUCTION ON MARKET DATA:**
-- You will often receive **[LIVE MARKET DATA INJECTION]** in the user's message.
-- You **MUST** prioritize this injected data (Current Price, Trend, Candles) over any external information found via Google Search or your internal knowledge.
-- Google Search results for "current price" are often outdated. **Trust the injected data implicitly** for defining Entry, Stop Loss, and Take Profit levels.
-- Use Google Search ONLY for finding news, fundamental events, or sentiment analysis.
+**CORE OBJECTIVE:**
+Provide precise, live trade setups.
+
+**CRITICAL DATA HANDLING:**
+
+1. **LIVE API DATA (Injected):**
+   - If you receive [LIVE MARKET DATA INJECTION] with "Data Source: LIVE API" or "Deriv WS":
+     - **TRUST THIS PRICE & STRUCTURE IMPLICITLY.**
+     - **Synthetic Indices:** The "Details" field contains the live structure (Trend, SMA, Range) fetched from the API. **Do NOT** attempt to Search for this. Use the provided details to form your bias.
+     - **Forex/Crypto:** Use the injected price for Entry. You may use \`googleSearch\` (if enabled) to validate macro news/sentiment, but priority goes to the live price.
+
+2. **MOCK/FALLBACK DATA:**
+   - If "Data Source: MOCK/FALLBACK":
+     - You **MUST** use \`googleSearch\` (if enabled) to find the actual price and structure.
+
+**CRITICAL INSTRUCTION FOR ANALYSIS:**
+
+1. **IF USER PROVIDES AN IMAGE:**
+   - Analyze the chart image directly for Price Action, Trends, and Key Levels.
+   - Generate the setup based on what you SEE in the image.
+
+2. **IF USER DOES NOT PROVIDE AN IMAGE (TEXT ONLY):**
+   - **Synthetics:** Analyze the [LIVE MARKET DATA INJECTION] Details (Trend, SMA, Highs/Lows) to determine the setup.
+   - **Forex/Crypto:** Synthesize the Injected Price + Search Results (News/Levels).
+   - **DECISION:**
+     - If Price is at Support + Bullish Structure -> BUY.
+     - If Price is at Resistance + Bearish Structure -> SELL.
+     - If uncertain -> "No clear setup".
 
 ${STRATEGY_CONTEXT}
 
 ## CORE INSTRUCTIONS:
 
 1.  **Analyze based on the Instrument:**
-    - If user asks about XAUUSD or XAGUSD, check US Yields and Supply/Demand zones.
-    - If user asks about EURUSD, look for Liquidity Grabs and Session times.
-    - If user asks about Boom/Crash, look for Spikes and Zones.
+    - If user asks about XAUUSD, check current US Yields/News via Search.
+    - If user asks about Synthetic Indices (e.g. Volatility 75), rely ONLY on the injected Trend details.
 
 2.  **Trade Setup Format (Strict):**
     When providing a trade, use this format:
     **TRADE SETUP**
     -   Instrument: [Name]
     -   Action: [BUY/SELL]
-    -   Entry: [Price]
+    -   Entry: [Price] (Must be close to Current Live Price)
     -   Stop Loss (SL): [Price]
     -   Take Profit (TP): [Price]
-    **Reasoning:** [Brief strategy-based reason]
+    **Reasoning:** [Reason based on Search Results, Injected Trend, or Image Analysis]
 
 3.  **Communication:**
     -   Be "Very Sure". No wishy-washy language.
-    -   If market conditions are bad, say "No clear setup".
-    -   For general questions, be concise.
+    -   If market conditions are unclear from Search/Injection, say "No clear setup found currently".
+    -   For Synthetics, explicitly mention you are analyzing "Live Deriv Market Structure".
 
-4.  **Platform Support:**
-    -   Guide users to "Settings" for cTrader linking.
-    -   Explain features like Lot Size Calculator.
-
-5.  **Disclaimer:**
+4.  **Disclaimer:**
     -   Include a brief disclaimer for financial advice.
 `;
 
@@ -144,10 +169,14 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ user, activeView, onExecuteTrade 
         const welcomeMessage = {
             id: 'welcome',
             role: 'model' as const,
-            text: `Welcome! I'm Olapete, your Trade Support Bot. I can analyze Majors, Minors, Crypto, Metals, and Synthetics using our proven strategies. How can I help?`
+            text: `Welcome! I'm Olapete, your Trade Support Bot. I can analyze the market for you. Upload a chart for precise analysis, or ask me for a setup and I'll scan the market.`
         };
+        // We display the welcome message in the UI state
         setMessages([welcomeMessage]);
-        chatHistoryRef.current = [{ role: "model", parts: [{ text: welcomeMessage.text }] }];
+        
+        // FIX: We do NOT add the model's welcome message to the API history.
+        // The API requires the conversation to generally start with a USER message to avoid 500 errors.
+        chatHistoryRef.current = [];
     }, []);
 
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,7 +197,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ user, activeView, onExecuteTrade 
 
     const parseTradeData = (text: string) => {
         // Regex to extract parameters more robustly
-        const instrumentMatch = text.match(/Instrument:\s*([A-Z0-9\/\.\s]+)/i);
+        const instrumentMatch = text.match(/Instrument:\s*([A-Z0-9\/\.\s_]+)/i);
         const actionMatch = text.match(/Action:\s*(BUY|SELL)/i);
         const entryMatch = text.match(/Entry:\s*([\d\.]+)/i);
         const slMatch = text.match(/Stop Loss.*:\s*([\d\.]+)/i);
@@ -213,7 +242,33 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ user, activeView, onExecuteTrade 
             'eu': 'EUR/USD', 'gu': 'GBP/USD',
             'uj': 'USD/JPY', 'gj': 'GBP/JPY',
             'nasdaq': 'NASDAQ', 'us30': 'US30',
-            'v75': 'Volatility 75', 'boom': 'Boom 1000', 'crash': 'Crash 1000'
+            
+            // Synthetics Aliases (Expanded for better detection)
+            'v75': 'Volatility 75 Index', 
+            'vol 75': 'Volatility 75 Index',
+            'volatility 75': 'Volatility 75 Index',
+            'v 75': 'Volatility 75 Index',
+            
+            'v10': 'Volatility 10 Index', 
+            'vol 10': 'Volatility 10 Index',
+            'volatility 10': 'Volatility 10 Index',
+            
+            'v100': 'Volatility 100 Index', 
+            'vol 100': 'Volatility 100 Index',
+            'volatility 100': 'Volatility 100 Index',
+            
+            'c500': 'Crash 500 Index', 
+            'crash 500': 'Crash 500 Index',
+            'c1000': 'Crash 1000 Index', 
+            'crash 1000': 'Crash 1000 Index',
+            
+            'b500': 'Boom 500 Index', 
+            'boom 500': 'Boom 500 Index',
+            'b1000': 'Boom 1000 Index', 
+            'boom 1000': 'Boom 1000 Index',
+            
+            'j25': 'Jump 25 Index', 
+            'jump 25': 'Jump 25 Index',
         };
         
         for (const [alias, canonical] of Object.entries(aliases)) {
@@ -225,6 +280,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ user, activeView, onExecuteTrade 
         for (const inst of instruments) {
              const cleanInst = inst.toLowerCase();
              const noSlash = cleanInst.replace('/', '');
+             // Ensure strict partial match against the full name in query if not aliased
              if (lowerText.includes(cleanInst) || lowerText.includes(noSlash)) {
                  return inst;
              }
@@ -286,20 +342,35 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ user, activeView, onExecuteTrade 
 
             // --- LIVE DATA INJECTION LOGIC ---
             let liveContextMsg = "";
+            let useGoogleSearch = true; // Default to true
+
             const detectedInst = findInstrumentInQuery(userQuery);
             
             if (detectedInst && !imageToProcess) {
-                // Only inject for text queries to prevent conflict with chart image interpretation
+                // Only inject for text queries.
                 try {
                     const marketData = await fetchMarketContext(detectedInst);
+                    const isReal = marketData.isDataReal;
+                    const isDeriv = instrumentDefinitions[detectedInst]?.isDeriv;
+                    
+                    if (isDeriv) {
+                        useGoogleSearch = false; // Disable search for Synthetics to prevent 500 errors (unindexed data)
+                    }
+
                     liveContextMsg = `
 \n\n*** [LIVE MARKET DATA INJECTION] ***
 Instrument: ${marketData.instrument}
-Current Live Price: ${marketData.currentPrice}
-Current Trend (M15): ${marketData.trend}
-Recent Candle History (Last 5 M15): ${JSON.stringify(marketData.candles)}
-TIMESTAMP: ${new Date().toISOString()}
-INSTRUCTION: You MUST use the 'Current Live Price' provided above for calculating Entry, Stop Loss, and Take Profit. Do NOT use old data from search results.
+Current Price: ${marketData.currentPrice}
+Data Source: ${isReal ? (isDeriv ? 'LIVE API (Deriv WS)' : 'LIVE API') : 'FALLBACK/MOCK'}
+${marketData.details ? `Details (Market Structure): ${marketData.details}` : ''}
+
+INSTRUCTION:
+1. **SOURCE CHECK:**
+   - If Source is "LIVE API (Deriv WS)": TRUST this structure details implicitly. Do NOT use search.
+   - If Source is "FALLBACK/MOCK": You MUST use \`googleSearch\` to find the *actual* price/structure.
+2. **VERIFY (Forex/Crypto):** Compare the "Provided Price" with search results if needed.
+3. **ANALYZE:** Look for technical breakouts based on the Trend/Price provided.
+4. **OUTPUT:** Generate the trade setup based on this synthesized real-time info.
 *** END DATA ***`;
                 } catch (err) {
                     console.error("Error fetching live context for chat:", err);
@@ -307,7 +378,7 @@ INSTRUCTION: You MUST use the 'Current Live Price' provided above for calculatin
             }
 
             // --- Main Gemini Call ---
-            const contextString = `\n\n[CONTEXT: User: ${user.name} (${user.email}), Role: ${user.isMentor ? 'Mentor' : 'User'}, Current Page: '${activeView}', Time: ${new Date().toLocaleString()}]` + liveContextMsg;
+            const contextString = `\n\n[CONTEXT: User: ${user.name}, Page: '${activeView}', Time: ${new Date().toLocaleString()}]` + liveContextMsg;
 
             const userParts: any[] = [{ text: userQuery + contextString }];
             if (imageToProcess) {
@@ -316,16 +387,19 @@ INSTRUCTION: You MUST use the 'Current Live Price' provided above for calculatin
             
             chatHistoryRef.current.push({ role: 'user', parts: userParts });
             
-            const response = await ai.models.generateContent({
+            // Conditionally enable Google Search only if it's NOT a synthetic index (to avoid errors)
+            const tools = useGoogleSearch ? [{ googleSearch: {} }] : undefined;
+
+            const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
                 model: 'gemini-3-pro-preview',
                 contents: chatHistoryRef.current,
                 config: {
                     systemInstruction: systemPrompt,
-                    tools: [{ googleSearch: {} }]
+                    tools: tools
                 }
-            });
+            }));
 
-            const modelResponseText = response.text;
+            const modelResponseText = response.text || "I couldn't generate a response.";
             chatHistoryRef.current.push({ role: 'model', parts: [{ text: modelResponseText }] });
             
             // Parse for trade data
@@ -338,9 +412,14 @@ INSTRUCTION: You MUST use the 'Current Live Price' provided above for calculatin
                 tradeData: tradeData 
             }]);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error with AI support chat:", error);
-            setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: "I'm sorry, I'm having trouble connecting right now. Please try again later." }]);
+            let errorMessage = "I'm sorry, I'm having trouble connecting right now. Please try again later.";
+            // Specific handling for Quota Exceeded
+            if (error.status === 429 || error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED') {
+                errorMessage = "I'm currently experiencing very high traffic (Quota Limit). Please wait a minute and try again.";
+            }
+            setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: errorMessage }]);
         } finally {
             setIsLoading(false);
         }
@@ -353,7 +432,7 @@ INSTRUCTION: You MUST use the 'Current Live Price' provided above for calculatin
                 className="fixed bottom-5 right-5 bg-primary hover:bg-primary-hover text-white rounded-full p-4 shadow-lg z-50 transition-transform transform hover:scale-110"
                 aria-label="Open AI Chat"
             >
-                <Icon name="chat" className="w-7 h-7" />
+                <Icon name="robot" className="w-7 h-7" />
             </button>
         );
     }

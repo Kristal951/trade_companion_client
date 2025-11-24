@@ -1,5 +1,5 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { PlanName } from "../types";
 import { instrumentDefinitions } from '../config/instruments';
 import { fetchMarketContext, MarketContext } from "./marketDataService";
@@ -62,7 +62,38 @@ const STRATEGY_GUIDELINES = `
    - Core Logic: Momentum-heavy assets.
    - Setup: Price above 20-period Moving Average (Bullish) or below (Bearish).
    - Entry: Breakout of consolidation patterns (Flags, Pennants) on M15/H1.
+
+5. Synthetic Indices (Deriv: Volatility, Crash, Boom)
+   Strategy: Algorithmic Price Action & Spike Catching
+   - Volatility Indices (V75, V10): Pure technicals. Respects support/resistance strictly. Trend following on H1/H4.
+   - Crash (500/1000): "Crash" implies sharp drops. Trend trading: Sell the trend. Reversal: Buy ONLY on confirmed structure shift after a spike series.
+   - Boom (500/1000): "Boom" implies sharp spikes UP. Trend trading: Buy the trend. Reversal: Sell ONLY on confirmed break of structure.
+
+6. **Trading Analysis (Adaptive Strategy):** 
+   Your expertise is comprehensive across all technical disciplines. You can fluidly apply and combine: **SMC** (Order Blocks, FVG, Liquidity, BOS, CHoCH), **Market Structure & Pullback**, **Support/Resistance**, **Trendlines**, **Candlestick Patterns** (e.g., Engulfing, Hammer), **Chart Patterns** (e.g., Head & Shoulders, Flags), and **Mean Reversion / Scalping**. Your goal is always to provide the **most effective, adaptive analysis** for any pair or timeframe to maximize profitability, based on the current chart condition. You will select the optimal concept (including Strategy A through K below) for the situation.
+
+   **Core Strategy A: Market Structure & Pullback Trading (Best for Trend Continuation)**
+   * **Concept:** Patiently wait for the price to "pull back" to a logical area of support or resistance in an established trend. This approach relies on momentum continuation.
+   * **Execution:**
+     1. **Identify Trend:** Confirm a clear trend on a Daily or 4-Hour chart.
+     2. **Identify Key Level:** Find a clear old **resistance turned new support** (or vice versa), or a strong Moving Average (like the 50-day EMA).
+     3. **Entry:** Wait for the price to test this level and show a clear sign of rejection (e.g., a bullish engulfing or hammer candle).
+     4. **Risk Management:** Place a tight **Stop-Loss** just outside the key level. Target a **Take-Profit** at a 1:2 or 1:3 Risk/Reward ratio.
 `;
+
+// Retry Utility
+export const withRetry = async <T>(fn: () => Promise<T>, retries = 3, baseDelay = 2000): Promise<T> => {
+  try {
+    return await fn();
+  } catch (error: any) {
+    if (retries > 0 && (error.status === 429 || error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED')) {
+      console.warn(`API Quota exceeded. Retrying in ${baseDelay}ms... (${retries} attempts left)`);
+      await new Promise(resolve => setTimeout(resolve, baseDelay));
+      return withRetry(fn, retries - 1, baseDelay * 2);
+    }
+    throw error;
+  }
+};
 
 export const classifyQuery = async (query: string): Promise<'IN_DEPTH_ANALYSIS' | 'GENERAL_SUPPORT'> => {
   const systemInstruction = `You are a query classifier. Your job is to determine if a user's request requires a "Trade Setup" with specific parameters.
@@ -88,15 +119,15 @@ export const classifyQuery = async (query: string): Promise<'IN_DEPTH_ANALYSIS' 
 
   try {
     const ai = getAI();
-    const response = await ai.models.generateContent({
+    const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
       model: GENERATION_MODEL,
       contents: query,
       config: {
         systemInstruction,
       }
-    });
+    }));
 
-    const classification = response.text.trim();
+    const classification = response.text ? response.text.trim() : 'GENERAL_SUPPORT';
     if (classification === 'IN_DEPTH_ANALYSIS') {
       return 'IN_DEPTH_ANALYSIS';
     }
@@ -108,18 +139,24 @@ export const classifyQuery = async (query: string): Promise<'IN_DEPTH_ANALYSIS' 
   }
 };
 
+const cleanJsonString = (text: string): string => {
+    // Remove markdown code blocks and whitespace
+    let clean = text.replace(/```json\n?|```/g, '');
+    return clean.trim();
+};
+
 export const scanForSignals = async (userPlan: PlanName, userSettings: { balance: string; risk: string; currency: string; }): Promise<any> => {
     // Determine which instruments to scan based on plan, but strictly adhering to the requested list
     const marketContextPromises = TARGET_INSTRUMENTS.map(inst => fetchMarketContext(inst));
     const marketContexts = await Promise.all(marketContextPromises);
     
     // Convert context to string for AI
+    // NOTE: We flag if the data is REAL or MOCK so the AI knows how much to trust the price vs search results.
     const marketDataString = marketContexts.map((ctx: MarketContext) => {
         return `Instrument: ${ctx.instrument}
-Current LIVE Price: ${ctx.currentPrice}
-Trend (Short Term): ${ctx.trend}
-Last 5 Candles (M15 Timeframe):
-${ctx.candles.map(c => `[${c.time}] O:${c.open} H:${c.high} L:${c.low} C:${c.close}`).join('\n')}
+Current Price: ${ctx.currentPrice} ${ctx.isDataReal ? '(LIVE API)' : '(MOCK/PLACEHOLDER)'}
+Trend: ${ctx.trend}
+${ctx.details ? `Details: ${ctx.details}` : ''}
 --------------------------------`;
     }).join('\n');
 
@@ -127,25 +164,27 @@ ${ctx.candles.map(c => `[${c.time}] O:${c.open} H:${c.high} L:${c.low} C:${c.clo
     const patternClassifierPrompt = `You are an elite algorithmic trading engine. 
     
     **TASK:**
-    Analyze the provided **LIVE M15 Market Data** (Price + Last 5 Candles) for the instruments below. 
+    Analyze the provided **Prices** for the instruments below. 
     
     **CRITICAL EXECUTION RULES:**
-    1. **Data Integrity:** You MUST use the **'Current LIVE Price'** provided in the data block as the Entry Price for any market execution signal. Do NOT hallucinate prices from your training data.
-    2. **15-Minute Alignment:** You must ONLY generate a signal if the **current 15-minute candle structure** perfectly aligns with one of the established strategies (e.g., a completed engulfing candle, a pin bar rejection at a zone, or a clear breakout).
-    3. **Pass Condition:** If the market is choppy, consolidating, or the 15m candle does not confirm the setup, return {"pass": false}. Do not force a trade.
+    1. **Data Integrity:** 
+       - If price is marked (LIVE API), use it as the definitive Entry Price.
+       - If price is marked (MOCK/PLACEHOLDER), you **MUST** use the \`googleSearch\` tool to find the ACTUAL current price before deciding.
+    2. **Trend Validation:** You **MUST USE THE \`googleSearch\` TOOL** to find the current M15/H1 technical analysis, trend direction, and key levels (Market Structure) for EACH instrument you consider.
+    3. **Pass Condition:** If the Google Search results indicate chop/consolidation, or if the direction contradicts the strategy, return {"pass": false}.
     
     **STRATEGY GUIDELINES:**
     ${STRATEGY_GUIDELINES}
 
     **ANALYSIS RULES:**
     1.  **Risk Management:** Risk-to-Reward MUST be > 1.5.
-    2.  **Select Best:** Choose the single best setup from the provided list.
+    2.  **Select Best:** Choose the single best setup from the provided list based on the clearer trend found via Search.
     
-    **MARKET DATA (LIVE):**
+    **MARKET DATA:**
     ${marketDataString}
 
     **Output:**
-    -   If a valid setup is found matching the strategy on the 15m timeframe, return the JSON object below.
+    -   If a valid setup is found, return the JSON object below.
     -   If NO setup matches all criteria, return \`{"pass": false}\`.
         
     **CRITICAL OUTPUT RULE:** 
@@ -162,8 +201,8 @@ ${ctx.candles.map(c => `[${c.time}] O:${c.open} H:${c.high} L:${c.low} C:${c.clo
       "stopLoss": 2290.00,
       "takeProfit1": 2320.00,
       "pattern_score": 0.95,
-      "tags": ["15m Bullish Engulfing", "Demand Zone"],
-      "reason_short": "M15 candle closed as bullish engulfing at key demand zone."
+      "tags": ["Bullish Trend", "Search Confirmed"],
+      "reason_short": "Google Search indicates strong bullish momentum on M15 breaking resistance."
     }`;
 
     // --- MODEL 2: FINANCIAL ANALYST ---
@@ -171,7 +210,7 @@ ${ctx.candles.map(c => `[${c.time}] O:${c.open} H:${c.high} L:${c.low} C:${c.clo
     
     **Task:**
     1.  Analyze the provided trade candidate.
-    2.  Check for **High Impact News** relevant to the instrument (e.g., NFP for USD, CPI, FOMC) in the next 4 hours.
+    2.  Check for **High Impact News** relevant to the instrument (e.g., NFP for USD, CPI, FOMC) in the next 4 hours using Google Search.
     3.  Verify the logic against the provided strategy type.
     4.  Return a JSON object with your confidence assessment.
     
@@ -189,19 +228,20 @@ ${ctx.candles.map(c => `[${c.time}] O:${c.open} H:${c.high} L:${c.low} C:${c.clo
         const ai = getAI();
         
         // --- STEP 1: Call Pattern Classifier Model ---
-        const patternResponse = await ai.models.generateContent({
+        const patternResponse = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
             model: GENERATION_MODEL,
             contents: `Analyze the live market data provided in system prompt. Current UTC time is ${new Date().toUTCString()}.`,
             config: {
                 systemInstruction: patternClassifierPrompt,
-                tools: [{ googleSearch: {} }], // Keep search for news context if needed
-                responseMimeType: 'application/json' // FORCE JSON
+                tools: [{ googleSearch: {} }] // KEY: Search is now critical for context
             }
-        });
+        }));
         
         let patternResult;
         try {
-            patternResult = JSON.parse(patternResponse.text);
+            // Manual JSON parsing since we can't enforce MIME type with Search tool
+            const cleanText = cleanJsonString(patternResponse.text || '');
+            patternResult = JSON.parse(cleanText);
         } catch (jsonError) {
             console.warn("JSON Parse Error in Pattern Classifier:", jsonError);
             console.debug("Raw Text:", patternResponse.text);
@@ -210,7 +250,7 @@ ${ctx.candles.map(c => `[${c.time}] O:${c.open} H:${c.high} L:${c.low} C:${c.clo
 
         // --- STEP 2: Check if a setup was found ---
         if (!patternResult.pass) {
-            console.log("Pattern Classifier found no valid setups in current M15 candle alignment.");
+            console.log("Pattern Classifier found no valid setups in current market conditions.");
             return { signalFound: false };
         }
         
@@ -218,19 +258,20 @@ ${ctx.candles.map(c => `[${c.time}] O:${c.open} H:${c.high} L:${c.low} C:${c.clo
         
         // --- STEP 3: Call Financial Analyst Model ---
         const analystContent = `Analyze this setup:\n${JSON.stringify(patternResult, null, 2)}`;
-        const analystResponse = await ai.models.generateContent({
+        
+        const analystResponse = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
             model: GENERATION_MODEL,
             contents: analystContent,
             config: {
                 systemInstruction: financialAnalystPrompt,
-                tools: [{ googleSearch: {} }],
-                responseMimeType: 'application/json' // FORCE JSON
+                tools: [{ googleSearch: {} }]
             }
-        });
+        }));
         
         let analystResult;
         try {
-            analystResult = JSON.parse(analystResponse.text);
+            const cleanText = cleanJsonString(analystResponse.text || '');
+            analystResult = JSON.parse(cleanText);
         } catch (jsonError) {
             console.warn("JSON Parse Error in Analyst:", jsonError);
             // Fallback if analyst JSON fails but pattern was good
@@ -334,16 +375,16 @@ Provide a brief and actionable summary in three short, direct sections:
 
   try {
     const ai = getAI();
-    const response = await ai.models.generateContent({
+    const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
       model: GENERATION_MODEL,
       contents: userPrompt,
       config: {
         systemInstruction: systemPrompt,
         tools: [{ googleSearch: {} }],
       }
-    });
+    }));
 
-    const text = response.text;
+    const text = response.text || '';
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
     const sources = groundingChunks
       .map((chunk: any) => chunk.web)

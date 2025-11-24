@@ -49,4 +49,16 @@ export const instrumentDefinitions: { [key: string]: any } = {
     'BTC/USD': { pipStep: 1, quoteCurrency: 'USD', isForex: false, contractSize: 1, symbol: 'BTC/USD', mockPrice: 65000.00 },
     'ETH/USD': { pipStep: 0.1, quoteCurrency: 'USD', isForex: false, contractSize: 1, symbol: 'ETH/USD', mockPrice: 3500.00 },
     'SOL/USD': { pipStep: 0.01, quoteCurrency: 'USD', isForex: false, contractSize: 1, symbol: 'SOL/USD', mockPrice: 145.00 },
+
+    // --- DERIV SYNTHETICS ---
+    'Volatility 10 Index': { pipStep: 0.001, quoteCurrency: 'USD', isForex: false, isDeriv: true, contractSize: 1, symbol: 'R_10', mockPrice: 6500.00 },
+    'Volatility 25 Index': { pipStep: 0.001, quoteCurrency: 'USD', isForex: false, isDeriv: true, contractSize: 1, symbol: 'R_25', mockPrice: 2000.00 },
+    'Volatility 50 Index': { pipStep: 0.001, quoteCurrency: 'USD', isForex: false, isDeriv: true, contractSize: 1, symbol: 'R_50', mockPrice: 300.00 },
+    'Volatility 75 Index': { pipStep: 0.01, quoteCurrency: 'USD', isForex: false, isDeriv: true, contractSize: 1, symbol: 'R_75', mockPrice: 450000.00 },
+    'Volatility 100 Index': { pipStep: 0.01, quoteCurrency: 'USD', isForex: false, isDeriv: true, contractSize: 1, symbol: 'R_100', mockPrice: 2000.00 },
+    'Crash 500 Index': { pipStep: 0.01, quoteCurrency: 'USD', isForex: false, isDeriv: true, contractSize: 1, symbol: 'CRASH500', mockPrice: 4500.00 },
+    'Crash 1000 Index': { pipStep: 0.01, quoteCurrency: 'USD', isForex: false, isDeriv: true, contractSize: 1, symbol: 'CRASH1000', mockPrice: 6000.00 },
+    'Boom 500 Index': { pipStep: 0.01, quoteCurrency: 'USD', isForex: false, isDeriv: true, contractSize: 1, symbol: 'BOOM500', mockPrice: 5500.00 },
+    'Boom 1000 Index': { pipStep: 0.01, quoteCurrency: 'USD', isForex: false, isDeriv: true, contractSize: 1, symbol: 'BOOM1000', mockPrice: 12000.00 },
+    'Jump 25 Index': { pipStep: 0.01, quoteCurrency: 'USD', isForex: false, isDeriv: true, contractSize: 1, symbol: 'JD25', mockPrice: 1500.00 },
 };

@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useRef, useMemo } from 'react';
 import { User, MentorSubscriber, MentorPost, Mentor, Notification, Payout, RecentSignal } from '../../types';
 import Icon from '../ui/Icon';
@@ -83,7 +84,7 @@ interface MentorDashboardProps {
 }
 
 const MentorDashboard: React.FC<MentorDashboardProps> = ({ user, showToast, addNotification }) => {
-    const [activeTab, setActiveTab] = useState<'publisher' | 'profile' | 'payouts'>('publisher');
+    const [activeTab, setActiveTab] = useState<'publisher' | 'profile'>('publisher');
     const [postType, setPostType] = useState<'analysis' | 'signal'>('analysis');
     const [posts, setPosts] = useState<MentorPost[]>(MOCK_MENTOR_POSTS);
 
@@ -131,6 +132,16 @@ const MentorDashboard: React.FC<MentorDashboardProps> = ({ user, showToast, addN
             ...prev,
             certifications: prev.certifications?.filter(cert => cert.name !== certNameToRemove)
         }));
+    };
+    
+    const handleShareProfile = () => {
+        const url = `${window.location.origin}${window.location.pathname}?mentorId=${mentorProfile.id}`;
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('Profile link copied to clipboard!', 'success');
+        }, (err) => {
+            console.error('Could not copy text: ', err);
+            showToast('Failed to copy link.', 'error');
+        });
     };
 
     const PublisherView = () => {
@@ -304,117 +315,16 @@ const MentorDashboard: React.FC<MentorDashboardProps> = ({ user, showToast, addN
     };
 
     const ProfileSettingsView = () => {
-        // FIX: Allow file and type to be optional to prevent invalid intermediate states.
-        const [idDoc, setIdDoc] = useState<{file?: File, type?: Mentor['identity']['idDocument']['type']} | null>(null);
-        const [addressDoc, setAddressDoc] = useState<{file?: File, type?: Mentor['identity']['addressDocument']['type']} | null>(null);
-        const [livenessState, setLivenessState] = useState<'idle' | 'checking' | 'success'>('idle');
-        const [isVerifying, setIsVerifying] = useState(false);
-    
-        // FIX: Update handler to only update the file in state, preserving the type.
-        const handleIdFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-            if (e.target.files && e.target.files[0]) {
-                setIdDoc(prev => ({ ...prev, file: e.target.files[0] }));
-            }
-        };
-    
-        // FIX: Update handler to only update the file in state, preserving the type.
-        const handleAddressFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-            if (e.target.files && e.target.files[0]) {
-                setAddressDoc(prev => ({ ...prev, file: e.target.files[0] }));
-            }
-        };
-
-        const startLivenessCheck = async () => {
-            setLivenessState('checking');
-            showToast("Please look into the camera.", 'info');
-            try {
-                // Request camera access to ensure permission is granted
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                // In a real app, you'd capture frames and send to a verification service.
-                // Here, we'll just simulate the process.
-                setTimeout(() => {
-                    stream.getTracks().forEach(track => track.stop()); // Turn off camera
-                    setLivenessState('success');
-                    showToast("Liveness check successful!", 'success');
-                }, 3000);
-            } catch (err) {
-                console.error("Camera access denied:", err);
-                showToast("Camera access is required for liveness check.", 'error');
-                setLivenessState('idle');
-            }
-        };
-
-        const handleVerificationSubmit = (e: React.FormEvent) => {
-            e.preventDefault();
-            // FIX: Add checks for file and type to prevent submission with incomplete data.
-            if (!idDoc || !idDoc.file || !idDoc.type || !addressDoc || !addressDoc.file || !addressDoc.type || livenessState !== 'success') {
-                showToast("Please complete all verification steps, including selecting a type and uploading a file for both documents.", "error");
-                return;
-            }
-
-            setIsVerifying(true);
-            showToast("Submitting documents for automated verification...", "info");
-            
-            // Set all statuses to pending
-            setMentorProfile(prev => ({
-                ...prev,
-                identity: {
-                    ...prev.identity!,
-                    idDocument: { status: 'Pending', type: idDoc.type, fileName: idDoc.file!.name },
-                    addressDocument: { status: 'Pending', type: addressDoc.type, fileName: addressDoc.file!.name },
-                    livenessCheck: { status: 'Pending' },
-                    overallStatus: 'Pending',
-                }
-            }));
-            
-            // Simulate async verification process
-            setTimeout(() => {
-                showToast("Your identity has been successfully verified!", "success");
-                setMentorProfile(prev => ({
-                    ...prev,
-                    identity: {
-                        ...prev.identity!,
-                        idDocument: { ...prev.identity!.idDocument, status: 'Verified' },
-                        addressDocument: { ...prev.identity!.addressDocument, status: 'Verified' },
-                        livenessCheck: { status: 'Verified' },
-                        overallStatus: 'Verified',
-                    }
-                }));
-                 setIsVerifying(false);
-            }, 5000); // 5-second delay
-        };
-
-        const VerificationStep: React.FC<{
-            title: string;
-            status: 'Not Submitted' | 'Pending' | 'Verified' | 'Rejected';
-            children: React.ReactNode;
-        }> = ({ title, status, children }) => {
-            const statusMap = {
-                'Not Submitted': { text: 'Pending Input', icon: 'info', color: 'text-mid-text' },
-                'Pending': { text: 'In Review', icon: 'info', color: 'text-info' },
-                'Verified': { text: 'Verified', icon: 'check', color: 'text-success' },
-                'Rejected': { text: 'Rejected', icon: 'danger', color: 'text-danger' },
-            };
-            const currentStatus = statusMap[status];
-
-            return (
-                 <div className="bg-light-hover p-4 rounded-lg border border-light-gray">
-                    <div className="flex justify-between items-center mb-3">
-                        <h5 className="font-semibold text-dark-text">{title}</h5>
-                        <span className={`flex items-center text-xs font-bold ${currentStatus.color}`}>
-                            <Icon name={currentStatus.icon} className="w-4 h-4 mr-1.5" />
-                            {currentStatus.text}
-                        </span>
-                    </div>
-                    {status !== 'Verified' && status !== 'Pending' && children}
-                </div>
-            )
-        };
-        
-        const isVerified = mentorProfile.identity?.overallStatus === 'Verified';
-
         return (
-            <div className="bg-light-surface p-6 rounded-lg shadow-sm border border-light-gray">
+            <div className="bg-light-surface p-6 rounded-lg shadow-sm border border-light-gray relative">
+                <button 
+                    onClick={handleShareProfile}
+                    className="absolute top-6 right-6 flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 rounded-lg transition-colors"
+                >
+                    <Icon name="link" className="w-4 h-4" />
+                    <span className="text-sm font-semibold">Share Profile</span>
+                </button>
+
                 <h3 className="text-xl font-bold mb-6 text-dark-text">Profile & Settings</h3>
                 <form onSubmit={handleProfileUpdate} className="space-y-8 divide-y divide-light-gray">
                      <div className="space-y-4 pt-4">
@@ -465,179 +375,11 @@ const MentorDashboard: React.FC<MentorDashboardProps> = ({ user, showToast, addN
                         </form>
                     </div>
 
-                    <div className="space-y-4 pt-8">
-                        <h4 className="text-lg font-semibold text-primary">Identity Verification for Payouts</h4>
-                         {isVerified ? (
-                            <div className="p-4 bg-success/10 text-success rounded-lg border border-success/20 flex items-center"><Icon name="check" className="w-5 h-5 mr-2"/> Your identity is fully verified.</div>
-                         ) : (
-                            <form onSubmit={handleVerificationSubmit} className="space-y-4">
-                                <VerificationStep title="1. Identity Document" status={mentorProfile.identity!.idDocument.status}>
-                                    {/* FIX: Update onChange to correctly update state without losing the file reference. */}
-                                    <select onChange={(e) => setIdDoc(prev => ({...prev, type: e.target.value as any}))} value={idDoc?.type || ""} className="w-full bg-light-surface border-light-gray rounded-md p-2 mb-2 focus:ring-primary focus:border-primary text-dark-text">
-                                        <option value="" disabled>Select Document Type</option>
-                                        <option>Driver's License</option>
-                                        <option>International Passport</option>
-                                        <option>National ID</option>
-                                        <option>NIN Slip</option>
-                                    </select>
-                                    <label htmlFor="id-upload" className="cursor-pointer border-2 border-dashed border-light-gray rounded-lg p-3 text-center block w-full hover:bg-light-surface text-sm text-mid-text">
-                                        <Icon name="apply" className="w-6 h-6 mx-auto mb-1" />
-                                        {idDoc?.file ? idDoc.file.name : 'Click to upload'}
-                                    </label>
-                                    {/* FIX: Update onChange to use the corrected handler. */}
-                                    <input id="id-upload" type="file" accept="image/*,.pdf" className="hidden" onChange={handleIdFileChange}/>
-                                </VerificationStep>
-
-                                <VerificationStep title="2. Liveness Check" status={mentorProfile.identity!.livenessCheck.status}>
-                                     {livenessState === 'idle' ? (
-                                        <button type="button" onClick={startLivenessCheck} className="w-full bg-secondary hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Start Liveness Check</button>
-                                     ) : livenessState === 'checking' ? (
-                                        <div className="w-full text-center py-2 text-info animate-pulse">Checking... Please wait.</div>
-                                     ) : (
-                                        <div className="w-full text-center py-2 text-success font-semibold">Liveness Check Complete</div>
-                                     )}
-                                </VerificationStep>
-                                
-                                <VerificationStep title="3. Proof of Address" status={mentorProfile.identity!.addressDocument.status}>
-                                     {/* FIX: Update onChange to correctly update state without losing the file reference. */}
-                                     <select onChange={(e) => setAddressDoc(prev => ({...prev, type: e.target.value as any}))} value={addressDoc?.type || ""} className="w-full bg-light-surface border-light-gray rounded-md p-2 mb-2 focus:ring-primary focus:border-primary text-dark-text">
-                                        <option value="" disabled>Select Document Type</option>
-                                        <option>Utility Bill</option>
-                                        <option>Bank Statement</option>
-                                    </select>
-                                    <label htmlFor="address-upload" className="cursor-pointer border-2 border-dashed border-light-gray rounded-lg p-3 text-center block w-full hover:bg-light-surface text-sm text-mid-text">
-                                        <Icon name="apply" className="w-6 h-6 mx-auto mb-1" />
-                                        {addressDoc?.file ? addressDoc.file.name : 'Click to upload'}
-                                    </label>
-                                    {/* FIX: Update onChange to use the corrected handler. */}
-                                    <input id="address-upload" type="file" accept="image/*,.pdf" className="hidden" onChange={handleAddressFileChange}/>
-                                </VerificationStep>
-                                
-                                <button type="submit" disabled={isVerifying} className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3 px-4 rounded-lg disabled:bg-light-gray">
-                                    {isVerifying ? 'Verifying...' : 'Submit All for Verification'}
-                                </button>
-                            </form>
-                         )}
-                    </div>
-
                     <div className="pt-8">
                         <button type="submit" className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3 px-4 rounded-lg">Save All Changes</button>
                     </div>
                 </form>
              </div>
-        );
-    }
-    
-    const PayoutsView = () => {
-        const [payoutAmount, setPayoutAmount] = useState('');
-        
-        const winRateCheck = useMemo(() => {
-            const fourWeeksAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
-            const recentSignals = mentorProfile.recentSignals?.filter(s => new Date(s.timestamp) > fourWeeksAgo) || [];
-            
-            if (recentSignals.length === 0) {
-                return { rate: 0, passed: false, trades: 0 };
-            }
-            const wins = recentSignals.filter(s => s.outcome === 'win').length;
-            const rate = Math.round((wins / recentSignals.length) * 100);
-            return { rate, passed: rate >= 70, trades: recentSignals.length };
-        }, [mentorProfile.recentSignals]);
-
-        const idVerified = mentorProfile.identity?.overallStatus === 'Verified';
-        const isEligible = winRateCheck.passed && idVerified;
-
-        const handleRequestPayout = (e: React.FormEvent) => {
-            e.preventDefault();
-            const amount = parseFloat(payoutAmount);
-            if (isNaN(amount) || amount <= 0 || amount > mentorProfile.earnings!.currentBalance) {
-                showToast("Please enter a valid amount.", "error");
-                return;
-            }
-            showToast(`Payout request for $${amount.toFixed(2)} submitted!`, 'success');
-            // In a real app, you'd update state here after an API call
-        }
-        
-        const EligibilityCheckItem: React.FC<{label: string; isMet: boolean; details: string}> = ({label, isMet, details}) => (
-            <div className={`flex items-start p-3 rounded-lg ${isMet ? 'bg-success/10' : 'bg-danger/10'}`}>
-                <Icon name={isMet ? 'check' : 'close'} className={`w-5 h-5 mr-3 mt-0.5 flex-shrink-0 ${isMet ? 'text-success' : 'text-danger'}`} />
-                <div>
-                    <p className={`font-semibold ${isMet ? 'text-success' : 'text-danger'}`}>{label}</p>
-                    <p className="text-xs text-mid-text">{details}</p>
-                </div>
-            </div>
-        )
-
-        return (
-            <div className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-light-surface p-6 rounded-lg shadow-sm border border-light-gray text-center">
-                        <p className="text-sm text-mid-text">Available for Payout</p>
-                        <p className="text-4xl font-bold text-primary">${mentorProfile.earnings?.currentBalance.toLocaleString()}</p>
-                    </div>
-                     <div className="bg-light-surface p-6 rounded-lg shadow-sm border border-light-gray text-center">
-                        <p className="text-sm text-mid-text">Lifetime Earnings</p>
-                        <p className="text-4xl font-bold text-dark-text">${mentorProfile.earnings?.lifetime.toLocaleString()}</p>
-                    </div>
-                </div>
-
-                <div className="bg-light-surface p-6 rounded-lg shadow-sm border border-light-gray space-y-4">
-                    <h3 className="text-xl font-bold text-dark-text">Payout Request</h3>
-                    <div className="space-y-3 p-4 bg-light-hover rounded-lg border border-light-gray">
-                        <h4 className="font-semibold text-dark-text">Eligibility Checklist</h4>
-                        <EligibilityCheckItem 
-                            label="Signal Performance"
-                            isMet={winRateCheck.passed}
-                            details={`Your 4-week win rate is ${winRateCheck.rate}% (${winRateCheck.trades} trades). Minimum 70% required.`}
-                        />
-                         <EligibilityCheckItem 
-                            label="Identity Verification"
-                            isMet={idVerified}
-                            details={`Your ID verification status is: ${mentorProfile.identity?.overallStatus}. 'Verified' status required.`}
-                        />
-                    </div>
-                    <form onSubmit={handleRequestPayout} className="space-y-3 pt-4 border-t border-light-gray">
-                        <div>
-                            <label className="block text-sm font-medium text-dark-text mb-1">Payout Amount ($)</label>
-                            <div className="flex">
-                                <input type="number" value={payoutAmount} onChange={e => setPayoutAmount(e.target.value)} placeholder="0.00" disabled={!isEligible} className="w-full bg-light-hover border-light-gray rounded-l-md p-3 focus:ring-primary focus:border-primary text-dark-text disabled:bg-light-gray/50" />
-                                <button type="button" onClick={() => setPayoutAmount(String(mentorProfile.earnings?.currentBalance))} disabled={!isEligible} className="bg-secondary text-white px-4 font-semibold rounded-r-md hover:bg-gray-600 disabled:bg-light-gray disabled:cursor-not-allowed">Max</button>
-                            </div>
-                        </div>
-                        <button type="submit" disabled={!isEligible} className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3 px-4 rounded-lg disabled:bg-light-gray disabled:cursor-not-allowed">
-                            {isEligible ? "Request Payout" : "Ineligible for Payout"}
-                        </button>
-                         <p className="text-xs text-mid-text text-center">Payouts are processed via Bank Transfer within 3-5 business days.</p>
-                    </form>
-                </div>
-                
-                 <div className="bg-light-surface p-6 rounded-lg shadow-sm border border-light-gray">
-                    <h3 className="text-xl font-bold text-dark-text mb-4">Payout History</h3>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                           <thead className="text-xs text-mid-text uppercase bg-light-hover">
-                               <tr>
-                                   <th className="px-4 py-2">Date</th>
-                                   <th className="px-4 py-2">Amount</th>
-                                   <th className="px-4 py-2">Status</th>
-                               </tr>
-                           </thead>
-                           <tbody className="text-dark-text">
-                               {mentorProfile.payoutHistory?.map(payout => (
-                                   <tr key={payout.id} className="border-b border-light-gray">
-                                       <td className="px-4 py-3">{new Date(payout.dateRequested).toLocaleDateString()}</td>
-                                       <td className="px-4 py-3 font-semibold">${payout.amount.toLocaleString()}</td>
-                                       <td className="px-4 py-3">
-                                           <span className={`px-2 py-1 text-xs font-bold rounded-full ${payout.status === 'Completed' ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}`}>
-                                               {payout.status}
-                                           </span>
-                                       </td>
-                                   </tr>
-                               ))}
-                           </tbody>
-                        </table>
-                    </div>
-                 </div>
-            </div>
         );
     }
 
@@ -648,14 +390,12 @@ const MentorDashboard: React.FC<MentorDashboardProps> = ({ user, showToast, addN
             <div className="flex border-b border-light-gray mb-8">
                 <button onClick={() => setActiveTab('publisher')} className={`py-2 px-6 font-semibold transition-colors ${activeTab === 'publisher' ? 'border-b-2 border-primary text-primary' : 'text-mid-text hover:text-dark-text'}`}>Content Publisher</button>
                 <button onClick={() => setActiveTab('profile')} className={`py-2 px-6 font-semibold transition-colors ${activeTab === 'profile' ? 'border-b-2 border-primary text-primary' : 'text-mid-text hover:text-dark-text'}`}>Profile & Settings</button>
-                <button onClick={() => setActiveTab('payouts')} className={`py-2 px-6 font-semibold transition-colors ${activeTab === 'payouts' ? 'border-b-2 border-primary text-primary' : 'text-mid-text hover:text-dark-text'}`}>Payouts</button>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
                    {activeTab === 'publisher' && <PublisherView />}
                    {activeTab === 'profile' && <ProfileSettingsView />}
-                   {activeTab === 'payouts' && <PayoutsView />}
                 </div>
 
                 <div className="space-y-8">

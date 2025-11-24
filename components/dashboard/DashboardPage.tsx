@@ -1,4 +1,12 @@
 
+
+
+
+
+
+
+
+
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { DashboardView, User, EducationArticle, PlanName, Mentor, MentorPost, TradeRecord, Notification, Signal, NotificationType, RecentSignal } from '../../types';
 import Icon from '../ui/Icon';
@@ -16,6 +24,7 @@ import { instrumentDefinitions } from '../../config/instruments';
 import FollowersPage from '../mentors/FollowersPage';
 import SecureContent from '../ui/SecureContent';
 import { PLAN_FEATURES } from '../../config/plans';
+import MentorPayoutsPage from '../mentors/MentorPayoutsPage';
 
 // --- MOCK DATA ---
 const signalPerformanceData = [
@@ -157,7 +166,7 @@ const MOCK_EDUCATION_ARTICLES: EducationArticle[] = [
         <p>PIP stands for <strong>"Percentage in Point"</strong> or "Price Interest Point." It is the smallest standardized unit of price change in a currency pair.</p>
         
         <h4>Standard Pairs (4 Decimals)</h4>
-        <p>For most pairs (EUR/USD, GBP/USD), a pip is the <strong>4th decimal place</strong> (0.0001).</p>
+        <p>For most pairs (EUR/USD, GBP/USD, USD/JPY), a pip is the <strong>4th decimal place</strong> (0.0001).</p>
         <p><em>Example:</em> If EUR/USD moves from 1.1050 to 1.1051, that is a <strong>1 pip</strong> rise.</p>
 
         <h4>Yen Pairs (2 Decimals)</h4>
@@ -352,6 +361,126 @@ interface SettingsProps {
   user: User;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
   showToast: (message: string, type?: 'success' | 'info' | 'error') => void;
+}
+
+const VerificationSettings: React.FC<{ showToast: (msg: string, type: 'success' | 'info' | 'error') => void }> = ({ showToast }) => {
+    // Local state to simulate verification status for the session
+    const [idDoc, setIdDoc] = useState<{file?: File, type?: string} | null>(null);
+    const [addressDoc, setAddressDoc] = useState<{file?: File, type?: string} | null>(null);
+    const [livenessState, setLivenessState] = useState<'idle' | 'checking' | 'success'>('idle');
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [verificationStatus, setVerificationStatus] = useState<'Not Submitted' | 'Pending' | 'Verified' | 'Rejected'>('Not Submitted');
+
+    const handleIdFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setIdDoc(prev => ({ ...prev, file: e.target.files![0] }));
+        }
+    };
+
+    const handleAddressFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setAddressDoc(prev => ({ ...prev, file: e.target.files![0] }));
+        }
+    };
+
+    const startLivenessCheck = async () => {
+        setLivenessState('checking');
+        showToast("Please look into the camera.", 'info');
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            setTimeout(() => {
+                stream.getTracks().forEach(track => track.stop());
+                setLivenessState('success');
+                showToast("Liveness check successful!", 'success');
+            }, 3000);
+        } catch (err) {
+            console.error("Camera access denied:", err);
+            showToast("Camera access is required for liveness check.", 'error');
+            setLivenessState('idle');
+        }
+    };
+
+    const handleVerificationSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!idDoc || !idDoc.file || !idDoc.type || !addressDoc || !addressDoc.file || !addressDoc.type || livenessState !== 'success') {
+            showToast("Please complete all verification steps, including selecting a type and uploading a file for both documents.", "error");
+            return;
+        }
+
+        setIsVerifying(true);
+        showToast("Submitting documents for automated verification...", "info");
+        setVerificationStatus('Pending');
+        
+        setTimeout(() => {
+            showToast("Your identity has been successfully verified!", "success");
+            setVerificationStatus('Verified');
+            setIsVerifying(false);
+        }, 5000);
+    };
+
+    const VerificationStep: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+        <div className="bg-light-hover p-4 rounded-lg border border-light-gray mb-4">
+            <h5 className="font-semibold text-dark-text mb-3">{title}</h5>
+            {children}
+        </div>
+    );
+
+    return (
+        <div className="p-6 bg-light-surface rounded-lg border border-light-gray text-dark-text animate-fade-in-right">
+            <h3 className="font-bold text-lg mb-2">Identity Verification</h3>
+            <p className="text-sm text-mid-text mb-6">Required for Mentors to receive payouts.</p>
+
+            {verificationStatus === 'Verified' ? (
+                <div className="p-4 bg-success/10 text-success rounded-lg border border-success/20 flex items-center">
+                    <Icon name="check" className="w-5 h-5 mr-2"/> Your identity is fully verified. You are eligible for payouts.
+                </div>
+            ) : (
+                <form onSubmit={handleVerificationSubmit}>
+                    <VerificationStep title="1. Identity Document">
+                        <select onChange={(e) => setIdDoc(prev => ({...prev, type: e.target.value}))} value={idDoc?.type || ""} className="w-full bg-light-surface border-light-gray rounded-md p-2 mb-2 focus:ring-primary focus:border-primary text-dark-text">
+                            <option value="" disabled>Select Document Type</option>
+                            <option>Driver's License</option>
+                            <option>International Passport</option>
+                            <option>National ID</option>
+                            <option>NIN Slip</option>
+                        </select>
+                        <label htmlFor="id-upload" className="cursor-pointer border-2 border-dashed border-light-gray rounded-lg p-3 text-center block w-full hover:bg-light-surface text-sm text-mid-text">
+                            <Icon name="image" className="w-6 h-6 mx-auto mb-1" />
+                            {idDoc?.file ? idDoc.file.name : 'Click to upload'}
+                        </label>
+                        <input id="id-upload" type="file" accept="image/*,.pdf" className="hidden" onChange={handleIdFileChange}/>
+                    </VerificationStep>
+
+                    <VerificationStep title="2. Liveness Check">
+                            {livenessState === 'idle' ? (
+                            <button type="button" onClick={startLivenessCheck} className="w-full bg-secondary hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Start Liveness Check</button>
+                            ) : livenessState === 'checking' ? (
+                            <div className="w-full text-center py-2 text-info animate-pulse">Checking... Please wait.</div>
+                            ) : (
+                            <div className="w-full text-center py-2 text-success font-semibold">Liveness Check Complete</div>
+                            )}
+                    </VerificationStep>
+                    
+                    <VerificationStep title="3. Proof of Address">
+                            <select onChange={(e) => setAddressDoc(prev => ({...prev, type: e.target.value}))} value={addressDoc?.type || ""} className="w-full bg-light-surface border-light-gray rounded-md p-2 mb-2 focus:ring-primary focus:border-primary text-dark-text">
+                            <option value="" disabled>Select Document Type</option>
+                            <option>Utility Bill</option>
+                            <option>Bank Statement</option>
+                        </select>
+                        <label htmlFor="address-upload" className="cursor-pointer border-2 border-dashed border-light-gray rounded-lg p-3 text-center block w-full hover:bg-light-surface text-sm text-mid-text">
+                            <Icon name="image" className="w-6 h-6 mx-auto mb-1" />
+                            {addressDoc?.file ? addressDoc.file.name : 'Click to upload'}
+                        </label>
+                        <input id="address-upload" type="file" accept="image/*,.pdf" className="hidden" onChange={handleAddressFileChange}/>
+                    </VerificationStep>
+                    
+                    <button type="submit" disabled={isVerifying} className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3 px-4 rounded-lg disabled:bg-light-gray">
+                        {isVerifying ? 'Verifying...' : 'Submit All for Verification'}
+                    </button>
+                </form>
+            )}
+        </div>
+    );
 }
 
 const ProfileSettings: React.FC<SettingsProps> = ({user, setUser, showToast}) => {
@@ -757,18 +886,30 @@ const CTraderSettings: React.FC<SettingsProps> = ({user, setUser, showToast}) =>
 };
 
 const SettingsPage: React.FC<SettingsProps> = ({ user, setUser, showToast }) => {
-    const [activeTab, setActiveTab] = useState<'profile' | 'billing' | 'notifications' | 'ctrader'>('profile');
+    const tabs = [
+        { id: 'profile', label: 'Profile' },
+        { id: 'billing', label: 'Billing' },
+        { id: 'notifications', label: 'Notifications' },
+        { id: 'ctrader', label: 'cTrader' }
+    ];
+
+    if (user.isMentor) {
+        tabs.push({ id: 'verification', label: 'Verification' });
+    }
+
+    const [activeTab, setActiveTab] = useState(tabs[0].id);
+
     return (
         <div className="p-8 bg-light-bg min-h-screen">
             <h2 className="text-2xl font-bold mb-6 text-dark-text">Settings</h2>
             <div className="flex space-x-4 mb-6 border-b border-light-gray overflow-x-auto">
-                {(['profile', 'billing', 'notifications', 'ctrader'] as const).map(tab => (
+                {tabs.map(tab => (
                     <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`py-2 px-4 font-medium capitalize whitespace-nowrap transition-colors ${activeTab === tab ? 'border-b-2 border-primary text-primary' : 'text-mid-text hover:text-dark-text'}`}
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`py-2 px-4 font-medium capitalize whitespace-nowrap transition-colors ${activeTab === tab.id ? 'border-b-2 border-primary text-primary' : 'text-mid-text hover:text-dark-text'}`}
                     >
-                        {tab.replace('ctrader', 'cTrader')}
+                        {tab.label}
                     </button>
                 ))}
             </div>
@@ -777,6 +918,7 @@ const SettingsPage: React.FC<SettingsProps> = ({ user, setUser, showToast }) => 
                 {activeTab === 'billing' && <BillingSettings user={user} setUser={setUser} showToast={showToast} />}
                 {activeTab === 'notifications' && <NotificationSettings user={user} setUser={setUser} showToast={showToast} />}
                 {activeTab === 'ctrader' && <CTraderSettings user={user} setUser={setUser} showToast={showToast} />}
+                {activeTab === 'verification' && <VerificationSettings showToast={showToast} />}
             </div>
         </div>
     );
@@ -1370,24 +1512,62 @@ const AnalyticsPage: React.FC<{ user: User, liveEquity: number, floatingPnL: num
 };
 
 
-const MentorPage: React.FC<{ onViewMentor: (mentor: Mentor) => void; user: User; }> = ({ onViewMentor, user }) => {
+const MentorPage: React.FC<{ onViewMentor: (mentor: Mentor) => void; onViewChange: (view: DashboardView) => void; user: User; }> = ({ onViewMentor, onViewChange, user }) => {
+    const [searchQuery, setSearchQuery] = useState('');
+
     const calculateWinRate = (signals: RecentSignal[] | undefined) => {
         if (!signals || signals.length === 0) return 0;
         const wins = signals.filter(s => s.outcome === 'win').length;
         return Math.round((wins / signals.length) * 100);
     };
 
+    const filteredMentors = MOCK_MENTORS_LIST.filter(mentor => 
+        mentor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        mentor.instruments.some(inst => inst.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        mentor.strategy.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
-    <div>
-        <h1 className="text-3xl font-bold mb-6 text-dark-text">Mentors</h1>
+    <div className="p-4 sm:p-8 bg-light-bg min-h-screen">
+        <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
+            <div>
+                 <h1 className="text-3xl font-bold text-dark-text">Mentors</h1>
+                 <p className="text-mid-text">Find expert traders to follow and learn from.</p>
+            </div>
+            {!user.isMentor && (
+                <button 
+                    onClick={() => onViewChange('apply_mentor')}
+                    className="bg-accent hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-transform hover:scale-105"
+                >
+                    Become a Mentor
+                </button>
+            )}
+        </div>
+
         {user.subscribedPlan === PlanName.Premium && (
             <div className="bg-accent/10 text-accent p-4 rounded-lg mb-6 border border-accent/20">
                 <p className="font-bold">Premium Perk Unlocked!</p>
                 <p className="text-sm">As a Premium member, you get one free month of mentorship. Choose a mentor to start your free trial!</p>
             </div>
         )}
+        
+        {/* Search Bar */}
+        <div className="mb-8 max-w-2xl relative">
+            <input 
+                type="text"
+                placeholder="Search mentors by name, strategy, or instrument (e.g., 'Scalping', 'XAUUSD')..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full p-4 pl-12 rounded-xl bg-light-surface border border-light-gray shadow-sm focus:ring-2 focus:ring-primary focus:outline-none text-dark-text"
+            />
+            <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-mid-text">
+                <Icon name="search" className="w-5 h-5" /> 
+                {/* Note: Ensure you have a search icon in your Icon component or use a fallback */}
+            </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-             {MOCK_MENTORS_LIST.map(mentor => {
+             {filteredMentors.length > 0 ? filteredMentors.map(mentor => {
                 const winRate = calculateWinRate(mentor.recentSignals);
                 return (
                 <div key={mentor.id} className="bg-light-surface rounded-lg overflow-hidden p-6 flex flex-col shadow-sm border border-light-gray transition-shadow hover:shadow-md hover:shadow-primary/10">
@@ -1417,12 +1597,18 @@ const MentorPage: React.FC<{ onViewMentor: (mentor: Mentor) => void; user: User;
                             </div>
                         </div>
                         <p className="text-mid-text text-sm mb-4">Instruments: {mentor.instruments.join(', ')}</p>
+                        <p className="text-xs text-mid-text italic line-clamp-2 mb-4">"{mentor.strategy}"</p>
                     </div>
                     <button onClick={() => onViewMentor(mentor)} className="w-full mt-auto bg-primary hover:bg-primary-hover text-white font-semibold py-2 px-4 rounded-lg transition-colors">
                         View Profile & Posts
                     </button>
                 </div>
-            )})}
+            )}) : (
+                <div className="col-span-full text-center py-12 text-mid-text">
+                    <p className="text-lg">No mentors found matching "{searchQuery}"</p>
+                    <button onClick={() => setSearchQuery('')} className="mt-2 text-primary hover:underline">Clear Search</button>
+                </div>
+            )}
         </div>
     </div>
     )
@@ -1816,6 +2002,22 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
       }
   }, [user.isMentor]);
 
+  // Deep Link Handling for Shared Mentor Profiles
+  useEffect(() => {
+      const params = new URLSearchParams(window.location.search);
+      const sharedMentorId = params.get('mentorId');
+      
+      if (sharedMentorId) {
+          const mentor = MOCK_MENTORS_LIST.find(m => m.id === parseInt(sharedMentorId));
+          if (mentor) {
+              setSelectedMentor(mentor);
+              onViewChange('mentor_profile');
+              // Optional: Clear URL params to avoid state stickiness on refresh
+              window.history.replaceState({}, '', window.location.pathname);
+          }
+      }
+  }, [onViewChange]);
+
   const toggleMentorMode = () => {
       const newMode = !isMentorMode;
       setIsMentorMode(newMode);
@@ -2068,7 +2270,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
       // Fix: Standard user dashboard shouldn't auto-switch based on user.isMentor
       case 'dashboard': return <DashboardOverview user={user} onViewChange={onViewChange} activeTrades={activeTrades} tradeHistory={tradeHistory} liveEquity={liveEquity} floatingPnL={floatingPnL} />;
       case 'ai_signals': return <AISignalsPage user={user} showToast={showToast} activeTrades={activeTrades} tradeHistory={tradeHistory} onViewChange={onViewChange} />;
-      case 'mentors': return <MentorPage onViewMentor={handleViewMentor} user={user} />;
+      case 'mentors': return <MentorPage onViewMentor={handleViewMentor} onViewChange={onViewChange} user={user} />;
       case 'followers': return <FollowersPage />;
       case 'analytics': return isMentorMode ? <MentorAnalyticsPage user={user} /> : <AnalyticsPage user={user} liveEquity={liveEquity} floatingPnL={floatingPnL} />;
       case 'education': return <EducationPage onViewContent={handleViewEducationContent} />;
@@ -2078,7 +2280,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
       case 'settings': return <SettingsPage user={user} setUser={setUser} showToast={showToast} />;
       case 'apply_mentor': return <ApplyMentorPage />;
       case 'mentor_dashboard': return <MentorDashboard user={user} showToast={showToast} addNotification={addNotification} />;
-      case 'mentor_profile': return selectedMentor ? <MentorProfilePage mentor={selectedMentor} onBack={handleBackToMentors} /> : <MentorPage onViewMentor={handleViewMentor} user={user} />;
+      case 'mentor_profile': return selectedMentor ? <MentorProfilePage mentor={selectedMentor} onBack={handleBackToMentors} showToast={showToast} /> : <MentorPage onViewMentor={handleViewMentor} onViewChange={onViewChange} user={user} />;
+      case 'mentor_payouts': return <MentorPayoutsPage showToast={showToast} />;
       case 'contact_us': return <ContactUsPage showToast={showToast} />;
       default: return <DashboardOverview user={user} onViewChange={onViewChange} activeTrades={activeTrades} tradeHistory={tradeHistory} liveEquity={liveEquity} floatingPnL={floatingPnL} />;
     }
@@ -2101,8 +2304,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
                 <div>
                     <p className={`text-xs text-mid-text uppercase font-semibold mb-2 ${isSidebarCollapsed ? 'hidden' : 'px-4'}`}>Mentor Area</p>
                     <NavLink view="mentor_dashboard" icon="dashboard" label="Dashboard" isCollapsed={isSidebarCollapsed} activeView={activeView} onViewChange={onViewChange} />
-                    <NavLink view="followers" icon="mentors" label="Followers" isCollapsed={isSidebarCollapsed} activeView={activeView} onViewChange={onViewChange} />
+                    <NavLink view="followers" icon="followers" label="Followers" isCollapsed={isSidebarCollapsed} activeView={activeView} onViewChange={onViewChange} />
                     <NavLink view="analytics" icon="analytics" label="Analytics" isCollapsed={isSidebarCollapsed} activeView={activeView} onViewChange={onViewChange} />
+                    <NavLink view="mentor_payouts" icon="payouts" label="Payouts" isCollapsed={isSidebarCollapsed} activeView={activeView} onViewChange={onViewChange} />
                 </div>
              </>
           ) : (
@@ -2146,7 +2350,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
               <hr className="border-light-gray my-1" />
               {user.isMentor ? (
                  <button onClick={toggleMentorMode} className="w-full flex items-center px-4 py-2 text-sm text-primary font-semibold hover:bg-light-hover">
-                    <Icon name="mentors" className="w-5 h-5 mr-2 text-primary"/>
+                    <Icon name={isMentorMode ? "user" : "mentors"} className="w-5 h-5 mr-2 text-primary"/>
                     {isMentorMode ? "Switch to User" : "Switch to Mentor"}
                  </button>
               ) : (

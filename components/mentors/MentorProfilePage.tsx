@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Mentor, MentorPost, RecentSignal } from '../../types';
 import Icon from '../ui/Icon';
@@ -94,6 +95,7 @@ const SignalOutcomeCard: React.FC<{ signal: RecentSignal }> = ({ signal }) => {
 interface MentorProfilePageProps {
   mentor: Mentor;
   onBack: () => void;
+  showToast: (message: string, type?: 'success' | 'info' | 'error') => void;
 }
 
 const RatingInput: React.FC = () => {
@@ -124,7 +126,7 @@ const RatingInput: React.FC = () => {
     );
 };
 
-const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, onBack }) => {
+const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, onBack, showToast }) => {
 
     const performanceMetrics = React.useMemo(() => {
         const signals = mentor.recentSignals;
@@ -146,6 +148,16 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, onBack })
         return { winRate, avgPnl, totalTrades };
     }, [mentor.recentSignals]);
 
+    const handleShareProfile = () => {
+        const url = `${window.location.origin}${window.location.pathname}?mentorId=${mentor.id}`;
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('Mentor profile link copied to clipboard!', 'success');
+        }, (err) => {
+            console.error('Could not copy text: ', err);
+            showToast('Failed to copy link.', 'error');
+        });
+    };
+
     const StatsCard: React.FC<{label: string; value: string | number; color?: string}> = ({ label, value, color = 'text-dark-text' }) => (
         <div className="bg-light-hover p-4 rounded-lg text-center border border-light-gray">
             <p className="text-sm text-mid-text">{label}</p>
@@ -160,7 +172,15 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ mentor, onBack })
                 Back to All Mentors
             </button>
             
-            <div className="bg-light-surface p-6 rounded-lg mb-8 shadow-sm border border-light-gray">
+            <div className="bg-light-surface p-6 rounded-lg mb-8 shadow-sm border border-light-gray relative">
+                <button 
+                    onClick={handleShareProfile}
+                    className="absolute top-6 right-6 p-2 rounded-full hover:bg-light-hover text-mid-text hover:text-primary transition-colors"
+                    title="Share Profile"
+                >
+                    <Icon name="link" className="w-6 h-6" />
+                </button>
+
                 <div className="flex flex-col md:flex-row items-center text-center md:text-left">
                     <img src={mentor.avatar} alt={mentor.name} className="w-24 h-24 rounded-full mb-4 md:mb-0 md:mr-6 border-4 border-primary" />
                     <div className="flex-grow">

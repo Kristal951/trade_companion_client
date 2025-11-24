@@ -36,18 +36,144 @@ export interface Candle {
 export interface MarketContext {
     instrument: string;
     currentPrice: number;
-    candles: Candle[]; // Last 5 candles (M15)
-    trend: 'UP' | 'DOWN' | 'SIDEWAYS';
+    isDataReal: boolean;
+    candles: Candle[];
+    trend: 'UP' | 'DOWN' | 'SIDEWAYS' | 'UNKNOWN';
+    details?: string;
 }
+
+// --- DERIV WEBSOCKET SERVICE ---
+const DERIV_WS_URL = 'wss://ws.binaryws.com/websockets/v3?app_id=1089';
+
+const getDerivMarketData = (symbol: string): Promise<MarketContext> => {
+    return new Promise((resolve) => {
+        const ws = new WebSocket(DERIV_WS_URL);
+        let isResolved = false;
+
+        // Increased timeout to 10 seconds for robustness
+        const timeout = setTimeout(() => {
+            if (!isResolved) {
+                console.warn(`Deriv WS timeout for ${symbol}. Using fallback.`);
+                isResolved = true;
+                if (ws.readyState === WebSocket.OPEN) ws.close();
+                resolve({
+                    instrument: symbol,
+                    currentPrice: 0,
+                    isDataReal: false,
+                    candles: [],
+                    trend: 'UNKNOWN'
+                });
+            }
+        }, 10000);
+
+        ws.onopen = () => {
+            // Fetch last 50 candles (M15 granularity = 900s) for better structure analysis
+            ws.send(JSON.stringify({
+                ticks_history: symbol,
+                adjust_start_time: 1,
+                count: 50,
+                end: 'latest',
+                style: 'candles',
+                granularity: 900 
+            }));
+        };
+
+        ws.onmessage = (msg) => {
+            if (isResolved) return;
+            
+            try {
+                const data = JSON.parse(msg.data);
+                
+                if (data.error) {
+                    console.warn(`Deriv API Error for ${symbol}:`, data.error.message);
+                    isResolved = true;
+                    resolve({
+                         instrument: symbol,
+                         currentPrice: 0,
+                         isDataReal: false,
+                         candles: [],
+                         trend: 'UNKNOWN'
+                    });
+                    ws.close();
+                    return;
+                }
+
+                if (data.candles) {
+                    const candles = data.candles.map((c: any) => ({
+                        time: new Date(c.epoch * 1000).toISOString(),
+                        open: parseFloat(c.open),
+                        high: parseFloat(c.high),
+                        low: parseFloat(c.low),
+                        close: parseFloat(c.close),
+                        volume: 0
+                    }));
+                    
+                    const currentPrice = candles[candles.length - 1].close;
+                    
+                    // Improved Trend Calculation
+                    const len = candles.length;
+                    const shortMA = candles.slice(len - 10).reduce((a: number, c: any) => a + c.close, 0) / 10;
+                    const longMA = candles.slice(len - 50).reduce((a: number, c: any) => a + c.close, 0) / 50;
+                    
+                    let trend: 'UP' | 'DOWN' | 'SIDEWAYS' = 'SIDEWAYS';
+                    if (shortMA > longMA * 1.0005) trend = 'UP';
+                    else if (shortMA < longMA * 0.9995) trend = 'DOWN';
+
+                    // Structure details
+                    const highestHigh = Math.max(...candles.slice(len - 20).map((c: any) => c.high));
+                    const lowestLow = Math.min(...candles.slice(len - 20).map((c: any) => c.low));
+
+                    const details = `Live Data (Deriv): Price ${currentPrice}. M15 Trend: ${trend}. 50-SMA: ${longMA.toFixed(2)}. Recent Range: ${lowestLow} - ${highestHigh}.`;
+
+                    console.log(`Deriv Data Fetched for ${symbol}: Price ${currentPrice}, Trend ${trend}`);
+
+                    clearTimeout(timeout);
+                    isResolved = true;
+                    resolve({
+                        instrument: symbol,
+                        currentPrice,
+                        isDataReal: true,
+                        candles,
+                        trend,
+                        details
+                    });
+                    ws.close();
+                }
+            } catch (e) {
+                console.error("Error parsing Deriv message", e);
+            }
+        };
+
+        ws.onerror = () => {
+             if (!isResolved) {
+                clearTimeout(timeout);
+                isResolved = true;
+                resolve({
+                    instrument: symbol,
+                    currentPrice: 0,
+                    isDataReal: false,
+                    candles: [],
+                    trend: 'UNKNOWN'
+                });
+             }
+        };
+    });
+};
 
 export const getLivePrice = async (instrument: string): Promise<PriceResult> => {
     const instrumentData = instrumentDefinitions[instrument];
     if (!instrumentData) return { price: null, isMock: true };
 
-    for (const api of forexAPIs) {
-        if (api.id === 'alphavantage' && !instrumentData.isForex) {
-            continue;
+    if (instrumentData.isDeriv) {
+        const ctx = await getDerivMarketData(instrumentData.symbol);
+        if (ctx.isDataReal) {
+            return { price: ctx.currentPrice, isMock: false };
         }
+        return { price: instrumentData.mockPrice, isMock: true };
+    }
+
+    for (const api of forexAPIs) {
+        if (api.id === 'alphavantage' && !instrumentData.isForex) continue;
         try {
             const response = await fetch(api.url(instrumentData.symbol));
             if (!response.ok) continue;
@@ -63,7 +189,7 @@ export const getLivePrice = async (instrument: string): Promise<PriceResult> => 
     }
 
     console.warn(`All APIs failed for ${instrument}. Using mock price.`);
-    return { price: instrumentData.mockPrice, isMock: true }; // Fallback to mock price
+    return { price: instrumentData.mockPrice, isMock: true };
 };
 
 export const getLivePrices = async (instruments: string[]): Promise<Record<string, PriceResult>> => {
@@ -73,58 +199,39 @@ export const getLivePrices = async (instruments: string[]): Promise<Record<strin
     );
 
     const results = await Promise.all(pricePromises);
-
     for (const result of results) {
         prices[result.instrument] = { price: result.price, isMock: result.isMock };
     }
-    
     return prices;
 };
 
-// Generates M15 candle context anchored to the live price
 export const fetchMarketContext = async (instrument: string): Promise<MarketContext> => {
-    const { price, isMock } = await getLivePrice(instrument);
-    const currentPrice = price || instrumentDefinitions[instrument].mockPrice;
-    const pipSize = instrumentDefinitions[instrument].pipStep;
-
-    // Simulate last 4 candles based on current price to create a pattern
-    // In a real production app, this would fetch historical OHLC data
-    const candles: Candle[] = [];
-    let refPrice = currentPrice;
+    const instrumentData = instrumentDefinitions[instrument];
     
-    // Generate simulated history (going backwards then reversing)
-    const volatility = isMock ? 0.0005 : 0.0015; // Higher volatility for live
-    
-    for (let i = 4; i >= 0; i--) {
-        const time = new Date(Date.now() - i * 15 * 60000).toISOString().substr(11, 5);
-        
-        // Random movement simulation to create candle structure
-        const move = (Math.random() - 0.5) * (currentPrice * volatility); 
-        const open = refPrice - move;
-        const close = i === 0 ? currentPrice : refPrice; // Ensure last candle closes at live price
-        
-        const high = Math.max(open, close) + (Math.random() * pipSize * 5);
-        const low = Math.min(open, close) - (Math.random() * pipSize * 5);
-
-        candles.push({
-            time,
-            open: parseFloat(open.toFixed(5)),
-            high: parseFloat(high.toFixed(5)),
-            low: parseFloat(low.toFixed(5)),
-            close: parseFloat(close.toFixed(5)),
-            volume: Math.floor(Math.random() * 1000)
-        });
-
-        refPrice = open; // Next candle opens where previous closed (roughly)
+    if (instrumentData && instrumentData.isDeriv) {
+        const derivContext = await getDerivMarketData(instrumentData.symbol);
+        if (!derivContext.isDataReal) {
+            return {
+                instrument,
+                currentPrice: instrumentData.mockPrice,
+                isDataReal: false,
+                candles: [],
+                trend: 'UNKNOWN',
+                details: 'Connection to Deriv failed. Using mock data.'
+            };
+        }
+        return { ...derivContext, instrument };
     }
 
-    // Determine simple trend based on open of first candle vs close of last
-    const trend = candles[4].close > candles[0].open ? 'UP' : candles[4].close < candles[0].open ? 'DOWN' : 'SIDEWAYS';
+    const { price, isMock } = await getLivePrice(instrument);
+    const currentPrice = price || (instrumentData ? instrumentData.mockPrice : 0);
 
     return {
         instrument,
         currentPrice,
-        candles,
-        trend
+        isDataReal: !isMock,
+        candles: [], 
+        trend: 'UNKNOWN',
+        details: isMock ? 'Using Placeholder Data. Verify with Search.' : 'Live API Price.'
     };
 };
