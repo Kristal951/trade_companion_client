@@ -178,7 +178,13 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
 
     **ANALYSIS RULES:**
     1.  **Risk Management:** Risk-to-Reward MUST be > 1.5.
-    2.  **Select Best:** Choose the single best setup from the provided list based on the clearer trend found via Search.
+    2.  **Profit Targets (CRITICAL):** Prioritize **Intraday/Swing** setups with **150 pips to 300 pips** profit potential.
+        -   **Forex (Majors):** Target price movement of ~0.0150 to 0.0300 (e.g. 1.0800 -> 1.0650).
+        -   **Forex (JPY):** Target price movement of ~1.50 to 3.00.
+        -   **Gold (XAU):** Target price movement of ~$15.00 to $30.00 (e.g. 2300 -> 2320).
+        -   **Crypto (BTC):** Target substantial intraday moves ($150+), but keep it within day-trade range.
+        -   **Strictness:** Do NOT generate small scalp signals (<100 pips). Only return a signal if the market structure allows for this magnitude of profit (e.g. clean breakouts, key level rejections).
+    3.  **Select Best:** Choose the single best setup from the provided list based on the clearer trend found via Search.
     
     **MARKET DATA:**
     ${marketDataString}
@@ -201,8 +207,8 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
       "stopLoss": 2290.00,
       "takeProfit1": 2320.00,
       "pattern_score": 0.95,
-      "tags": ["Bullish Trend", "Search Confirmed"],
-      "reason_short": "Google Search indicates strong bullish momentum on M15 breaking resistance."
+      "tags": ["Bullish Trend", "Search Confirmed", "150+ Pips Potential"],
+      "reason_short": "Google Search indicates strong bullish momentum on M15 breaking resistance with clear 200 pip target."
     }`;
 
     // --- MODEL 2: FINANCIAL ANALYST ---

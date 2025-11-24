@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Signal, User, TradeRecord, PlanName, DashboardView } from '../../types';
 import Icon from '../ui/Icon';
@@ -39,7 +41,7 @@ const TradeCard: React.FC<{ trade: TradeRecord; }> = ({ trade }) => {
                     <span className="text-sm font-semibold text-info bg-info/10 px-2 py-1 rounded-full">Monitoring...</span>
                 )}
             </div>
-             <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-light-gray text-sm">
+             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-3 pt-3 border-t border-light-gray text-sm">
                 <div className="text-center bg-light-hover p-2 rounded-md">
                     <p className="text-xs text-mid-text">Entry</p>
                     <p className="font-semibold text-dark-text">{trade.entryPrice.toFixed(5)}</p>
@@ -56,6 +58,13 @@ const TradeCard: React.FC<{ trade: TradeRecord; }> = ({ trade }) => {
                     <div className="text-center bg-primary/10 p-2 rounded-md">
                         <p className="text-xs text-primary/80">Lot Size</p>
                         <p className="font-semibold text-primary">{trade.lotSize.toFixed(2)}</p>
+                    </div>
+                )}
+                {/* NEW: Floating P&L Display for Active Trades */}
+                {trade.status === 'active' && typeof trade.pnl === 'number' && (
+                     <div className={`text-center p-2 rounded-md ${trade.pnl >= 0 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>
+                        <p className="text-xs opacity-80">Floating P&L</p>
+                        <p className="font-semibold">{trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}</p>
                     </div>
                 )}
             </div>
