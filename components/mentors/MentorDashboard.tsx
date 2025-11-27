@@ -1,6 +1,8 @@
 
 
 
+
+
 import React, { useState, useRef, useMemo } from 'react';
 import { User, MentorSubscriber, MentorPost, Mentor, Notification, Payout, RecentSignal } from '../../types';
 import Icon from '../ui/Icon';
@@ -314,7 +316,7 @@ const MentorDashboard: React.FC<MentorDashboardProps> = ({ user, showToast, addN
         )
     };
 
-    const ProfileSettingsView = () => {
+    const renderProfileSettings = () => {
         return (
             <div className="bg-light-surface p-6 rounded-lg shadow-sm border border-light-gray relative">
                 <button 
@@ -395,7 +397,7 @@ const MentorDashboard: React.FC<MentorDashboardProps> = ({ user, showToast, addN
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
                    {activeTab === 'publisher' && <PublisherView />}
-                   {activeTab === 'profile' && <ProfileSettingsView />}
+                   {activeTab === 'profile' && renderProfileSettings()}
                 </div>
 
                 <div className="space-y-8">

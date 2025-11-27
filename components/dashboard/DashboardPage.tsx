@@ -3549,6 +3549,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
              // Return trade as-is if no price data available
              if (!priceData || priceData.price === null) return trade;
 
+             // NEW: If data is mock (network interrupted), preserve current PnL state
+             // instead of recalculating based on potentially stale/static mock data.
+             if (priceData.isMock) {
+                 if (typeof trade.pnl === 'number') {
+                     totalFloating += trade.pnl;
+                 }
+                 return trade;
+             }
+
              const currentPrice = priceData.price;
              
              // Calculate Floating P/L
@@ -3583,6 +3592,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
         updatedActiveTrades.forEach(trade => {
             const priceData = livePrices[trade.instrument];
             if (!priceData || priceData.price === null) return;
+
+            // NEW: CRITICAL CHECK - Do not close trades if data is mock/fallback due to network error
+            if (priceData.isMock) return;
+
             const currentPrice = priceData.price;
 
             let isWin = false;

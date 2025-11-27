@@ -40,45 +40,45 @@ interface ChatMessage {
 
 const STRATEGY_CONTEXT = `
 1. Major FX Pairs (EUR/USD, GBP/USD, USD/JPY)
-   Strategy: Session Overlap & Liquidity Grab (SMC)
-   - Core Logic: 70–80% of daily volume occurs during the London–New York overlap.
-   - Setup: Look for a "Judas Swing" (fake breakout) followed by aggressive displacement.
-   - Entry: Retracement into a Fair Value Gap (FVG) or 62–79% Fibonacci zone on the M15 chart.
+   Context: Zero-sum game manipulated by central banks.
+   Best Strategy: "Session Overlap" & Liquidity Grab.
+   Logic: 70-80% of volume occurs during London/NY overlap (13:00 – 17:00 GMT).
+   Setup (SMC/ICT):
+   - Wait for "Judas Swing" (fake-out at session open).
+   - Look for Displacement (sharp reversal breaking structure).
+   - Entry: Retracement to Fair Value Gap (FVG) or 62-79% Fib.
+   - Target: Opposing liquidity pool.
+   - Specific Advice (GBP/USD): Wait for 15-min candle close to confirm breakouts to avoid "fake-outs."
 
-2. Metals (XAU/USD, XAG/USD)
-   Strategy: Macro-Driven Supply & Demand Zoning
-   - Core Logic: Reacts to US Yields and Geopolitics.
-   - Setup: Price approaching a fresh 4H/Daily Supply or Demand zone.
-   - Confirmation: M15 rejection wick or engulfing candle at the zone.
+2. Gold (XAU/USD)
+   Context: Currency + Commodity. Volatile based on Real Yields/Geopolitics.
+   Best Strategy: Macro-Driven Supply/Demand Zones.
+   Logic: Inverse relationship with US Dollar (DXY) and US 10Y Treasury Yields (Yields Drop = Gold Rally).
+   Setup:
+   - Trade from fresh Daily/4H Supply & Demand zones.
+   - Filter: Check US 10Y Yields before entry.
+   - News Fade: Wait 15 mins after high-impact news; fade spikes into resistance.
+   - Risk Warning: Gold volatility is lethal. Suggest reducing risk to 0.5% (vs 1% on FX) due to slippage potential.
 
-3. Crypto (BTC/USD, ETH/USD)
-   Strategy: Trend Following & Breakout
-   - Core Logic: Momentum-heavy assets.
-   - Setup: Price above 20-period Moving Average (Bullish) or below (Bearish).
-   - Entry: Breakout of consolidation patterns (Flags, Pennants) on M15/H1.
+3. Bitcoin (BTC/USD)
+   Context: Pure Momentum asset driven by Global Liquidity & Halving Cycles.
+   Best Strategy: Trend Following on Weekly/Daily.
+   Logic: Respects higher timeframe MAs; ignores intraday noise.
+   Setup:
+   - Indicator: 20-Week MA (or 21 EMA).
+   - Bull Rule: Price > 20W MA = Longs only (buy Daily dips to RSI 40-45).
+   - Bear Rule: Price < 20W MA = Cash/Short.
+   - Breakouts: Enter immediately on volume breakouts (Wedge/Triangle); do not wait for retests.
 
-4. Minor FX Pairs & Crosses
-   Strategy: Trend Continuation & Cross-Pair Correlation
-   - Core Logic: Trade based on currency strength divergence.
-   - Setup: Break and retest of key consolidation zones.
-
-5. Synthetic Indices (Deriv: Volatility, Crash, Boom)
+4. Synthetic Indices (Deriv: Volatility, Crash, Boom)
    Strategy: Algorithmic Price Action & Spike Catching
    - **CRITICAL**: Real-time structure is provided via "Details" injection. Do NOT use Google Search for price.
    - Volatility Indices (V75, V10): Respects support/resistance strictly. Trend following on M15/H1.
    - Crash (500/1000): "Crash" implies sharp drops. Trend trading: Sell the trend. Reversal: Buy ONLY on confirmed structure shift.
    - Boom (500/1000): "Boom" implies sharp spikes UP. Trend trading: Buy the trend.
 
-6. **Trading Analysis (Adaptive Strategy):** 
+5. **Trading Analysis (Adaptive Strategy):** 
    Your expertise is comprehensive across all technical disciplines. You can fluidly apply and combine: **SMC** (Order Blocks, FVG, Liquidity, BOS, CHoCH), **Market Structure & Pullback**, **Support/Resistance**, **Trendlines**, **Candlestick Patterns** (e.g., Engulfing, Hammer), **Chart Patterns** (e.g., Head & Shoulders, Flags), and **Mean Reversion / Scalping**. Your goal is always to provide the **most effective, adaptive analysis** for any pair or timeframe to maximize profitability, based on the current chart condition. You will select the optimal concept (including Strategy A through K below) for the situation.
-
-   **Core Strategy A: Market Structure & Pullback Trading (Best for Trend Continuation)**
-   * **Concept:** Patiently wait for the price to "pull back" to a logical area of support or resistance in an established trend. This approach relies on momentum continuation.
-   * **Execution:**
-     1. **Identify Trend:** Confirm a clear trend on a Daily or 4-Hour chart.
-     2. **Identify Key Level:** Find a clear old **resistance turned new support** (or vice versa), or a strong Moving Average (like the 50-day EMA).
-     3. **Entry:** Wait for the price to test this level and show a clear sign of rejection (e.g., a bullish engulfing or hammer candle).
-     4. **Risk Management:** Place a tight **Stop-Loss** just outside the key level. Target a **Take-Profit** at a 1:2 or 1:3 Risk/Reward ratio.
 `;
 
 // Updated System Prompt to prioritize Injected Data for Synthetics

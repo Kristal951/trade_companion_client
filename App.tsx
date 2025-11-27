@@ -1,6 +1,9 @@
 
+
+
 import React, { useState, useEffect } from 'react';
 import LandingPage from './components/onboarding/LandingPage';
+import AuthPage from './components/onboarding/AuthPage';
 import DashboardPage from './components/dashboard/DashboardPage';
 import AIChatbot from './components/widgets/AIChatWidget';
 import Toast from './components/ui/Toast';
@@ -25,6 +28,7 @@ const MOCK_USER_BASE: Omit<User, 'isMentor'> = {
 
 export const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
   const [activeView, setActiveView] = useState<DashboardView>('dashboard');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -67,13 +71,20 @@ export const App: React.FC = () => {
   };
 
   const handleLoginRequest = () => {
-    // Single login flow: Automatically logs in as a user who has mentor capabilities enabled
-    // to demonstrate the switching feature.
+    setShowAuth(true);
+  };
+
+  const handleAuthSuccess = (userData: { name: string; email: string }) => {
+    // Merge authentication data with mock plan data for demo purposes
+    // In production, this would fetch full user profile from backend
     const newUser = {
       ...MOCK_USER_BASE,
-      isMentor: true, 
+      name: userData.name,
+      email: userData.email,
+      isMentor: true, // Default to allowing mentor toggle for demo
     };
     setUser(newUser);
+    setShowAuth(false);
     
     // Initialize trades for this user
     const savedTrades = localStorage.getItem(`active_trades_${newUser.email}`);
@@ -84,10 +95,13 @@ export const App: React.FC = () => {
     }
     
     setActiveView('dashboard');
+    showToast(`Welcome, ${userData.name.split(' ')[0]}!`, 'success');
   };
   
   const handleLogout = () => {
     setUser(null);
+    setShowAuth(false);
+    setActiveTrades([]);
   };
   
   const handleViewChange = (view: DashboardView) => {
@@ -183,9 +197,18 @@ export const App: React.FC = () => {
   };
 
   if (!user) {
+    if (showAuth) {
+      return (
+        <>
+          <AuthPage onLogin={handleAuthSuccess} onBack={() => setShowAuth(false)} />
+          {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
+        </>
+      );
+    }
     return (
       <>
         <LandingPage onLoginRequest={handleLoginRequest} />
+        {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
       </>
     );
   }

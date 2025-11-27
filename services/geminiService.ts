@@ -18,7 +18,6 @@ const getAI = () => {
 const GENERATION_MODEL = 'gemini-3-pro-preview';
 
 // Filtered list based on user request (All Majors, All Minors, Metals, Crypto)
-// Synthetics have been removed.
 export const TARGET_INSTRUMENTS = [
     // --- Majors ---
     'EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF', 'USD/CAD', 'AUD/USD', 'NZD/USD',
@@ -37,48 +36,88 @@ export const TARGET_INSTRUMENTS = [
     'BTC/USD', 'ETH/USD', 'SOL/USD'
 ];
 
-// Strategy Guidelines
+// Helper to shuffle array and pick subset
+const getRandomSubset = (array: string[], count: number) => {
+    const shuffled = array.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+};
+
+// Strategy Guidelines - Olapete AI-Aligned Bot Logic
+// NOTE: This logic is EXCLUSIVELY for the Automated Signal Generator.
 const STRATEGY_GUIDELINES = `
-1. Major FX Pairs (e.g., EUR/USD, GBP/USD, USD/JPY)
-   Strategy: Session Overlap & Liquidity Grab (SMC)
-   - Core Logic: 70–80% of daily volume occurs during the London–New York overlap.
-   - Setup: Look for a "Judas Swing" (fake breakout) followed by aggressive displacement.
-   - Entry: Retracement into a Fair Value Gap (FVG) or 62–79% Fibonacci zone on the M15 chart.
+STRATEGY: Olapete Quantitative Bot (Math-Driven + Market Regime Filter)
 
-2. Minor FX Pairs (e.g., EUR/GBP, GBP/JPY, AUD/CAD)
-   Strategy: Trend Continuation & Cross-Pair Correlation
-   - Core Logic: Trade based on currency strength divergence (e.g., Strong GBP vs Weak JPY).
-   - Setup: Break and retest of key consolidation zones on M15.
-   - Entry: Bullish/Bearish Engulfing or Pin Bar rejection at support/resistance.
+**CORE PHILOSOPHY:** 
+Do NOT guess. Use the provided CALCULATED indicators.
 
-3. Metals (XAU/USD, XAG/USD)
-   Strategy: Macro-Driven Supply & Demand Zoning
-   - Core Logic: Reacts to US Yields and Geopolitics.
-   - Setup: Price approaching a fresh 4H/Daily Supply or Demand zone.
-   - Confirmation: M15 rejection wick or engulfing candle at the zone.
+1. **Market Regime Filter (CRITICAL):**
+   - **ADX Indicator (14):**
+     - If ADX < 20: The market is **RANGING/CHOPPY**. 
+       - **ACTION:** REJECT all Trend Follow setups. ONLY accept Reversal/Bounce setups at key levels.
+     - If ADX >= 20: The market is **TRENDING**.
+       - **ACTION:** ACCEPT Trend Follow (Breakout/Pullback) setups.
 
-4. Crypto (BTC/USD, ETH/USD)
-   Strategy: Trend Following & Momentum Breakout
-   - Core Logic: Momentum-heavy assets.
-   - Setup: Price above 20-period Moving Average (Bullish) or below (Bearish).
-   - Entry: Breakout of consolidation patterns (Flags, Pennants) on M15/H1.
+2. **Trend Alignment (Quantitative):**
+   - **Bullish:** Price > EMA(14) AND EMA(14) > EMA(34).
+   - **Bearish:** Price < EMA(14) AND EMA(14) < EMA(34).
 
-5. Synthetic Indices (Deriv: Volatility, Crash, Boom)
-   Strategy: Algorithmic Price Action & Spike Catching
-   - Volatility Indices (V75, V10): Pure technicals. Respects support/resistance strictly. Trend following on H1/H4.
-   - Crash (500/1000): "Crash" implies sharp drops. Trend trading: Sell the trend. Reversal: Buy ONLY on confirmed structure shift after a spike series.
-   - Boom (500/1000): "Boom" implies sharp spikes UP. Trend trading: Buy the trend. Reversal: Sell ONLY on confirmed break of structure.
+3. **RSI Momentum Filter (No Exceptions):**
+   - **BUY Signal:** RSI must be between 40 and 65. (Not Overbought).
+   - **SELL Signal:** RSI must be between 35 and 60. (Not Oversold).
+   - **REJECT** if RSI > 70 (Overbought) or RSI < 30 (Oversold) unless trading a specific Mean Reversion strategy.
 
-6. **Trading Analysis (Adaptive Strategy):** 
-   Your expertise is comprehensive across all technical disciplines. You can fluidly apply and combine: **SMC** (Order Blocks, FVG, Liquidity, BOS, CHoCH), **Market Structure & Pullback**, **Support/Resistance**, **Trendlines**, **Candlestick Patterns** (e.g., Engulfing, Hammer), **Chart Patterns** (e.g., Head & Shoulders, Flags), and **Mean Reversion / Scalping**. Your goal is always to provide the **most effective, adaptive analysis** for any pair or timeframe to maximize profitability, based on the current chart condition. You will select the optimal concept (including Strategy A through K below) for the situation.
+4. **Risk Management (ATR Based):**
+   - **Stop Loss (SL):** Entry +/- (1.5 * ATR).
+   - **Take Profit 1 (TP1):** Entry +/- (2.0 * ATR).
+   - **Take Profit 2 (TP2):** Entry +/- (4.0 * ATR).
+   - **Risk/Reward:** Minimum 1:1.5 required.
 
-   **Core Strategy A: Market Structure & Pullback Trading (Best for Trend Continuation)**
-   * **Concept:** Patiently wait for the price to "pull back" to a logical area of support or resistance in an established trend. This approach relies on momentum continuation.
-   * **Execution:**
-     1. **Identify Trend:** Confirm a clear trend on a Daily or 4-Hour chart.
-     2. **Identify Key Level:** Find a clear old **resistance turned new support** (or vice versa), or a strong Moving Average (like the 50-day EMA).
-     3. **Entry:** Wait for the price to test this level and show a clear sign of rejection (e.g., a bullish engulfing or hammer candle).
-     4. **Risk Management:** Place a tight **Stop-Loss** just outside the key level. Target a **Take-Profit** at a 1:2 or 1:3 Risk/Reward ratio.
+5. **News Filter:**
+   - Use Google Search to ensure NO High-Impact news in the next 2 hours.
+   
+6. **Data Source Exception:**
+   - If DATA SOURCE is 'SIMULATED/MOCK', treat it as valid real-time data for testing purposes. Do not reject based on 'MOCK' label.
+`;
+
+// Strategy Guidelines - Manual / Chatbot & Calculator Logic
+const MANUAL_TRADING_GUIDELINES = `
+STRATEGY: Advanced Discretionary & Smart Money Concepts (SMC)
+
+1. Major FX Pairs (EUR/USD, GBP/USD, USD/JPY)
+   Context: Zero-sum game manipulated by central banks.
+   Best Strategy: "Session Overlap" & Liquidity Grab.
+   Logic: 70-80% of volume occurs during London/NY overlap (13:00 – 17:00 GMT).
+   Setup (SMC/ICT):
+   - Wait for "Judas Swing" (fake-out at session open).
+   - Look for Displacement (sharp reversal breaking structure).
+   - Entry: Retracement to Fair Value Gap (FVG) or 62-79% Fib.
+   - Target: Opposing liquidity pool.
+   - Specific Advice (GBP/USD): Wait for 15-min candle close to confirm breakouts to avoid "fake-outs."
+
+2. Gold (XAU/USD)
+   Context: Currency + Commodity. Volatile based on Real Yields/Geopolitics.
+   Best Strategy: Macro-Driven Supply/Demand Zones.
+   Logic: Inverse relationship with US Dollar (DXY) and US 10Y Treasury Yields (Yields Drop = Gold Rally).
+   Setup:
+   - Trade from fresh Daily/4H Supply & Demand zones.
+   - Filter: Check US 10Y Yields before entry.
+   - News Fade: Wait 15 mins after high-impact news; fade spikes into resistance.
+   - Risk Warning: Gold volatility is lethal. Suggest reducing risk to 0.5% (vs 1% on FX) due to slippage potential.
+
+3. Bitcoin (BTC/USD)
+   Context: Pure Momentum asset driven by Global Liquidity & Halving Cycles.
+   Best Strategy: Trend Following on Weekly/Daily.
+   Logic: Respects higher timeframe MAs; ignores intraday noise.
+   Setup:
+   - Indicator: 20-Week MA (or 21 EMA).
+   - Bull Rule: Price > 20W MA = Longs only (buy Daily dips to RSI 40-45).
+   - Bear Rule: Price < 20W MA = Cash/Short.
+   - Breakouts: Enter immediately on volume breakouts (Wedge/Triangle); do not wait for retests.
+
+Logic Alignment Summary:
+- FX: Mean Reversion / Liquidity Grabs (Tight SL).
+- Gold: Volatile Trend / Yield Correlation (Wide SL).
+- Bitcoin: Extreme Momentum / Trend Following (Percentage SL).
 `;
 
 // Retry Utility
@@ -86,8 +125,9 @@ export const withRetry = async <T>(fn: () => Promise<T>, retries = 3, baseDelay 
   try {
     return await fn();
   } catch (error: any) {
-    if (retries > 0 && (error.status === 429 || error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED')) {
-      console.warn(`API Quota exceeded. Retrying in ${baseDelay}ms... (${retries} attempts left)`);
+    // Retry on 429 (Rate Limit) or 500 (Server Error)
+    if (retries > 0 && (error.status === 429 || error.status === 500 || error.message?.includes('429') || error.message?.includes('500') || error.status === 'RESOURCE_EXHAUSTED')) {
+      console.warn(`API Error (${error.status || 'Unknown'}). Retrying in ${baseDelay}ms... (${retries} attempts left)`);
       await new Promise(resolve => setTimeout(resolve, baseDelay));
       return withRetry(fn, retries - 1, baseDelay * 2);
     }
@@ -134,7 +174,6 @@ export const classifyQuery = async (query: string): Promise<'IN_DEPTH_ANALYSIS' 
     return 'GENERAL_SUPPORT';
   } catch (error) {
     console.error("Error classifying query:", error);
-    // Default to general support on error to avoid blocking the user.
     return 'GENERAL_SUPPORT';
   }
 };
@@ -146,151 +185,161 @@ const cleanJsonString = (text: string): string => {
 };
 
 export const scanForSignals = async (userPlan: PlanName, userSettings: { balance: string; risk: string; currency: string; }): Promise<any> => {
-    // Determine which instruments to scan based on plan, but strictly adhering to the requested list
-    const marketContextPromises = TARGET_INSTRUMENTS.map(inst => fetchMarketContext(inst));
+    // 1. BATCHING: Only scan a random subset of 5 instruments to avoid API Rate Limits and Context Overload (500 Error)
+    const instrumentsToScan = getRandomSubset(TARGET_INSTRUMENTS, 5);
+    
+    console.log(`Scanning subset: ${instrumentsToScan.join(', ')}`);
+
+    const marketContextPromises = instrumentsToScan.map(inst => fetchMarketContext(inst));
     const marketContexts = await Promise.all(marketContextPromises);
     
-    // Convert context to string for AI
-    // NOTE: We flag if the data is REAL or MOCK so the AI knows how much to trust the price vs search results.
+    // Convert context to QUANTITATIVE string for AI
     const marketDataString = marketContexts.map((ctx: MarketContext) => {
-        return `Instrument: ${ctx.instrument}
-Current Price: ${ctx.currentPrice} ${ctx.isDataReal ? '(LIVE API)' : '(MOCK/PLACEHOLDER)'}
-Trend: ${ctx.trend}
-${ctx.details ? `Details: ${ctx.details}` : ''}
+        return `
+INSTRUMENT: ${ctx.instrument}
+PRICE: ${ctx.currentPrice}
+DATA SOURCE: ${ctx.isDataReal ? 'LIVE FEED' : 'SIMULATED/MOCK'}
+INDICATORS (Calculated):
+- RSI (14): ${ctx.indicators.rsi}
+- ADX (14): ${ctx.indicators.adx} (Regime: ${ctx.indicators.regime})
+- EMA (14): ${ctx.indicators.emaFast}
+- EMA (34): ${ctx.indicators.emaSlow}
+- ATR (14): ${ctx.indicators.atr}
+- Trend Status: ${ctx.indicators.trend}
 --------------------------------`;
     }).join('\n');
 
-    // --- MODEL 1: MULTI-STRATEGY SCANNER ---
-    const patternClassifierPrompt = `You are an elite algorithmic trading engine. 
+    // --- MODEL 1: QUANTITATIVE ANALYST (Olapete Bot) ---
+    const patternClassifierPrompt = `You are the **Olapete Quantitative Bot**. You generate trade signals based STRICTLY on the calculated math provided.
     
     **TASK:**
-    Analyze the provided **Prices** for the instruments below. 
+    Analyze the provided **INDICATORS** for each instrument. Do NOT search for new indicators. Use the values provided in the prompt.
     
     **CRITICAL EXECUTION RULES:**
-    1. **Data Integrity:** 
-       - If price is marked (LIVE API), use it as the definitive Entry Price.
-       - If price is marked (MOCK/PLACEHOLDER), you **MUST** use the \`googleSearch\` tool to find the ACTUAL current price before deciding.
-    2. **Trend Validation:** You **MUST USE THE \`googleSearch\` TOOL** to find the current M15/H1 technical analysis, trend direction, and key levels (Market Structure) for EACH instrument you consider.
-    3. **Pass Condition:** If the Google Search results indicate chop/consolidation, or if the direction contradicts the strategy, return {"pass": false}.
+    1. **Market Regime Check (ADX):** 
+       - If ADX < 20, you MUST REJECT any Trend Following trade. 
+       - If ADX >= 20, Trend Following is allowed.
+    2. **Indicator Confirmation:**
+       - RSI must be within safe zones (40-65 for Buy, 35-60 for Sell).
+       - EMAs must be aligned with the direction.
+    3. **Stop Loss:** Use the provided ATR to calculate dynamic Stop Loss (Price +/- 1.5 * ATR).
+    4. **Data Integrity:** Trust the "INDICATORS (Calculated)" section above all else. Treat 'SIMULATED/MOCK' data as valid.
     
-    **STRATEGY GUIDELINES:**
+    **STRATEGY LOGIC:**
     ${STRATEGY_GUIDELINES}
 
     **ANALYSIS RULES:**
-    1.  **Risk Management:** Risk-to-Reward MUST be > 1.5.
-    2.  **Profit Targets (CRITICAL):** Prioritize **Intraday/Swing** setups with **150 pips to 300 pips** profit potential.
-        -   **Forex (Majors):** Target price movement of ~0.0150 to 0.0300 (e.g. 1.0800 -> 1.0650).
-        -   **Forex (JPY):** Target price movement of ~1.50 to 3.00.
-        -   **Gold (XAU):** Target price movement of ~$15.00 to $30.00 (e.g. 2300 -> 2320).
-        -   **Crypto (BTC):** Target substantial intraday moves ($150+), but keep it within day-trade range.
-        -   **Strictness:** Do NOT generate small scalp signals (<100 pips). Only return a signal if the market structure allows for this magnitude of profit (e.g. clean breakouts, key level rejections).
-    3.  **Select Best:** Choose the single best setup from the provided list based on the clearer trend found via Search.
+    1.  **Select Best:** Choose the single best setup from the provided list that passes the ADX and RSI filters.
+    2.  **Pass/Fail:** If NO instrument passes the strict math filters, return {"pass": false}. Do not force a trade.
     
     **MARKET DATA:**
     ${marketDataString}
 
-    **Output:**
-    -   If a valid setup is found, return the JSON object below.
-    -   If NO setup matches all criteria, return \`{"pass": false}\`.
-        
-    **CRITICAL OUTPUT RULE:** 
-    - You MUST output ONLY valid JSON. 
-    - Do NOT output markdown blocks.
-    - Start immediately with {.
-
-    **Valid Setup JSON Schema:**
+    **Valid Setup JSON Schema (Example):**
     {
       "pass": true,
       "instrument": "XAU/USD",
       "type": "BUY",
       "entryPrice": 2300.50,
       "stopLoss": 2290.00,
-      "takeProfit1": 2320.00,
+      "takeProfit1": 2315.00,
+      "takeProfit2": 2330.00,
       "pattern_score": 0.95,
-      "tags": ["Bullish Trend", "Search Confirmed", "150+ Pips Potential"],
-      "reason_short": "Google Search indicates strong bullish momentum on M15 breaking resistance with clear 200 pip target."
+      "tags": ["ADX > 20", "RSI 55", "EMA Bullish"],
+      "reason_short": "Strong Trend Regime (ADX 32). Price above EMAs. RSI healthy."
     }`;
 
-    // --- MODEL 2: FINANCIAL ANALYST ---
-    const financialAnalystPrompt = `You are a senior financial analyst validating an algorithmic trade signal.
+    // --- MODEL 2: RISK MANAGER & NEWS ANALYST ---
+    const financialAnalystPrompt = `You are a Senior Risk Manager validating an algorithmic trade.
     
     **Task:**
-    1.  Analyze the provided trade candidate.
-    2.  Check for **High Impact News** relevant to the instrument (e.g., NFP for USD, CPI, FOMC) in the next 4 hours using Google Search.
-    3.  Verify the logic against the provided strategy type.
+    1.  Review the trade candidate.
+    2.  **NEWS CHECK:** Use Google Search to find if there is High Impact News (CPI, NFP, FOMC, Rate Decision) for this instrument in the next 2 hours.
+    3.  **VERDICT:** 
+        - If High Impact News is imminent -> REJECT (confidence 0).
+        - If the quantitative logic (ADX/RSI) holds up -> APPROVE.
     4.  Return a JSON object with your confidence assessment.
     
     **CRITICAL OUTPUT RULE:** 
-    - Output ONLY valid JSON.
+    - Output ONLY valid JSON. Do not use Markdown.
 
     **JSON Schema:**
     {
       "confidence": 88,
-      "reason": "Setup aligns with Session Overlap strategy. No major news events scheduled. Volume is supporting the move.",
+      "reason": "Quantitative metrics pass (ADX > 20). No high-impact news found for next 2 hours.",
       "adjustment": { "sl_adjust_points": 0.0 }
     }`;
 
     try {
         const ai = getAI();
         
-        // --- STEP 1: Call Pattern Classifier Model ---
+        // --- STEP 1: Call Quantitative Model ---
+        // FIX: Use responseMimeType: 'application/json' to prevent parsing errors and 500s.
         const patternResponse = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
             model: GENERATION_MODEL,
-            contents: `Analyze the live market data provided in system prompt. Current UTC time is ${new Date().toUTCString()}.`,
+            contents: `Analyze the provided quantitative market data. Current UTC time is ${new Date().toUTCString()}.`,
             config: {
                 systemInstruction: patternClassifierPrompt,
-                tools: [{ googleSearch: {} }] // KEY: Search is now critical for context
+                responseMimeType: 'application/json', // Force JSON
             }
         }));
         
         let patternResult;
         try {
-            // Manual JSON parsing since we can't enforce MIME type with Search tool
+            // Even with mimeType, sometimes it sends markdown code blocks in preview models. Clean it just in case.
             const cleanText = cleanJsonString(patternResponse.text || '');
             patternResult = JSON.parse(cleanText);
         } catch (jsonError) {
             console.warn("JSON Parse Error in Pattern Classifier:", jsonError);
-            console.debug("Raw Text:", patternResponse.text);
             return { signalFound: false };
         }
 
         // --- STEP 2: Check if a setup was found ---
         if (!patternResult.pass) {
-            console.log("Pattern Classifier found no valid setups in current market conditions.");
+            console.log("Pattern Classifier found no valid setups passing quantitative filters (ADX/RSI).");
             return { signalFound: false };
         }
         
         const instrumentProps = instrumentDefinitions[patternResult.instrument];
         
-        // --- STEP 3: Call Financial Analyst Model ---
-        const analystContent = `Analyze this setup:\n${JSON.stringify(patternResult, null, 2)}`;
+        // --- STEP 3: Call Risk Manager Model (With Search) ---
+        // NOTE: We wrap this in a dedicated try/catch. If Google Search causes a 500 error (common),
+        // we shouldn't kill the whole signal. We'll fallback to the Technical Score.
         
-        const analystResponse = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
-            model: GENERATION_MODEL,
-            contents: analystContent,
-            config: {
-                systemInstruction: financialAnalystPrompt,
-                tools: [{ googleSearch: {} }]
-            }
-        }));
+        let analystResult = { confidence: 80, reason: "News check skipped (Service Unavailable), proceeding with technicals." };
         
-        let analystResult;
         try {
-            const cleanText = cleanJsonString(analystResponse.text || '');
-            analystResult = JSON.parse(cleanText);
-        } catch (jsonError) {
-            console.warn("JSON Parse Error in Analyst:", jsonError);
-            // Fallback if analyst JSON fails but pattern was good
-            analystResult = { confidence: 70, reason: "Analyst validation failed format check, proceeding with pattern score." };
+            const analystContent = `Validate this trade:\n${JSON.stringify(patternResult, null, 2)}`;
+            
+            const analystResponse = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
+                model: GENERATION_MODEL,
+                contents: analystContent,
+                config: {
+                    systemInstruction: financialAnalystPrompt,
+                    tools: [{ googleSearch: {} }] // Risk Manager gets Search for News
+                }
+            }));
+            
+            try {
+                const cleanText = cleanJsonString(analystResponse.text || '');
+                analystResult = JSON.parse(cleanText);
+            } catch (e) {
+                console.warn("Analyst returned malformed JSON, using fallback.");
+            }
+        } catch (analystError) {
+            console.warn("Risk Manager (Search) failed, likely 500 or Timeout. Falling back to technicals.", analystError);
+            // Fallback remains as initialized above
         }
 
         // --- STEP 4: Decision Layer ---
-        const patternScore = (patternResult.pattern_score || 0) * 60; // 60% weight
-        const analystScore = (analystResult.confidence || 0) * 0.40; // 40% weight
+        const patternScore = (patternResult.pattern_score || 0) * 50; // 50% weight
+        const analystScore = (analystResult.confidence || 0) * 0.50; // 50% weight
         
-        const finalConfidence = Math.min(100, patternScore + analystScore);
+        const finalConfidence = patternScore + analystScore;
         
-        const ACCEPTANCE_THRESHOLD = 70;
+        // Threshold
+        const ACCEPTANCE_THRESHOLD = 80; // Set to 80 per user request
+        
         if (finalConfidence < ACCEPTANCE_THRESHOLD) {
             console.log(`Signal for ${patternResult.instrument} rejected. Confidence ${finalConfidence.toFixed(2)} < ${ACCEPTANCE_THRESHOLD}.`);
             return { signalFound: false };
@@ -304,7 +353,6 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
         const entryPrice = parseFloat(patternResult.entryPrice);
         const stopLoss = parseFloat(patternResult.stopLoss);
         
-        // Safety check for pricing
         if (isNaN(entryPrice) || isNaN(stopLoss)) return { signalFound: false };
 
         const pip_step = instrumentProps ? instrumentDefinitions[patternResult.instrument].pipStep : 0.0001;
@@ -312,7 +360,7 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
         const stopLossInPips = stop_dist_price / pip_step;
         
         // Calculate Lot Size (Simplified)
-        let pipValueInUSDForOneLot = 10; // Default
+        let pipValueInUSDForOneLot = 10; 
         const contractSize = instrumentProps ? instrumentDefinitions[patternResult.instrument].contractSize : 100000;
         const quoteCurrency = instrumentProps ? instrumentDefinitions[patternResult.instrument].quoteCurrency : 'USD';
 
@@ -339,8 +387,9 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
             entryPrice: entryPrice,
             stopLoss: stopLoss,
             takeProfit1: parseFloat(patternResult.takeProfit1),
+            takeProfit2: patternResult.takeProfit2 ? parseFloat(patternResult.takeProfit2) : undefined,
             confidence: parseFloat(finalConfidence.toFixed(2)),
-            reasoning: analystResult.reason,
+            reasoning: `${analystResult.reason} (Tech: ${patternResult.reason_short})`,
             technicalReasoning: patternResult.reason_short,
             lotSize: lotSize,
             riskAmount: parseFloat(risk_amount.toFixed(2)),
@@ -364,10 +413,11 @@ export const getTradeAnalysis = async (tradeDetails: {
 }): Promise<{ text: string; sources: any[] }> => {
   const { instrument, timeFrame, tradeDirection, entryPrice, stopLossPrice, tpPrice } = tradeDetails;
   
+  // Use MANUAL_TRADING_GUIDELINES specifically for the manual calculator analysis
   const systemPrompt = `You are an expert financial analyst. 
   
   STRATEGY GUIDELINES TO CONSIDER:
-  ${STRATEGY_GUIDELINES}
+  ${MANUAL_TRADING_GUIDELINES}
   
   Provide a brief, concise, and straight-to-the-point analysis using these guidelines where applicable.`;
 
