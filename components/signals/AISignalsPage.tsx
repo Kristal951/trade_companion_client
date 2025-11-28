@@ -1,8 +1,4 @@
 
-
-
-
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Signal, User, TradeRecord, PlanName, DashboardView } from '../../types';
 import Icon from '../ui/Icon';
@@ -62,13 +58,23 @@ const TradeCard: React.FC<{ trade: TradeRecord; }> = ({ trade }) => {
                         <p className="font-semibold text-success">{trade.takeProfit2.toFixed(5)}</p>
                     </div>
                 )}
+                
+                {/* NEW: Current Price Display for Active Trades */}
+                {trade.status === 'active' && trade.currentPrice && (
+                    <div className="text-center bg-light-surface border border-primary/30 p-2 rounded-md col-span-2 md:col-span-1 shadow-sm relative overflow-hidden">
+                        <div className="absolute inset-0 bg-primary/5"></div>
+                        <p className="text-xs text-primary/80 font-bold relative z-10">Live Price</p>
+                        <p className="font-bold text-dark-text relative z-10">{trade.currentPrice.toFixed(5)}</p>
+                    </div>
+                )}
+
                 {trade.lotSize && (
                     <div className="text-center bg-primary/10 p-2 rounded-md col-span-2 md:col-span-1">
                         <p className="text-xs text-primary/80">Lot Size</p>
                         <p className="font-semibold text-primary">{trade.lotSize.toFixed(2)}</p>
                     </div>
                 )}
-                {/* NEW: Floating P&L Display for Active Trades */}
+                {/* Floating P&L Display for Active Trades */}
                 {trade.status === 'active' && typeof trade.pnl === 'number' && (
                      <div className={`text-center p-2 rounded-md col-span-2 md:col-span-1 ${trade.pnl >= 0 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>
                         <p className="text-xs opacity-80">Floating P&L</p>
@@ -76,6 +82,11 @@ const TradeCard: React.FC<{ trade: TradeRecord; }> = ({ trade }) => {
                     </div>
                 )}
             </div>
+            {trade.technicalReasoning && (
+                <div className="mt-3 p-2 bg-light-hover rounded text-xs text-mid-text">
+                    <span className="font-bold text-dark-text">AI Logic: </span> {trade.technicalReasoning}
+                </div>
+            )}
         </div>
     );
 };

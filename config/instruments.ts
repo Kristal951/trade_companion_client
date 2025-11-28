@@ -50,6 +50,10 @@ export const instrumentDefinitions: { [key: string]: any } = {
     'ETH/USD': { pipStep: 0.1, quoteCurrency: 'USD', isForex: false, contractSize: 1, symbol: 'ETH/USD', mockPrice: 3500.00 },
     'SOL/USD': { pipStep: 0.01, quoteCurrency: 'USD', isForex: false, contractSize: 1, symbol: 'SOL/USD', mockPrice: 145.00 },
 
+    // --- INDICES ---
+    'US500': { pipStep: 0.1, quoteCurrency: 'USD', isForex: false, contractSize: 1, symbol: 'SPX', mockPrice: 5200.00 },
+    'US100': { pipStep: 0.1, quoteCurrency: 'USD', isForex: false, contractSize: 1, symbol: 'NDX', mockPrice: 18000.00 },
+
     // --- DERIV SYNTHETICS ---
     'Volatility 10 Index': { pipStep: 0.001, quoteCurrency: 'USD', isForex: false, isDeriv: true, contractSize: 1, symbol: 'R_10', mockPrice: 6500.00 },
     'Volatility 25 Index': { pipStep: 0.001, quoteCurrency: 'USD', isForex: false, isDeriv: true, contractSize: 1, symbol: 'R_25', mockPrice: 2000.00 },

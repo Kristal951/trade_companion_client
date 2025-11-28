@@ -1,7 +1,9 @@
+
 import React, { useState } from 'react';
 import { Plan, PlanName, Mentor, Review, FAQ } from '../../types';
 import Icon from '../ui/Icon';
 import { PLAN_FEATURES } from '../../config/plans';
+import AuthModal from '../auth/AuthModal';
 
 // FIX: Replaced `bio` with `strategy` and added the required `roi` property to match the Mentor type.
 const MOCK_MENTORS: Mentor[] = [
@@ -32,16 +34,30 @@ const MOCK_FAQS: FAQ[] = [
 
 
 interface LandingPageProps {
-  onLoginRequest: () => void;
+  onLoginRequest: (userDetails: { name: string; email: string }) => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
   const [isYearly, setIsYearly] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [mentorSearchQuery, setMentorSearchQuery] = useState('');
+  
+  // Auth Modal State
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
+  };
+
+  const openLogin = () => {
+      setAuthMode('login');
+      setIsAuthModalOpen(true);
+  };
+
+  const openSignup = () => {
+      setAuthMode('signup');
+      setIsAuthModalOpen(true);
   };
 
   const filteredMentors = MOCK_MENTORS.filter(mentor =>
@@ -53,6 +69,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
 
   return (
     <div className="bg-light-bg min-h-screen text-dark-text">
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        initialMode={authMode}
+        onAuthSuccess={onLoginRequest}
+      />
+
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 bg-light-surface/80 backdrop-blur-sm z-50 shadow-sm">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
@@ -65,8 +88,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
             <a href="#faq" className="text-mid-text hover:text-primary transition-colors">FAQ</a>
           </nav>
           <div className="flex items-center space-x-4">
-            <button onClick={onLoginRequest} className="text-primary hover:text-primary-hover font-semibold transition-colors">Login</button>
-            <button onClick={onLoginRequest} className="bg-primary hover:bg-primary-hover text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+            <button onClick={openLogin} className="text-primary hover:text-primary-hover font-semibold transition-colors">Login</button>
+            <button onClick={openSignup} className="bg-primary hover:bg-primary-hover text-white font-semibold py-2 px-4 rounded-lg transition-colors">
               Get Started
             </button>
           </div>
@@ -79,7 +102,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
           <div className="container mx-auto px-6">
             <h2 className="text-5xl md:text-6xl font-extrabold leading-tight mb-4 text-dark-text">Trade Smarter, Not Harder</h2>
             <p className="text-xl text-mid-text max-w-3xl mx-auto mb-8">Leverage AI-powered signals and expert mentorship to elevate your Forex trading performance.</p>
-            <button onClick={onLoginRequest} className="bg-primary hover:bg-primary-hover text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105">
+            <button onClick={openSignup} className="bg-primary hover:bg-primary-hover text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105">
               Start Your Free Trial
             </button>
           </div>
@@ -161,7 +184,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
                         <span><strong className="text-primary">${mentor.price}</strong>/month</span>
                     </div>
                     <p className="text-mid-text text-sm mb-4">Trades: {mentor.instruments.join(', ')}</p>
-                    <button className="w-full bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                    <button onClick={openSignup} className="w-full bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold py-2 px-4 rounded-lg transition-colors">
                         View Profile
                     </button>
                     </div>
@@ -210,7 +233,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
                       </li>
                     ))}
                   </ul>
-                  <button className={`w-full font-bold py-3 px-6 rounded-lg transition-colors mt-auto ${plan.name === PlanName.Pro ? 'bg-primary text-white hover:bg-primary-hover' : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'}`}>
+                  <button onClick={openSignup} className={`w-full font-bold py-3 px-6 rounded-lg transition-colors mt-auto ${plan.name === PlanName.Pro ? 'bg-primary text-white hover:bg-primary-hover' : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'}`}>
                     {plan.monthlyPrice > 0 ? 'Choose Plan' : 'Start for Free'}
                   </button>
                 </div>

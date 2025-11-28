@@ -1,4 +1,9 @@
 
+
+
+
+
+
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { DashboardView, User, EducationArticle, PlanName, Mentor, MentorPost, TradeRecord, Notification, Signal, NotificationType, RecentSignal } from '../../types';
 import Icon from '../ui/Icon';
@@ -3442,16 +3447,35 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
       }
   };
 
+  // --- REFS FOR INTERVAL ACCESS ---
+  // Create refs to hold the latest state values
+  const activeTradesRef = useRef(activeTrades);
+  const tradeHistoryRef = useRef(tradeHistory);
+
+  // Sync refs with state
+  useEffect(() => {
+      activeTradesRef.current = activeTrades;
+  }, [activeTrades]);
+
+  useEffect(() => {
+      tradeHistoryRef.current = tradeHistory;
+  }, [tradeHistory]);
+
 
   // --- Automatic Signal Scanner ---
   useEffect(() => {
     const scannerInterval = setInterval(async () => {
-      // Allow scanner to run if user is on dashboard or signals page
-      if (activeView !== 'dashboard' && activeView !== 'ai_signals') return;
+      // Access the latest state via refs inside the interval callback
+      // This prevents the interval from being reset when activeTrades changes
+      const currentActiveTrades = activeTradesRef.current;
+      const currentTradeHistory = tradeHistoryRef.current;
+
+      // Allow scanner to run continuously in background regardless of active view
+      // if (activeView !== 'dashboard' && activeView !== 'ai_signals') return; // Removed to enable background scanning
 
       // SYSTEM LIMIT: Max 12 trades generated per day globally (simulated per client)
       const todayStr = new Date().toDateString();
-      const tradesToday = [...activeTrades, ...tradeHistory].filter(t => new Date(t.dateTaken).toDateString() === todayStr).length;
+      const tradesToday = [...currentActiveTrades, ...currentTradeHistory].filter(t => new Date(t.dateTaken).toDateString() === todayStr).length;
 
       if (tradesToday >= 12) {
           console.log("Daily system signal limit (12) reached. Skipping scan.");
@@ -3483,7 +3507,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
             };
 
             // UPDATED LOGIC: Prevent any new signal if an active trade exists for that instrument
-            const alreadyExists = activeTrades.some(t => t.instrument === newTrade.instrument);
+            // Check against the ref's current value
+            const alreadyExists = currentActiveTrades.some(t => t.instrument === newTrade.instrument);
             
             if (!alreadyExists) {
                 incrementUsage('aiSignal');
@@ -3526,7 +3551,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
     }, 900000); // Scan every 15 minutes (900,000ms)
 
     return () => clearInterval(scannerInterval);
-  }, [activeView, user, canUseFeature, incrementUsage, showToast, activeTrades, tradeHistory, EQUITY_KEY, addNotification, setActiveTrades]);
+    // Removed activeTrades and tradeHistory from dependency array to prevent timer reset
+  }, [user, canUseFeature, incrementUsage, showToast, EQUITY_KEY, setActiveTrades]);
 
 
   // --- Live Trade Monitoring & Equity Calculation ---
@@ -3581,8 +3607,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
              
              totalFloating += tradePnL;
              
-             // Return updated trade object
-             return { ...trade, pnl: tradePnL };
+             // Return updated trade object with current price
+             return { ...trade, pnl: tradePnL, currentPrice: currentPrice };
         });
         
         setFloatingPnL(totalFloating);

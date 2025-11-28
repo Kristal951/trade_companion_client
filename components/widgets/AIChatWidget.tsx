@@ -38,47 +38,75 @@ interface ChatMessage {
     isTradeExecuted?: boolean;
 }
 
+// --- NEW KNOWLEDGE BASE: DERIV SYNTHETICS ---
+const DERIV_KNOWLEDGE_BASE = `
+7. **DERIV SYNTHETIC INDICES EXPERTISE (SPECIALIZED DOMAIN)**
+   **Core Principles:**
+   - **Nature:** Simulated markets based on cryptographically secure RNG.
+   - **Independence:** Unaffected by real-world news (NFP, CPI, wars). Fundamental analysis does NOT apply. Use strict Price Action & Technical Analysis.
+   - **Availability:** 24/7/365.
+   
+   **Market Structure & Strategy Guide:**
+   - **Boom & Crash (B1000, C1000, B500, C500):**
+     * *Structure:* "Ticks" (slow steady) vs "Spikes" (sudden large moves). Boom spikes UP. Crash spikes DOWN.
+     * *Safe Strategy (Spike Catching):* Place Buy Limits on Boom (at Support) and Sell Limits on Crash (at Resistance). Target the spike.
+     * *Riskier Strategy (Tick Scalping):* Trade against the spike (Sell Boom, Buy Crash) using EMA 200 as trend filter.
+   
+   - **Volatility Indices (V10, V25, V75, V100):**
+     * *Structure:* Constant volatility. V75 = 75% volatility.
+     * *Strategy (Trend Flow):* Use Bollinger Bands + MA 50. Buy when price > MA50 & breaks Upper BB. Sell when price < MA50 & breaks Lower BB.
+   
+   - **Jump Indices:**
+     * *Structure:* Normal volatility with random massive "Jumps" every ~20 mins.
+     * *Strategy (Reversal Recovery):* Wait for Jump. If RSI < 30 (Oversold) immediately after a jump down, Buy for recovery.
+   
+   - **Step Index:**
+     * *Structure:* Price moves in strict steps of 0.1.
+     * *Strategy (Staircase Breakout):* Draw trendline connecting "steps". Wait for breakout with full candle close.
+
+   **MANDATORY MATH RULE ($15 TARGET):**
+   - The user has a strict goal: **$15 Profit** using **0.02 Lot Size**.
+   - You MUST recommend Take Profit levels based on the calculated points provided in the system context.
+`;
+
 const STRATEGY_CONTEXT = `
 1. Major FX Pairs (EUR/USD, GBP/USD, USD/JPY)
-   Context: Zero-sum game manipulated by central banks.
-   Best Strategy: "Session Overlap" & Liquidity Grab.
-   Logic: 70-80% of volume occurs during London/NY overlap (13:00 – 17:00 GMT).
-   Setup (SMC/ICT):
-   - Wait for "Judas Swing" (fake-out at session open).
-   - Look for Displacement (sharp reversal breaking structure).
-   - Entry: Retracement to Fair Value Gap (FVG) or 62-79% Fib.
-   - Target: Opposing liquidity pool.
-   - Specific Advice (GBP/USD): Wait for 15-min candle close to confirm breakouts to avoid "fake-outs."
+   Strategy: Session Overlap & Liquidity Grab (SMC)
+   - Core Logic: 70–80% of daily volume occurs during the London–New York overlap.
+   - Setup: Look for a "Judas Swing" (fake breakout) followed by aggressive displacement.
+   - Entry: Retracement into a Fair Value Gap (FVG) or 62–79% Fibonacci zone on the M15 chart.
 
-2. Gold (XAU/USD)
-   Context: Currency + Commodity. Volatile based on Real Yields/Geopolitics.
-   Best Strategy: Macro-Driven Supply/Demand Zones.
-   Logic: Inverse relationship with US Dollar (DXY) and US 10Y Treasury Yields (Yields Drop = Gold Rally).
-   Setup:
-   - Trade from fresh Daily/4H Supply & Demand zones.
-   - Filter: Check US 10Y Yields before entry.
-   - News Fade: Wait 15 mins after high-impact news; fade spikes into resistance.
-   - Risk Warning: Gold volatility is lethal. Suggest reducing risk to 0.5% (vs 1% on FX) due to slippage potential.
+2. Metals (XAU/USD, XAG/USD)
+   Strategy: Supply/Demand + FVG & Retest
+   - Core Logic: Reacts to US Yields and Geopolitics with aggressive volatility.
+   - Primary Setup (FVG): Look for aggressive displacement candles (marubozu) that create a Fair Value Gap (FVG). Enter on the wick retrace into the FVG.
+   - Secondary Setup (Break & Retest): Wait for price to cleanly break a 1H/4H Supply or Demand zone. Enter ONLY on the retest of the broken zone.
+   - Confirmation: M15 rejection wick or engulfing candle at the FVG or Retest level.
 
-3. Bitcoin (BTC/USD)
-   Context: Pure Momentum asset driven by Global Liquidity & Halving Cycles.
-   Best Strategy: Trend Following on Weekly/Daily.
-   Logic: Respects higher timeframe MAs; ignores intraday noise.
-   Setup:
-   - Indicator: 20-Week MA (or 21 EMA).
-   - Bull Rule: Price > 20W MA = Longs only (buy Daily dips to RSI 40-45).
-   - Bear Rule: Price < 20W MA = Cash/Short.
-   - Breakouts: Enter immediately on volume breakouts (Wedge/Triangle); do not wait for retests.
+3. Crypto (BTC/USD, ETH/USD)
+   Strategy: Momentum Breakouts & FVG Fills
+   - Core Logic: Momentum-heavy assets prone to fakeouts.
+   - Setup (Break & Retest): Identify consolidation patterns (Flags, Pennants). Do NOT trade the initial breakout. Enter on the retest of the pattern boundary to confirm validity.
+   - Setup (FVG Continuation): In a strong trend, look for price to pull back into a 15m/1H FVG (Inefficiency) before continuing the trend.
+   - Indicator: Price must be above 20 EMA (Bullish) or below (Bearish).
 
-4. Synthetic Indices (Deriv: Volatility, Crash, Boom)
-   Strategy: Algorithmic Price Action & Spike Catching
-   - **CRITICAL**: Real-time structure is provided via "Details" injection. Do NOT use Google Search for price.
-   - Volatility Indices (V75, V10): Respects support/resistance strictly. Trend following on M15/H1.
-   - Crash (500/1000): "Crash" implies sharp drops. Trend trading: Sell the trend. Reversal: Buy ONLY on confirmed structure shift.
-   - Boom (500/1000): "Boom" implies sharp spikes UP. Trend trading: Buy the trend.
+4. Minor FX Pairs & Crosses
+   Strategy: Trend Continuation & Cross-Pair Correlation
+   - Core Logic: Trade based on currency strength divergence.
+   - Setup: Break and retest of key consolidation zones.
 
 5. **Trading Analysis (Adaptive Strategy):** 
    Your expertise is comprehensive across all technical disciplines. You can fluidly apply and combine: **SMC** (Order Blocks, FVG, Liquidity, BOS, CHoCH), **Market Structure & Pullback**, **Support/Resistance**, **Trendlines**, **Candlestick Patterns** (e.g., Engulfing, Hammer), **Chart Patterns** (e.g., Head & Shoulders, Flags), and **Mean Reversion / Scalping**. Your goal is always to provide the **most effective, adaptive analysis** for any pair or timeframe to maximize profitability, based on the current chart condition. You will select the optimal concept (including Strategy A through K below) for the situation.
+
+   **Core Strategy A: Market Structure & Pullback Trading (Best for Trend Continuation)**
+   * **Concept:** Patiently wait for the price to "pull back" to a logical area of support or resistance in an established trend. This approach relies on momentum continuation.
+   * **Execution:**
+     1. **Identify Trend:** Confirm a clear trend on a Daily or 4-Hour chart.
+     2. **Identify Key Level:** Find a clear old **resistance turned new support** (or vice versa), or a strong Moving Average (like the 50-day EMA).
+     3. **Entry:** Wait for the price to test this level and show a clear sign of rejection (e.g., a bullish engulfing or hammer candle).
+     4. **Risk Management:** Place a tight **Stop-Loss** just outside the key level. Target a **Take-Profit** at a 1:2 or 1:3 Risk/Reward ratio.
+
+${DERIV_KNOWLEDGE_BASE}
 `;
 
 // Updated System Prompt to prioritize Injected Data for Synthetics
@@ -106,7 +134,7 @@ Provide precise, live trade setups.
    - Generate the setup based on what you SEE in the image.
 
 2. **IF USER DOES NOT PROVIDE AN IMAGE (TEXT ONLY):**
-   - **Synthetics:** Analyze the [LIVE MARKET DATA INJECTION] Details (Trend, SMA, Highs/Lows) to determine the setup.
+   - **Synthetics:** Analyze the [LIVE MARKET DATA INJECTION] Details (Trend, SMA, Highs/Lows) to determine the setup. Utilize the **DERIV SYNTHETIC INDICES EXPERTISE** section.
    - **Forex/Crypto:** Synthesize the Injected Price + Search Results (News/Levels).
    - **DECISION:**
      - If Price is at Support + Bullish Structure -> BUY.
@@ -119,7 +147,7 @@ ${STRATEGY_CONTEXT}
 
 1.  **Analyze based on the Instrument:**
     - If user asks about XAUUSD, check current US Yields/News via Search.
-    - If user asks about Synthetic Indices (e.g. Volatility 75), rely ONLY on the injected Trend details.
+    - If user asks about Synthetic Indices (e.g. Volatility 75, Boom 1000), refer to the **DERIV EXPERTISE** section. **DO NOT** use Google Search for Synthetics as they are simulated.
 
 2.  **Trade Setup Format (Strict):**
     When providing a trade, use this format:
@@ -128,8 +156,8 @@ ${STRATEGY_CONTEXT}
     -   Action: [BUY/SELL]
     -   Entry: [Price] (Must be close to Current Live Price)
     -   Stop Loss (SL): [Price]
-    -   Take Profit (TP): [Price]
-    **Reasoning:** [Reason based on Search Results, Injected Trend, or Image Analysis]
+    -   Take Profit (TP): [Price] (If Synthetic, verify it meets the $15 profit target rule).
+    **Reasoning:** [Reason based on Strategy Guide, Injected Trend, or Image Analysis]
 
 3.  **Communication:**
     -   Be "Very Sure". No wishy-washy language.
@@ -288,6 +316,21 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ user, activeView, onExecuteTrade 
         return null;
     };
 
+    // --- ALGORITHMIC MATH FOR SYNTHETICS ---
+    const calculateDerivTarget = (instrument: string, targetUsd = 15, lotSize = 0.02) => {
+        const def = instrumentDefinitions[instrument];
+        if (!def) return null;
+        
+        // Formula: Profit = PointsMoved * LotSize * ContractSize
+        // Therefore: PointsMoved = Profit / (LotSize * ContractSize)
+        
+        // Ensure contract size isn't zero
+        const size = def.contractSize || 1; 
+        const requiredPoints = targetUsd / (lotSize * size);
+        
+        return requiredPoints;
+    };
+
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         if ((userInput.trim() === '' && !uploadedImage) || isLoading) return;
@@ -353,8 +396,20 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ user, activeView, onExecuteTrade 
                     const isReal = marketData.isDataReal;
                     const isDeriv = instrumentDefinitions[detectedInst]?.isDeriv;
                     
+                    let mathInjection = "";
                     if (isDeriv) {
                         useGoogleSearch = false; // Disable search for Synthetics to prevent 500 errors (unindexed data)
+                        
+                        // Calculate specific profit target points
+                        const requiredPoints = calculateDerivTarget(detectedInst);
+                        if (requiredPoints) {
+                            mathInjection = `
+\n[ALGORITHMIC MATH INJECTION]
+Target: $15 Profit @ 0.02 Lot Size.
+Required Price Movement: ${requiredPoints.toFixed(2)} Points.
+Formula: Profit / (Lot * ContractSize).
+INSTRUCTION: You MUST use this calculated distance for Take Profit levels.`;
+                        }
                     }
 
                     liveContextMsg = `
@@ -363,6 +418,7 @@ Instrument: ${marketData.instrument}
 Current Price: ${marketData.currentPrice}
 Data Source: ${isReal ? (isDeriv ? 'LIVE API (Deriv WS)' : 'LIVE API') : 'FALLBACK/MOCK'}
 ${marketData.details ? `Details (Market Structure): ${marketData.details}` : ''}
+${mathInjection}
 
 INSTRUCTION:
 1. **SOURCE CHECK:**

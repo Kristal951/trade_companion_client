@@ -1,9 +1,6 @@
 
-
-
 import React, { useState, useEffect } from 'react';
 import LandingPage from './components/onboarding/LandingPage';
-import AuthPage from './components/onboarding/AuthPage';
 import DashboardPage from './components/dashboard/DashboardPage';
 import AIChatbot from './components/widgets/AIChatWidget';
 import Toast from './components/ui/Toast';
@@ -28,7 +25,6 @@ const MOCK_USER_BASE: Omit<User, 'isMentor'> = {
 
 export const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [showAuth, setShowAuth] = useState(false);
   const [activeView, setActiveView] = useState<DashboardView>('dashboard');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -41,11 +37,16 @@ export const App: React.FC = () => {
     return 'light';
   });
   
-  // Lifted activeTrades state from DashboardPage to App
+  // Lifted activeTrades state from DashboardPage to App with Safe Parsing
   const [activeTrades, setActiveTrades] = useState<TradeRecord[]>(() => {
      if (!user) return [];
-     const saved = localStorage.getItem(`active_trades_${user.email}`);
-     return saved ? JSON.parse(saved) : [];
+     try {
+         const saved = localStorage.getItem(`active_trades_${user.email}`);
+         return saved ? JSON.parse(saved) : [];
+     } catch (e) {
+         console.error("Failed to parse active trades", e);
+         return [];
+     }
   });
 
   useEffect(() => {
@@ -70,38 +71,34 @@ export const App: React.FC = () => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
   };
 
-  const handleLoginRequest = () => {
-    setShowAuth(true);
-  };
-
-  const handleAuthSuccess = (userData: { name: string; email: string }) => {
-    // Merge authentication data with mock plan data for demo purposes
-    // In production, this would fetch full user profile from backend
+  const handleLoginRequest = (userDetails: { name: string; email: string }) => {
+    // Create user based on input
     const newUser = {
       ...MOCK_USER_BASE,
-      name: userData.name,
-      email: userData.email,
-      isMentor: true, // Default to allowing mentor toggle for demo
+      name: userDetails.name,
+      email: userDetails.email,
+      isMentor: true, // Keeping mentor capability for demo purposes
     };
     setUser(newUser);
-    setShowAuth(false);
     
-    // Initialize trades for this user
-    const savedTrades = localStorage.getItem(`active_trades_${newUser.email}`);
-    if (savedTrades) {
-        setActiveTrades(JSON.parse(savedTrades));
-    } else {
+    // Initialize trades for this user safely
+    try {
+        const savedTrades = localStorage.getItem(`active_trades_${newUser.email}`);
+        if (savedTrades) {
+            setActiveTrades(JSON.parse(savedTrades));
+        } else {
+            setActiveTrades([]);
+        }
+    } catch (e) {
         setActiveTrades([]);
     }
     
     setActiveView('dashboard');
-    showToast(`Welcome, ${userData.name.split(' ')[0]}!`, 'success');
+    showToast(`Welcome back, ${userDetails.name.split(' ')[0]}!`, 'success');
   };
   
   const handleLogout = () => {
     setUser(null);
-    setShowAuth(false);
-    setActiveTrades([]);
   };
   
   const handleViewChange = (view: DashboardView) => {
@@ -140,9 +137,15 @@ export const App: React.FC = () => {
       }
 
       // Retrieve user settings for lot size calc
-      const settings = JSON.parse(localStorage.getItem(`tradeSettings_${user.email}`) || '{"balance": "10000", "risk": "1.0", "currency": "USD"}');
-      const currentEquity = parseFloat(localStorage.getItem(`currentEquity_${user.email}`) || settings.balance);
-      const riskPct = parseFloat(settings.risk);
+      let currentEquity = 10000;
+      let riskPct = 1.0;
+      try {
+          const settings = JSON.parse(localStorage.getItem(`tradeSettings_${user.email}`) || '{"balance": "10000", "risk": "1.0", "currency": "USD"}');
+          currentEquity = parseFloat(localStorage.getItem(`currentEquity_${user.email}`) || settings.balance);
+          riskPct = parseFloat(settings.risk);
+      } catch (e) {
+          console.warn("Failed to parse user settings, using defaults");
+      }
       
       // Calculate Lot Size
       let lotSize = 0.01; // Default
@@ -166,6 +169,8 @@ export const App: React.FC = () => {
               const totalRiskPerLot = stopLossPips * pipValueInUSDForOneLot;
               if (totalRiskPerLot > 0) {
                   lotSize = riskAmount / totalRiskPerLot;
+                  // Safe Guard for NaN
+                  if (isNaN(lotSize)) lotSize = 0.01;
                   lotSize = Math.max(0.01, parseFloat(lotSize.toFixed(2)));
               }
           }
@@ -186,7 +191,7 @@ export const App: React.FC = () => {
           confidence: tradeDetails.confidence,
           reasoning: tradeDetails.reasoning,
           lotSize: lotSize,
-          riskAmount: parseFloat(riskAmount.toFixed(2)),
+          riskAmount: isNaN(riskAmount) ? 0 : parseFloat(riskAmount.toFixed(2)),
           technicalReasoning: "Manual AI Execution from Chat",
           takeProfit1: tradeDetails.takeProfit, // Mapped from takeProfit for TradeRecord compatibility
           timestamp: new Date().toISOString(), // Required by Signal/TradeRecord interface
@@ -197,14 +202,6 @@ export const App: React.FC = () => {
   };
 
   if (!user) {
-    if (showAuth) {
-      return (
-        <>
-          <AuthPage onLogin={handleAuthSuccess} onBack={() => setShowAuth(false)} />
-          {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
-        </>
-      );
-    }
     return (
       <>
         <LandingPage onLoginRequest={handleLoginRequest} />
