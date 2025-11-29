@@ -3805,7 +3805,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
             onClick={() => setAccountMenuOpen(!isAccountMenuOpen)}
             className={`w-full flex items-center p-3 rounded-lg hover:bg-light-hover ${isSidebarCollapsed ? 'justify-center' : ''}`}
           >
-            <img src={user.image || user.avatar || `https://i.pravatar.cc/150?u=${user.email}`} alt="User Avatar" className="w-8 h-8 rounded-full object-cover border border-light-gray flex-shrink-0" />
+            <img src={user.avatar || `https://i.pravatar.cc/150?u=${user.email}`} alt="User Avatar" className="w-8 h-8 rounded-full object-cover border border-light-gray flex-shrink-0" />
             {!isSidebarCollapsed && (
                 <>
                     <div className="text-left ml-3 flex-1 overflow-hidden">
@@ -3817,7 +3817,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
             )}
           </button>
           {isAccountMenuOpen && (
-            <div style={{ zIndex: 100 }} className={`absolute w-56 bg-light-surface rounded-lg shadow-xl border border-light-gray py-2 animate-fade-in-right ${isSidebarCollapsed ? 'left-full bottom-0 ml-2' : 'bottom-full left-0 right-0 mb-2'}`}>
+            <div className={`absolute z-10 w-56 bg-light-surface rounded-lg shadow-xl border border-light-gray py-2 animate-fade-in-right ${isSidebarCollapsed ? 'left-full bottom-0 ml-2' : 'bottom-full left-0 right-0 mb-2'}`}>
               <a onClick={() => { onViewChange('settings'); setAccountMenuOpen(false); }} href="#" className="flex items-center px-4 py-2 text-sm text-dark-text hover:bg-light-hover"><Icon name="settings" className="w-5 h-5 mr-2 text-mid-text"/>Settings</a>
               <a onClick={() => { onViewChange('contact_us'); setAccountMenuOpen(false); }} href="#" className="flex items-center px-4 py-2 text-sm text-dark-text hover:bg-light-hover"><Icon name="mail" className="w-5 h-5 mr-2 text-mid-text"/>Contact Us</a>
               <hr className="border-light-gray my-1" />
@@ -3871,7 +3871,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
                     setNotifications={setNotifications} 
                     onViewChange={onViewChange}
                 />
-                <img src={user.image || user.avatar || `https://i.pravatar.cc/150?u=${user.email}`} alt="User Avatar" className="w-10 h-10 rounded-full" />
+                <img src={user.avatar || `https://i.pravatar.cc/150?u=${user.email}`} alt="User Avatar" className="w-10 h-10 rounded-full" />
             </div>
         </header>
         

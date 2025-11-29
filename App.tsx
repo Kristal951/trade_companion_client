@@ -7,12 +7,24 @@ import Toast from './components/ui/Toast';
 import { User, PlanName, DashboardView, TradeRecord } from './types';
 import ScreenshotDetector from './components/ui/ScreenshotDetector';
 import { instrumentDefinitions } from './config/instruments';
-import useAppStore from './store/useStore';
+
+// This would typically come from an auth service
+const MOCK_USER_BASE: Omit<User, 'isMentor'> = { 
+  name: 'Olaniyi Peter', 
+  email: 'olaniyi.peter@example.com', 
+  avatar: '', 
+  subscribedPlan: PlanName.Premium, 
+  cTraderConfig: {
+    accountId: '',
+    accessToken: '',
+    isConnected: false,
+    autoTradeEnabled: false,
+  }
+};
 
 
 export const App: React.FC = () => {
-  const {user, setUser} = useAppStore()
-  console.log(user)
+  const [user, setUser] = useState<User | null>(null);
   const [activeView, setActiveView] = useState<DashboardView>('dashboard');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -48,9 +60,9 @@ export const App: React.FC = () => {
     }
   }, [theme]);
 
+  // Persist activeTrades whenever they change
   useEffect(() => {
       if (user) {
-        console.log(user)
         localStorage.setItem(`active_trades_${user.email}`, JSON.stringify(activeTrades));
       }
   }, [activeTrades, user]);
@@ -60,8 +72,18 @@ export const App: React.FC = () => {
   };
 
   const handleLoginRequest = (userDetails: { name: string; email: string }) => {
+    // Create user based on input
+    const newUser = {
+      ...MOCK_USER_BASE,
+      name: userDetails.name,
+      email: userDetails.email,
+      isMentor: true, // Keeping mentor capability for demo purposes
+    };
+    setUser(newUser);
+    
+    // Initialize trades for this user safely
     try {
-        const savedTrades = localStorage.getItem(`active_trades_${user.email}`);
+        const savedTrades = localStorage.getItem(`active_trades_${newUser.email}`);
         if (savedTrades) {
             setActiveTrades(JSON.parse(savedTrades));
         } else {

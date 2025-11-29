@@ -84,7 +84,7 @@ const TradeCard: React.FC<{ trade: TradeRecord; }> = ({ trade }) => {
             </div>
             {trade.technicalReasoning && (
                 <div className="mt-3 p-2 bg-light-hover rounded text-xs text-mid-text">
-                    <span className="font-bold text-dark-text">AI Logic: </span> {trade.technicalReasoning}
+                    <span className="font-bold text-dark-text">Olapete Logic: </span> {trade.technicalReasoning}
                 </div>
             )}
         </div>

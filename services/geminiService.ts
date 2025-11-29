@@ -2,7 +2,7 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { PlanName } from "../types";
 import { instrumentDefinitions } from '../config/instruments';
-import { fetchMarketContext, MarketContext } from "./marketDataService";
+import { fetchMarketContext, MarketContext, Candle } from "./marketDataService";
 
 // Helper to safely get AI instance
 const getAI = () => {
@@ -139,12 +139,48 @@ export const classifyQuery = async (query: string): Promise<'IN_DEPTH_ANALYSIS' 
 };
 
 const cleanJsonString = (text: string): string => {
+    // Find the first '{' and the last '}' to extract the JSON object
+    const firstOpen = text.indexOf('{');
+    const lastClose = text.lastIndexOf('}');
+    
+    if (firstOpen !== -1 && lastClose !== -1 && firstOpen < lastClose) {
+        return text.substring(firstOpen, lastClose + 1);
+    }
+    
+    // Fallback: simple cleanup if braces are not strictly found in order
     let clean = text.replace(/```json\n?|```/g, '');
     return clean.trim();
 };
 
 // Global rotation index for scanning batches
 let rotationIndex = 0;
+
+// Technical Analysis Helper
+const calculateTechnicalSummary = (candles: Candle[]) => {
+    if (candles.length < 200) {
+        return { trend: 'NEUTRAL (Insufficient Data)', sma200: 0 };
+    }
+    
+    const closes = candles.map(c => c.close);
+    const lastPrice = closes[closes.length - 1];
+    
+    // SMA 200
+    const sma200Slice = closes.slice(closes.length - 200);
+    const sma200 = sma200Slice.reduce((a, b) => a + b, 0) / 200;
+    
+    // SMA 50
+    const sma50Slice = closes.slice(closes.length - 50);
+    const sma50 = sma50Slice.reduce((a, b) => a + b, 0) / 50;
+
+    let trend = 'SIDEWAYS';
+    if (lastPrice > sma200) {
+        trend = lastPrice > sma50 ? 'STRONG BULLISH' : 'BULLISH PULLBACK';
+    } else {
+        trend = lastPrice < sma50 ? 'STRONG BEARISH' : 'BEARISH RETRACEMENT';
+    }
+
+    return { trend, sma200, sma50, lastPrice };
+};
 
 export const scanForSignals = async (userPlan: PlanName, userSettings: { balance: string; risk: string; currency: string; }): Promise<any> => {
     // 1. Define Priority Instruments (Always scanned)
@@ -153,8 +189,7 @@ export const scanForSignals = async (userPlan: PlanName, userSettings: { balance
     // 2. Define Rotation Pool (All other instruments)
     const ROTATION_POOL = TARGET_INSTRUMENTS.filter(inst => !PRIORITY_INSTRUMENTS.includes(inst));
     
-    // 3. Determine Batch Construction
-    // Requirement: Batch of 5. 2 Priority + 3 Rotating.
+    // 3. Determine Batch Construction (Hybrid Batch)
     const BATCH_SIZE = 5;
     const SLOTS_FOR_ROTATION = BATCH_SIZE - PRIORITY_INSTRUMENTS.length; // 3 slots
     
@@ -169,51 +204,65 @@ export const scanForSignals = async (userPlan: PlanName, userSettings: { balance
     // 5. Update Rotation Index for next call
     rotationIndex = (rotationIndex + SLOTS_FOR_ROTATION) % ROTATION_POOL.length;
     
-    console.log(`[AI Scanner] Scanning batch: ${currentBatch.join(', ')}`);
+    console.log(`[Hybrid AI Scanner] Scanning batch: ${currentBatch.join(', ')}`);
 
-    const marketContextPromises = currentBatch.map(inst => fetchMarketContext(inst));
+    // Fetch 500 candles for deep analysis
+    const marketContextPromises = currentBatch.map(inst => fetchMarketContext(inst, 500));
     const allMarketContexts = await Promise.all(marketContextPromises);
     
-    const marketContexts = allMarketContexts.filter(ctx => ctx.isDataReal);
+    const marketContexts = allMarketContexts.filter(ctx => ctx.isDataReal || ctx.candles.length > 0);
 
     if (marketContexts.length === 0) {
-        console.log("Scan aborted: No live market data available (All sources returned Mock/Fallback).");
+        console.log("Scan aborted: No market data available.");
         return { signalFound: false };
     }
     
     const marketDataString = marketContexts.map((ctx: MarketContext) => {
-        let candleDataStr = "Candle Data: Unavailable (Use Google Search for Structure)";
+        // 1. Calculate Long Term Trend locally (Method A)
+        const techSummary = calculateTechnicalSummary(ctx.candles);
         
+        // 2. Slice Data for AI Prompt (Method B - 24 Hours / 96 Candles)
+        let rawCandlesStr = "Candle Data: Unavailable (Use Google Search for Structure)";
         if (ctx.candles && ctx.candles.length >= 5) {
-            const last5 = ctx.candles.slice(-5);
-            candleDataStr = "Last 5 Candles (M15):\n" + last5.map(c => 
-                `   [${c.time.split('T')[1]?.slice(0,5) || '00:00'}] O:${c.open} H:${c.high} L:${c.low} C:${c.close}`
+            // Take last 96 candles (approx 24h on M15)
+            const last96 = ctx.candles.slice(-96);
+            rawCandlesStr = `Raw Candles (Last 24h - M15):\n` + last96.map(c => 
+                `[${c.time.split('T')[1]?.slice(0,5)}] O:${c.open} H:${c.high} L:${c.low} C:${c.close}`
             ).join('\n');
         }
 
-        return `Instrument: ${ctx.instrument}
-Current Price: ${ctx.currentPrice} (LIVE API)
-Trend: ${ctx.trend}
-${candleDataStr}
+        // 3. Construct Hybrid Context Block
+        return `
+=== INSTRUMENT: ${ctx.instrument} ===
+Current Price: ${ctx.currentPrice}
+MACRO TREND (Calculated on 500 candles): ${techSummary.trend}
+(Price vs 200 SMA: ${ctx.currentPrice > techSummary.sma200 ? 'ABOVE' : 'BELOW'})
+${rawCandlesStr}
 ${ctx.details ? `Details: ${ctx.details}` : ''}
---------------------------------`;
+================================
+`;
     }).join('\n');
 
-    const patternClassifierPrompt = `You are an elite algorithmic trading engine. 
+    const patternClassifierPrompt = `You are "Olapete-Alpha", an elite algorithmic trading engine running a Hybrid 96-Candle Scan.
     
     **TASK:**
-    Analyze the provided **Prices** and **Candle Data** (if available) for the instruments below. 
+    Analyze the provided **Macro Trend** and **24-Hour Raw Candle Data** to find a high-probability setup.
     
     **CRITICAL EXECUTION RULES:**
-    1. **Data Integrity:** 
-       - Use the provided (LIVE API) price as the definitive Entry Price.
-    2. **Trend Validation:** 
-       - You **MUST USE THE \`googleSearch\` TOOL** to find the current M15/H1 technical analysis, trend direction, and key levels (Market Structure) for EACH instrument.
-       - If Candle Data is provided, analyze the Highs and Lows to confirm structure.
-    3. **Pass Condition (STRICT):** 
-       - **If the Google Search results indicate chop, ranging, or consolidation, return {"pass": false}.**
-       - **If the "Last 5 Candles" (if available) show a tight price range (low volatility/consolidation), you MUST return {"pass": false}.**
-       - **If the market structure is not clear (no obvious Higher Highs/Lows or Lower Highs/Lows), return {"pass": false}.**
+    1.  **Trend Alignment (MANDATORY):** 
+        - You MUST trade WITH the "Macro Trend" provided. 
+        - If Trend is BULLISH, look ONLY for BUYS.
+        - If Trend is BEARISH, look ONLY for SELLS.
+        - If Trend is NEUTRAL, output {"pass": false}.
+        
+    2.  **Pattern Recognition (Visual):**
+        - Use the 96 lines of raw candle data to visualize the chart shape for the last 24 hours.
+        - Look for specific patterns: Bull/Bear Flags, Pennants, Head & Shoulders, Double Tops/Bottoms.
+        - Look for Liquidity Wicks (stop hunts) near recent highs/lows.
+    
+    3.  **Pass Condition (STRICT):** 
+        - If the 24h price action is chopping/ranging with no clear pattern: {"pass": false}.
+        - If the Pattern opposes the Macro Trend: {"pass": false}.
     
     **STRATEGY GUIDELINES:**
     ${STRATEGY_GUIDELINES}
@@ -221,13 +270,10 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
     **ANALYSIS RULES:**
     1.  **Risk Management:** Risk-to-Reward MUST be > 1.5.
     2.  **Profit Targets (CRITICAL):** Generate **Day Trading** setups where a 0.01 lot size yields **$10 to $15 profit**.
-        -   **Forex (Majors/Minors):** Target price movement of **100 to 150 pips** (0.0100 - 0.0150).
-        -   **Forex (JPY):** Target price movement of **1.00 to 1.50**.
-        -   **Gold (XAU):** Target price movement of **$10.00 to $15.00** (e.g. 2300 -> 2315).
+        -   **Forex (Majors/Minors):** Target price movement of **100 to 150 pips**.
+        -   **Gold (XAU):** Target price movement of **$10.00 to $15.00**.
         -   **Crypto (BTC):** Target price movement of **$1,000 to $1,500**.
-        -   **Indices (US500/US100):** Target movement of **50 to 100 points**.
-        -   **Strictness:** Target these specific ranges to ensure trade completion within 24 hours. Do not aim for multi-day swing targets.
-    3.  **Select Best:** Choose the single best setup from the provided list based on the clearer trend found via Search.
+    3.  **Select Best:** Choose the single best setup from the batch.
     
     **MARKET DATA:**
     ${marketDataString}
@@ -235,11 +281,7 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
     **Output:**
     -   If a valid setup is found, return the JSON object below.
     -   If NO setup matches all criteria, return \`{"pass": false}\`.
-        
-    **CRITICAL OUTPUT RULE:** 
-    - You MUST output ONLY valid JSON. 
-    - Do NOT output markdown blocks.
-    - Start immediately with {.
+    -   Output ONLY valid JSON. Start immediately with {.
 
     **Valid Setup JSON Schema:**
     {
@@ -250,8 +292,8 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
       "stopLoss": 2292.00,
       "takeProfit1": 2312.50,
       "pattern_score": 0.95,
-      "tags": ["Bullish Trend", "Search Confirmed", "$12 Target"],
-      "reason_short": "Google Search indicates strong bullish momentum on M15 breaking resistance with clear $12 price target."
+      "tags": ["Trend Aligned", "Bull Flag", "SMA Support"],
+      "reason_short": "Macro Trend is Bullish. 24h price action formed a clean Bull Flag pattern retesting the 200 SMA."
     }`;
 
     const financialAnalystPrompt = `You are a senior financial analyst validating an algorithmic trade signal.
@@ -260,7 +302,6 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
     1.  Analyze the provided trade candidate.
     2.  **NEWS CHECK (CRITICAL):** Check for **High Impact News** (Red Folder events like NFP, CPI, FOMC, Rate Decisions) relevant to the instrument's currencies in the next **60 minutes** using Google Search.
     3.  Verify the logic against the provided strategy type.
-    4.  Return a JSON object with your confidence assessment.
     
     **DECISION RULES:**
     - **IF HIGH IMPACT NEWS IS IMMINENT (< 60 mins):** You MUST set "confidence" to 0. Reason: "High Impact News Imminent - Trading Suspended".
@@ -272,7 +313,7 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
     **JSON Schema:**
     {
       "confidence": 88,
-      "reason": "Setup aligns with Session Overlap strategy. No major news events scheduled. Volume is supporting the move.",
+      "reason": "Setup aligns with Macro Trend. No major news events scheduled. Volume is supporting the move.",
       "adjustment": { "sl_adjust_points": 0.0 }
     }`;
 
@@ -281,10 +322,10 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
         
         const patternResponse = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
             model: GENERATION_MODEL,
-            contents: `Analyze the live market data provided in system prompt. Current UTC time is ${new Date().toUTCString()}.`,
+            contents: `Analyze the hybrid market data (Trend + 96 Candles) provided in system prompt. Current UTC time is ${new Date().toUTCString()}.`,
             config: {
                 systemInstruction: patternClassifierPrompt,
-                tools: [{ googleSearch: {} }]
+                tools: [{ googleSearch: {} }] // Keep search for extra validation if needed
             }
         }));
         
@@ -298,7 +339,7 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
         }
 
         if (!patternResult.pass) {
-            console.log("Pattern Classifier found no valid setups in current market conditions.");
+            console.log("Hybrid Scanner found no valid setups in current market conditions.");
             return { signalFound: false };
         }
         
@@ -335,6 +376,7 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
             return { signalFound: false };
         }
 
+        // Risk Calculation Logic (Unchanged)
         const currentEquity = parseFloat(userSettings.balance);
         const risk_pct = parseFloat(userSettings.risk);
         const risk_amount = currentEquity * (risk_pct / 100);
