@@ -9,11 +9,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "recharts": "^3.3.0",
     "@google/genai": "^1.28.0",
-    "lightweight-charts": "4.2.0"
+    "axios": "^1.13.2",
+    "install": "^0.13.0",
+    "lightweight-charts": "4.2.0",
+    "npm": "^11.6.4",
+    "react": "^19.2.0",
+    "react-datepicker": "^8.10.0",
+    "react-dom": "^19.2.0",
+    "react-icons": "^5.5.0",
+    "recharts": "^3.3.0",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

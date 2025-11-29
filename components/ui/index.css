@@ -1,0 +1,6 @@
+.react-datepicker-wrapper{
+  display: flex;
+}
+.icon{
+    z-index: 100;
+}
