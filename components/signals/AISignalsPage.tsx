@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Signal, User, TradeRecord, PlanName, DashboardView } from '../../types';
 import Icon from '../ui/Icon';
@@ -16,11 +18,24 @@ const TradeCard: React.FC<{ trade: TradeRecord; }> = ({ trade }) => {
     else if (trade.confidence >= 75) confColor = 'text-info';
     else confColor = 'text-warning';
 
+    // Entry Type Badge Color
+    const entryType = trade.entryType || 'MARKET';
+    let entryBadgeClass = 'bg-gray-100 text-gray-600';
+    if (entryType === 'LIMIT') entryBadgeClass = 'bg-info/10 text-info';
+    if (entryType === 'STOP') entryBadgeClass = 'bg-warning/10 text-warning';
+
     return (
         <div className={`bg-light-surface p-4 rounded-xl shadow-sm border border-l-4 ${trade.status === 'active' ? 'border-info' : trade.status === 'win' ? 'border-success' : 'border-danger'} animate-fade-in-right`}>
             <div className="flex justify-between items-start">
                 <div>
-                    <h4 className="font-bold text-dark-text">{trade.instrument} - <span className={isBuy ? 'text-success' : 'text-danger'}>{trade.type}</span></h4>
+                    <h4 className="font-bold text-dark-text">
+                        {trade.instrument} - <span className={isBuy ? 'text-success' : 'text-danger'}>{trade.type}</span>
+                        {entryType !== 'MARKET' && (
+                            <span className={`ml-2 text-xs font-bold px-2 py-0.5 rounded ${entryBadgeClass}`}>
+                                {entryType}
+                            </span>
+                        )}
+                    </h4>
                     <div className="flex items-center gap-3 mt-1">
                         <p className="text-xs text-mid-text">Taken: {new Date(trade.dateTaken).toLocaleString()}</p>
                         {/* REQUIREMENT: Display Signal Confidence */}

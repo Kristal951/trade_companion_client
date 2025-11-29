@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { PlanName } from "../types";
 import { instrumentDefinitions } from '../config/instruments';
@@ -182,8 +183,37 @@ const calculateTechnicalSummary = (candles: Candle[]) => {
     return { trend, sma200, sma50, lastPrice };
 };
 
+// Helper to check if market is open
+const isMarketOpen = (instrument: string): boolean => {
+    const now = new Date();
+    const day = now.getUTCDay(); // 0 = Sunday, 6 = Saturday
+    const hour = now.getUTCHours();
+    
+    const def = instrumentDefinitions[instrument];
+    if (!def) return false;
+
+    // 1. Always Open: Synthetics (Deriv) & Crypto
+    // Synthetics flag
+    if (def.isDeriv) return true;
+    
+    // Explicit Crypto Check (BTC/ETH/SOL)
+    const cryptoPairs = ['BTC/USD', 'ETH/USD', 'SOL/USD'];
+    if (cryptoPairs.includes(instrument)) return true;
+
+    // 2. Closed on Weekends (Forex, Metals, Indices)
+    // Saturday (6) is fully closed for FX/Metals
+    if (day === 6) return false;
+    
+    // Sunday (0) is closed until roughly 21:00 UTC (Market Open)
+    // Adjust logic: If Sunday AND hour < 21, consider closed.
+    if (day === 0 && hour < 21) return false;
+
+    // Weekdays are open
+    return true;
+};
+
 export const scanForSignals = async (userPlan: PlanName, userSettings: { balance: string; risk: string; currency: string; }): Promise<any> => {
-    // 1. Define Priority Instruments (Always scanned)
+    // 1. Define Priority Instruments (Always scanned if open)
     const PRIORITY_INSTRUMENTS = ['XAU/USD', 'BTC/USD'];
     
     // 2. Define Rotation Pool (All other instruments)
@@ -193,7 +223,7 @@ export const scanForSignals = async (userPlan: PlanName, userSettings: { balance
     const BATCH_SIZE = 5;
     const SLOTS_FOR_ROTATION = BATCH_SIZE - PRIORITY_INSTRUMENTS.length; // 3 slots
     
-    const currentBatch = [...PRIORITY_INSTRUMENTS];
+    let currentBatch = [...PRIORITY_INSTRUMENTS];
     
     // 4. Fill Rotating Slots
     for (let i = 0; i < SLOTS_FOR_ROTATION; i++) {
@@ -204,10 +234,18 @@ export const scanForSignals = async (userPlan: PlanName, userSettings: { balance
     // 5. Update Rotation Index for next call
     rotationIndex = (rotationIndex + SLOTS_FOR_ROTATION) % ROTATION_POOL.length;
     
-    console.log(`[Hybrid AI Scanner] Scanning batch: ${currentBatch.join(', ')}`);
+    // 6. Filter for Open Markets
+    const openBatch = currentBatch.filter(isMarketOpen);
 
-    // Fetch 500 candles for deep analysis
-    const marketContextPromises = currentBatch.map(inst => fetchMarketContext(inst, 500));
+    if (openBatch.length === 0) {
+        console.log(`[Hybrid AI Scanner] All instruments in batch are currently closed: ${currentBatch.join(', ')}`);
+        return { signalFound: false };
+    }
+    
+    console.log(`[Hybrid AI Scanner] Scanning open markets: ${openBatch.join(', ')}`);
+
+    // Fetch 500 candles for deep analysis using filtered OPEN batch
+    const marketContextPromises = openBatch.map(inst => fetchMarketContext(inst, 500));
     const allMarketContexts = await Promise.all(marketContextPromises);
     
     const marketContexts = allMarketContexts.filter(ctx => ctx.isDataReal || ctx.candles.length > 0);
@@ -263,6 +301,12 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
     3.  **Pass Condition (STRICT):** 
         - If the 24h price action is chopping/ranging with no clear pattern: {"pass": false}.
         - If the Pattern opposes the Macro Trend: {"pass": false}.
+
+    **ENTRY TYPE LOGIC (DYNAMIC):**
+    You must decide the best entry type based on current price action:
+    - **MARKET:** If current price is close to optimal entry (within 5 pips).
+    - **LIMIT:** If you expect a pullback (e.g., Trend is Bullish but price is extended, set Buy Limit lower at support).
+    - **STOP:** If you are trading a breakout (e.g., Price is consolidating, set Buy Stop above resistance to confirm momentum).
     
     **STRATEGY GUIDELINES:**
     ${STRATEGY_GUIDELINES}
@@ -287,13 +331,14 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
     {
       "pass": true,
       "instrument": "XAU/USD",
-      "type": "BUY",
+      "type": "BUY", // or "SELL"
+      "entryType": "LIMIT", // "MARKET", "LIMIT", or "STOP"
       "entryPrice": 2300.50,
       "stopLoss": 2292.00,
       "takeProfit1": 2312.50,
       "pattern_score": 0.95,
       "tags": ["Trend Aligned", "Bull Flag", "SMA Support"],
-      "reason_short": "Macro Trend is Bullish. 24h price action formed a clean Bull Flag pattern retesting the 200 SMA."
+      "reason_short": "Explain logic. e.g. 'Waiting for retest of the order block at 2300.50 before entering long (Buy Limit)'."
     }`;
 
     const financialAnalystPrompt = `You are a senior financial analyst validating an algorithmic trade signal.
@@ -413,6 +458,7 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
             signalFound: true,
             instrument: patternResult.instrument,
             type: patternResult.type,
+            entryType: patternResult.entryType || 'MARKET', // Default to market if not provided
             entryPrice: entryPrice,
             stopLoss: stopLoss,
             takeProfit1: parseFloat(patternResult.takeProfit1),

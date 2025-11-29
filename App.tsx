@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useEffect } from 'react';
 import LandingPage from './components/onboarding/LandingPage';
 import DashboardPage from './components/dashboard/DashboardPage';
@@ -121,6 +123,7 @@ export const App: React.FC = () => {
   const handleExecuteTrade = (tradeDetails: {
       instrument: string;
       type: 'BUY' | 'SELL';
+      entryType: 'MARKET' | 'LIMIT' | 'STOP';
       entryPrice: number;
       stopLoss: number;
       takeProfit: number;
@@ -185,6 +188,7 @@ export const App: React.FC = () => {
           initialEquity: currentEquity,
           instrument: tradeDetails.instrument,
           type: tradeDetails.type,
+          entryType: tradeDetails.entryType, // NEW
           entryPrice: tradeDetails.entryPrice,
           stopLoss: tradeDetails.stopLoss,
           takeProfit: tradeDetails.takeProfit,
@@ -198,7 +202,7 @@ export const App: React.FC = () => {
       };
 
       setActiveTrades(prev => [newTrade, ...prev]);
-      showToast(`${tradeDetails.instrument} ${tradeDetails.type} executed successfully!`, 'success');
+      showToast(`${tradeDetails.instrument} ${tradeDetails.type} (${tradeDetails.entryType}) executed successfully!`, 'success');
   };
 
   if (!user) {
