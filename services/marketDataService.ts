@@ -13,7 +13,10 @@ const TWELVE_DATA_KEYS = [
     '0dc49b6059944d4f9c7c16688d24807d', // New Key 7
     '23d84647343f491bb18471f4ea59909d', // New Key 8
     'dd88bc459de64aa4b60738b881663f43', // New Key 9
-    '095caa7fe42c4bd0864ca141451c756c'  // New Key 10
+    '095caa7fe42c4bd0864ca141451c756c', // New Key 10
+    '313060fa4d3c4d358394c4bc098a8b1c', // New Key 11
+    '4c1485d310084de2a95400a286081859', // New Key 12
+    'b71fdcc515974085a242d9aa32762ebd'  // New Key 13
 ];
 
 let tdKeyIndex = 0;
