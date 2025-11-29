@@ -36,6 +36,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const [Age, setAge] = useState("");
 
   const signup = useAppStore((state) => state.signup);
+  const signIn = useAppStore((state) => state.signIn);
   const loading = useAppStore((state) => state.loading);
   const setLoading = useAppStore((state) => state.setLoading);
   const error = useAppStore((state) => state.error);
@@ -91,7 +92,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
     setFormError(null);
     setError(false);
     setLoading(true);
-    console.log("submitting.....");
 
     if (
       !formData.email ||
@@ -110,28 +110,35 @@ const AuthModal: React.FC<AuthModalProps> = ({
     }
 
     try {
+      let user;
       if (!isLogin) {
-        console.log("signing up user");
-        const user = await signup({
+        user = await signup({
           name: formData.name,
           email: formData.email,
           password: formData.password,
           age: formData.age,
         });
-        console.log("user", user);
-        onAuthSuccess({ name: user.name, email: user.email });
       } else {
+        user = await signIn({
+          email: formData.email,
+          password: formData.password,
+        });
       }
+
+      onAuthSuccess({
+        name: user.name,
+        email: user.email,
+        plan: user.subscribedPlan || "FREE",
+      });
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.log(err);
       setFormError("Authentication failed. Please try again.");
-      if (err.response?.data?.error?.includes("Email already in use")) {
-       return showToast(
-          "Email already in use, please try again with another email",
-          "error"
-        );
-      }
+      const errorMessage =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Authentication failed. Please try again.";
+      showToast(errorMessage, "error");
     } finally {
       setLoading(false);
     }

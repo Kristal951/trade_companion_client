@@ -29,7 +29,14 @@ interface AppState {
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
 
-  signup: (data: { name: string; email: string; password: string; age: string }) => Promise<User>;
+  signup: (data: {
+    name: string;
+    email: string;
+    password: string;
+    age: string;
+  }) => Promise<User>;
+  
+  signIn: (data: { email: string; password: string }) => Promise<User>;
 }
 
 const useAppStore = create<AppState>()(
@@ -64,24 +71,17 @@ const useAppStore = create<AppState>()(
 
       signup: async (data) => {
         const { setUser, setLoading, setError, addNotification } = get();
-
         try {
           setLoading(true);
           setError(false);
-
           const res = await API.post("/api/user/register", data);
-
-        console.log(res)
           const user = res.data.user ?? res.data;
-
           setUser(user);
-
           addNotification({
             id: Date.now().toString(),
             message: "Signup successful!",
             read: false,
           });
-
           return user;
         } catch (err) {
           setError(true);
@@ -97,14 +97,40 @@ const useAppStore = create<AppState>()(
           setLoading(false);
         }
       },
+
+      signIn: async (data: any) => {
+        const { setUser, setLoading, setError, addNotification } = get();
+        try {
+          setLoading(true);
+          setError(false);
+          const res = await API.post("/api/user/login", data);
+          const user = res.data.user ?? res.data;
+          setUser(user);
+          addNotification({
+            id: Date.now().toString(),
+            message: "SignIn successful!",
+            read: false,
+          });
+          return user;
+        } catch (err) {
+          setError(true);
+
+          addNotification({
+            id: Date.now().toString(),
+            message: "SignIn failed. Please try again.",
+            read: false,
+          });
+
+          throw err;
+        } finally {
+          setLoading(false);
+        }
+      },
     }),
     {
       name: "app-storage",
 
-      // REQUIRED FOR PERSIST TO WORK
       storage: createJSONStorage(() => localStorage),
-
-      // Only store what is safe
       partialize: (state) => ({
         user: state.user,
         isLoggedIn: state.isLoggedIn,
