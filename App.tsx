@@ -49,9 +49,7 @@ export const App: React.FC = () => {
   const closeToast = () => setToast(null);
 
   const handleLoginRequest = (user) => {
-    console.log(user)
     setUser(user);
-    console.log(user)
     try {
       const savedTrades = localStorage.getItem(`active_trades_${user.email}`);
       setActiveTrades(savedTrades ? JSON.parse(savedTrades) : []);
@@ -59,7 +57,7 @@ export const App: React.FC = () => {
       setActiveTrades([]);
     }
     setActiveView("dashboard");
-    showToast(`Welcome back, ${userData.name.split(" ")[0]}!`, "success");
+    showToast(`Welcome back, ${user.name.split(" ")[0]}!`, "success");
   };
 
   const handleLogout = () => setUser(null);
