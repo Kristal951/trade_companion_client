@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trade Companion</title>
+    <style>
+      :root {
+        --color-primary: #6366F1;
+        --color-primary-hover: #4F46E5;
+        --color-secondary: #6B7280;
+        --color-accent: #9333EA;
+        --color-success: #22C55E;
+        --color-danger: #EF4444;
+        --color-warning: #FACC15;
+        --color-info: #3B82F6;
+        --color-bg: #F9FAFB;
+        --color-surface: #FFFFFF;
+        --color-hover: #F3F4F6;
+        --color-text: #1F2937;
+        --color-text-mid: #4B5563;
+        --color-border-light: #E5E7EB;
+        --color-border-dark: #D1D5DB;
+      }
+
+      html.dark {
+        --color-primary: #818CF8;
+        --color-primary-hover: #6366F1;
+        --color-secondary: #9CA3AF;
+        --color-accent: #A855F7;
+        --color-success: #4ADE80;
+        --color-danger: #F87171;
+        --color-warning: #FBBF24;
+        --color-info: #60A5FA;
+        --color-bg: #111827; /* gray-900 */
+        --color-surface: #1F2937; /* gray-800 */
+        --color-hover: #374151; /* gray-700 */
+        --color-text: #F9FAFB; /* gray-50 */
+        --color-text-mid: #9CA3AF; /* gray-400 */
+        --color-border-light: #374151; /* gray-700 */
+        --color-border-dark: #4B5563; /* gray-600 */
+      }
+
+      body {
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+      
+      @media print {
+        .no-print, .no-print * {
+          display: none !important;
+        }
+      }
+
+      /* Animated Theme Toggle */
+      .theme-toggle-label {
+        position: relative;
+        display: inline-block;
+        width: 60px; /* Width of the track */
+        height: 30px; /* Height of the track */
+        cursor: pointer;
+      }
+
+      .theme-toggle-input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .theme-toggle-slider {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #87CEEB; /* Day: Light Sky Blue */
+        transition: background-color .4s ease-in-out;
+        border-radius: 30px;
+      }
+
+      .theme-toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 24px; /* Thumb height */
+        width: 24px;  /* Thumb width */
+        left: 3px;    /* Thumb padding */
+        bottom: 3px;  /* Thumb padding */
+        background-color: white;
+        transition: transform .4s ease-in-out;
+        border-radius: 50%;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      }
+
+      .theme-toggle-input:checked + .theme-toggle-slider {
+        background-color: #4A5568; /* Night: Gray-700 */
+      }
+
+      .theme-toggle-input:checked + .theme-toggle-slider:before {
+        transform: translateX(30px); /* track width - thumb width */
+      }
+
+      /* Icons inside the toggle */
+      .theme-toggle-icon {
+        position: absolute;
+        pointer-events: none;
+        transition: opacity .4s ease-in-out, transform .4s ease-in-out;
+        width: 18px;
+        height: 18px;
+        top: 6px; /* (track height - icon height) / 2 */
+      }
+
+      .sun-icon {
+        left: 6px; /* (thumb width / 2) - (icon width / 2) + padding */
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+      }
+      
+      .moon-icon {
+        right: 6px;
+        opacity: 0;
+        transform: scale(0.5) rotate(90deg);
+      }
+      
+      .theme-toggle-input:checked ~ .sun-icon {
+        opacity: 0;
+        transform: scale(0.5) rotate(-90deg);
+      }
+      
+      .theme-toggle-input:checked ~ .moon-icon {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+      }
+
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'primary': 'var(--color-primary)',
+              'primary-hover': 'var(--color-primary-hover)',
+              'secondary': 'var(--color-secondary)',
+              'accent': 'var(--color-accent)',
+              'success': 'var(--color-success)',
+              'danger': 'var(--color-danger)',
+              'warning': 'var(--color-warning)',
+              'info': 'var(--color-info)',
+              'light-bg': 'var(--color-bg)',
+              'light-surface': 'var(--color-surface)',
+              'light-hover': 'var(--color-hover)',
+              'dark-text': 'var(--color-text)',
+              'mid-text': 'var(--color-text-mid)',
+              'light-gray': 'var(--color-border-light)',
+              'dark-gray': 'var(--color-border-dark)',
+              'chart-purple': '#A78BFA',
+              'chart-blue': '#60A5FA',
+              'chart-green': '#34D399',
+              'chart-red': '#FB7185',
+            },
+            keyframes: {
+              'fade-in-right': {
+                '0%': { opacity: '0', transform: 'translateX(20px)' },
+                '100%': { opacity: '1', transform: 'translateX(0)' },
+              },
+            },
+            animation: {
+              'fade-in-right': 'fade-in-right 0.3s ease-out forwards',
+            },
+          }
+        },
+        plugins: [
+            function ({ addUtilities }) {
+                const newUtilities = {
+                    '.glassmorphism': {
+                        'background-color': 'rgba(255, 255, 255, 0.7)',
+                        'backdrop-filter': 'blur(10px)',
+                        'border': '1px solid var(--color-border-dark)',
+                        'box-shadow': '0 4px 6px rgba(0, 0, 0, 0.1)',
+                    },
+                    '.dark .glassmorphism': {
+                        'background-color': 'rgba(30, 30, 30, 0.7)',
+                        'border': '1px solid var(--color-border-dark)',
+                    }
+                };
+                addUtilities(newUtilities, ['responsive', 'hover']);
+            }
+        ]
+      }
+    </script>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "recharts": "https://aistudiocdn.com/recharts@^3.3.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
+    "lightweight-charts": "https://esm.sh/lightweight-charts@4.2.0"
+  }
+}
+</script>
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+</head>
+<body class="bg-light-bg text-dark-text">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>
