@@ -10,7 +10,7 @@ import "../ui/index.css";
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialMode: "login" | "signup";
+  initialMode: "login" | "signup"
   onAuthSuccess: (details: { name: string; email: string }) => void;
 }
 
