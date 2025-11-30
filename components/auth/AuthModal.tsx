@@ -128,6 +128,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         name: user.name,
         email: user.email,
         plan: user.subscribedPlan || "FREE",
+        image: user.image || user.avatar,
       });
       onClose();
     } catch (err: any) {

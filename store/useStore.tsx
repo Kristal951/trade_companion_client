@@ -72,8 +72,10 @@ const useAppStore = create<AppState>()(
 
           const res = await API.post("/api/user/register", data);
           const user = res.data.user ?? res.data;
+          console.log(user)
 
           setUser(user);
+          console.log(user)
 
           addNotification({
             id: Date.now().toString(),
@@ -97,7 +99,7 @@ const useAppStore = create<AppState>()(
         }
       },
       signIn: async (data: any) => {
-        const { setUser, setLoading, setError, addNotification } = get();
+        const { setLoading, setError, addNotification } = get();
 
         try {
           setLoading(true);
@@ -105,6 +107,7 @@ const useAppStore = create<AppState>()(
 
           const res = await API.post("/api/user/login", data);
           const user = res.data.user
+          console.log(user)
 
           addNotification({
             id: Date.now().toString(),
