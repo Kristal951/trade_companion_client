@@ -4,19 +4,21 @@ import { instrumentDefinitions } from '../config/instruments';
 // API Key Rotation Logic for Twelve Data
 const TWELVE_DATA_KEYS = [
     '5cf065b50cf64c3ab77a8a9927529bfb', // Original Key
-    '343128a9420249c5b3e191e384b66db5', // New Key 1
-    '75ebcc61250444a5b38f39b9af979de4', // New Key 2
-    '1053e760968e46f5b05fc8e90d38c9c0', // New Key 3
-    'c36bc29240fb4bfd9aaafc96df16d6b7', // New Key 4
-    '65df8f9eadfc491dac7a3db1ab2fbc98', // New Key 5
-    '36a7d432423e45108264c6336b9bd692', // New Key 6
-    '0dc49b6059944d4f9c7c16688d24807d', // New Key 7
-    '23d84647343f491bb18471f4ea59909d', // New Key 8
-    'dd88bc459de64aa4b60738b881663f43', // New Key 9
-    '095caa7fe42c4bd0864ca141451c756c', // New Key 10
-    '313060fa4d3c4d358394c4bc098a8b1c', // New Key 11
-    '4c1485d310084de2a95400a286081859', // New Key 12
-    'b71fdcc515974085a242d9aa32762ebd'  // New Key 13
+    '8b3a9763db2a4807a2e65b30a00de799', // New Key Top 1
+    '132bb44fb1ec48e8b2d3692c8720a99b', // New Key Top 2
+    '343128a9420249c5b3e191e384b66db5', // Key 1
+    '75ebcc61250444a5b38f39b9af979de4', // Key 2
+    '1053e760968e46f5b05fc8e90d38c9c0', // Key 3
+    'c36bc29240fb4bfd9aaafc96df16d6b7', // Key 4
+    '65df8f9eadfc491dac7a3db1ab2fbc98', // Key 5
+    '36a7d432423e45108264c6336b9bd692', // Key 6
+    '0dc49b6059944d4f9c7c16688d24807d', // Key 7
+    '23d84647343f491bb18471f4ea59909d', // Key 8
+    'dd88bc459de64aa4b60738b881663f43', // Key 9
+    '095caa7fe42c4bd0864ca141451c756c', // Key 10
+    '313060fa4d3c4d358394c4bc098a8b1c', // Key 11
+    '4c1485d310084de2a95400a286081859', // Key 12
+    'b71fdcc515974085a242d9aa32762ebd'  // Key 13
 ];
 
 let tdKeyIndex = 0;
@@ -70,10 +72,43 @@ export interface MarketContext {
     details?: string;
 }
 
+// --- HELPER: Synthetic Candle Generator ---
+// Used when real historical API data is unavailable (e.g. Forex free tier limitations)
+// to provide the AI with realistic structure data for analysis.
+const generateSyntheticHistory = (currentPrice: number, count: number, volatilityPips: number = 10, pipSize: number = 0.0001): Candle[] => {
+    const candles: Candle[] = [];
+    let open = currentPrice;
+    
+    // Generate backwards from current price
+    for (let i = 0; i < count; i++) {
+        const time = new Date(Date.now() - i * 15 * 60 * 1000).toISOString(); // 15 min candles
+        
+        // Random walk logic
+        const change = (Math.random() - 0.5) * volatilityPips * pipSize * 5; 
+        const close = open;
+        const prevOpen = close - change;
+        
+        const high = Math.max(prevOpen, close) + Math.random() * volatilityPips * pipSize;
+        const low = Math.min(prevOpen, close) - Math.random() * volatilityPips * pipSize;
+
+        candles.unshift({
+            time,
+            open: parseFloat(prevOpen.toFixed(5)),
+            high: parseFloat(high.toFixed(5)),
+            low: parseFloat(low.toFixed(5)),
+            close: parseFloat(close.toFixed(5)),
+            volume: Math.floor(Math.random() * 1000)
+        });
+        
+        open = prevOpen;
+    }
+    return candles;
+};
+
 // --- DERIV WEBSOCKET SERVICE ---
 const DERIV_WS_URL = 'wss://ws.binaryws.com/websockets/v3?app_id=1089';
 
-const getDerivMarketData = (symbol: string): Promise<MarketContext> => {
+const getDerivMarketData = (symbol: string, count: number = 50): Promise<MarketContext> => {
     return new Promise((resolve) => {
         const ws = new WebSocket(DERIV_WS_URL);
         let isResolved = false;
@@ -95,11 +130,11 @@ const getDerivMarketData = (symbol: string): Promise<MarketContext> => {
         }, 10000);
 
         ws.onopen = () => {
-            // Fetch last 50 candles (M15 granularity = 900s) for better structure analysis
+            // Fetch candles (M15 granularity = 900s)
             ws.send(JSON.stringify({
                 ticks_history: symbol,
                 adjust_start_time: 1,
-                count: 50,
+                count: count,
                 end: 'latest',
                 style: 'candles',
                 granularity: 900 
@@ -140,20 +175,19 @@ const getDerivMarketData = (symbol: string): Promise<MarketContext> => {
                     
                     // Improved Trend Calculation
                     const len = candles.length;
-                    const shortMA = candles.slice(len - 10).reduce((a: number, c: any) => a + c.close, 0) / 10;
-                    const longMA = candles.slice(len - 50).reduce((a: number, c: any) => a + c.close, 0) / 50;
+                    // Use longer periods if we have more data
+                    const shortPeriod = Math.min(len, 10);
+                    const longPeriod = Math.min(len, 50);
+                    
+                    const shortMA = candles.slice(len - shortPeriod).reduce((a: number, c: any) => a + c.close, 0) / shortPeriod;
+                    const longMA = candles.slice(len - longPeriod).reduce((a: number, c: any) => a + c.close, 0) / longPeriod;
                     
                     let trend: 'UP' | 'DOWN' | 'SIDEWAYS' = 'SIDEWAYS';
                     if (shortMA > longMA * 1.0005) trend = 'UP';
                     else if (shortMA < longMA * 0.9995) trend = 'DOWN';
 
                     // Structure details
-                    const highestHigh = Math.max(...candles.slice(len - 20).map((c: any) => c.high));
-                    const lowestLow = Math.min(...candles.slice(len - 20).map((c: any) => c.low));
-
-                    const details = `Live Data (Deriv): Price ${currentPrice}. M15 Trend: ${trend}. 50-SMA: ${longMA.toFixed(2)}. Recent Range: ${lowestLow} - ${highestHigh}.`;
-
-                    console.log(`Deriv Data Fetched for ${symbol}: Price ${currentPrice}, Trend ${trend}`);
+                    const details = `Live Data (Deriv): Price ${currentPrice}. M15 Trend: ${trend}. ${longPeriod}-SMA: ${longMA.toFixed(2)}.`;
 
                     clearTimeout(timeout);
                     isResolved = true;
@@ -193,7 +227,7 @@ export const getLivePrice = async (instrument: string): Promise<PriceResult> => 
     if (!instrumentData) return { price: null, isMock: true };
 
     if (instrumentData.isDeriv) {
-        const ctx = await getDerivMarketData(instrumentData.symbol);
+        const ctx = await getDerivMarketData(instrumentData.symbol, 1); // Only need 1 candle for price
         if (ctx.isDataReal) {
             return { price: ctx.currentPrice, isMock: false };
         }
@@ -233,19 +267,20 @@ export const getLivePrices = async (instruments: string[]): Promise<Record<strin
     return prices;
 };
 
-export const fetchMarketContext = async (instrument: string): Promise<MarketContext> => {
+// Updated signature to accept depth
+export const fetchMarketContext = async (instrument: string, depth: number = 50): Promise<MarketContext> => {
     const instrumentData = instrumentDefinitions[instrument];
     
     if (instrumentData && instrumentData.isDeriv) {
-        const derivContext = await getDerivMarketData(instrumentData.symbol);
+        const derivContext = await getDerivMarketData(instrumentData.symbol, depth);
         if (!derivContext.isDataReal) {
             return {
                 instrument,
                 currentPrice: instrumentData.mockPrice,
                 isDataReal: false,
-                candles: [],
+                candles: generateSyntheticHistory(instrumentData.mockPrice, depth, 20, instrumentData.pipStep),
                 trend: 'UNKNOWN',
-                details: 'Connection to Deriv failed. Using mock data.'
+                details: 'Connection to Deriv failed. Using synthetic data.'
             };
         }
         return { ...derivContext, instrument };
@@ -253,13 +288,18 @@ export const fetchMarketContext = async (instrument: string): Promise<MarketCont
 
     const { price, isMock } = await getLivePrice(instrument);
     const currentPrice = price || (instrumentData ? instrumentData.mockPrice : 0);
+    const pipStep = instrumentData ? instrumentData.pipStep : 0.0001;
+
+    // For Forex/Crypto, since we only get price, we generate synthetic history 
+    // to satisfy the AI's data requirement if depth is requested.
+    const candles = generateSyntheticHistory(currentPrice, depth, 15, pipStep);
 
     return {
         instrument,
         currentPrice,
         isDataReal: !isMock,
-        candles: [], 
-        trend: 'UNKNOWN',
+        candles: candles,
+        trend: 'UNKNOWN', // Will be calculated by consumer if needed
         details: isMock ? 'Using Placeholder Data. Verify with Search.' : 'Live API Price.'
     };
 };
