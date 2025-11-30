@@ -3,10 +3,10 @@ import React, { useState, useEffect } from 'react';
 import Icon from '../ui/Icon';
 
 interface AuthModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    initialMode: 'login' | 'signup';
-    onAuthSuccess: (details: { name: string; email: string }) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  initialMode: "login" | "signup";
+  onAuthSuccess: (details: { name: string; email: string }) => void;
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode, onAuthSuccess }) => {
