@@ -3805,7 +3805,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
             onClick={() => setAccountMenuOpen(!isAccountMenuOpen)}
             className={`w-full flex items-center p-3 rounded-lg hover:bg-light-hover ${isSidebarCollapsed ? 'justify-center' : ''}`}
           >
+<<<<<<< HEAD
             <img src={user.avatar || user.image || `https://i.pravatar.cc/150?u=${user.email}`} alt="User Avatar" className="w-8 h-8 rounded-full object-cover border border-light-gray flex-shrink-0" />
+=======
+            <img src={user.avatar || `https://i.pravatar.cc/150?u=${user.email}`} alt="User Avatar" className="w-8 h-8 rounded-full object-cover border border-light-gray flex-shrink-0" />
+>>>>>>> 21ebe0eb19bee6c73b50966acd33866b1d3dcdd7
             {!isSidebarCollapsed && (
                 <>
                     <div className="text-left ml-3 flex-1 overflow-hidden">
@@ -3871,7 +3875,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
                     setNotifications={setNotifications} 
                     onViewChange={onViewChange}
                 />
+<<<<<<< HEAD
                 <img src={user.avatar || user.image  || `https://i.pravatar.cc/150?u=${user.email}`} alt="User Avatar" className="w-10 h-10 rounded-full" />
+=======
+                <img src={user.avatar || `https://i.pravatar.cc/150?u=${user.email}`} alt="User Avatar" className="w-10 h-10 rounded-full" />
+>>>>>>> 21ebe0eb19bee6c73b50966acd33866b1d3dcdd7
             </div>
         </header>
         

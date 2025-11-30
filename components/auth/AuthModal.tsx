@@ -380,7 +380,5 @@ const AuthModal: React.FC<AuthModalProps> = ({
         <Toast message={toast.message} type={toast.type} onClose={closeToast} />
       )}
     </div>
-  );
-};
-
+  )};
 export default AuthModal;
