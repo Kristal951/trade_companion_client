@@ -126,7 +126,6 @@ export interface MentorSubscriber {
 export interface Signal {
   instrument: string;
   type: "BUY" | "SELL";
-  entryType?: "MARKET" | "LIMIT" | "STOP"; // NEW: Supports pending orders
   entryPrice: number;
   stopLoss: number;
   takeProfit1: number;

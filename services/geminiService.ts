@@ -1,5 +1,4 @@
 
-
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { PlanName } from "../types";
 import { instrumentDefinitions } from '../config/instruments';
@@ -301,12 +300,6 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
     3.  **Pass Condition (STRICT):** 
         - If the 24h price action is chopping/ranging with no clear pattern: {"pass": false}.
         - If the Pattern opposes the Macro Trend: {"pass": false}.
-
-    **ENTRY TYPE LOGIC (DYNAMIC):**
-    You must decide the best entry type based on current price action:
-    - **MARKET:** If current price is close to optimal entry (within 5 pips).
-    - **LIMIT:** If you expect a pullback (e.g., Trend is Bullish but price is extended, set Buy Limit lower at support).
-    - **STOP:** If you are trading a breakout (e.g., Price is consolidating, set Buy Stop above resistance to confirm momentum).
     
     **STRATEGY GUIDELINES:**
     ${STRATEGY_GUIDELINES}
@@ -331,14 +324,13 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
     {
       "pass": true,
       "instrument": "XAU/USD",
-      "type": "BUY", // or "SELL"
-      "entryType": "LIMIT", // "MARKET", "LIMIT", or "STOP"
+      "type": "BUY",
       "entryPrice": 2300.50,
       "stopLoss": 2292.00,
       "takeProfit1": 2312.50,
       "pattern_score": 0.95,
       "tags": ["Trend Aligned", "Bull Flag", "SMA Support"],
-      "reason_short": "Explain logic. e.g. 'Waiting for retest of the order block at 2300.50 before entering long (Buy Limit)'."
+      "reason_short": "Macro Trend is Bullish. 24h price action formed a clean Bull Flag pattern retesting the 200 SMA."
     }`;
 
     const financialAnalystPrompt = `You are a senior financial analyst validating an algorithmic trade signal.
@@ -458,7 +450,6 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
             signalFound: true,
             instrument: patternResult.instrument,
             type: patternResult.type,
-            entryType: patternResult.entryType || 'MARKET', // Default to market if not provided
             entryPrice: entryPrice,
             stopLoss: stopLoss,
             takeProfit1: parseFloat(patternResult.takeProfit1),

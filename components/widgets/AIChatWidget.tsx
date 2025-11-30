@@ -1,5 +1,4 @@
 
-
 import React, { useState, useRef, useEffect } from 'react';
 import Icon from '../ui/Icon';
 import { DashboardView, User } from '../../types';
@@ -16,7 +15,6 @@ interface AIChatbotProps {
     onExecuteTrade: (tradeDetails: {
         instrument: string;
         type: 'BUY' | 'SELL';
-        entryType: 'MARKET' | 'LIMIT' | 'STOP';
         entryPrice: number;
         stopLoss: number;
         takeProfit: number;
@@ -33,7 +31,6 @@ interface ChatMessage {
     tradeData?: {
         instrument: string;
         type: 'BUY' | 'SELL';
-        entryType: 'MARKET' | 'LIMIT' | 'STOP';
         entry: number;
         sl: number;
         tp: number;
@@ -116,7 +113,7 @@ ${DERIV_KNOWLEDGE_BASE}
 const systemPrompt = `You are "Olapete" - a highly knowledgeable trading and support expert. 
 
 **CORE OBJECTIVE:**
-Provide precise, live trade setups with DYNAMIC entry types (Market, Limit, Stop).
+Provide precise, live trade setups.
 
 **CRITICAL DATA HANDLING:**
 
@@ -144,12 +141,6 @@ Provide precise, live trade setups with DYNAMIC entry types (Market, Limit, Stop
      - If Price is at Resistance + Bearish Structure -> SELL.
      - If uncertain -> "No clear setup".
 
-**ENTRY TYPE LOGIC:**
-You must recommend the most efficient entry type:
-- **MARKET:** If the price is *currently* at the optimal zone (within 3-5 pips/points).
-- **LIMIT:** If the price is far away and you expect a pullback to a better price (e.g. "Buy Limit at Support" when price is currently high).
-- **STOP:** If you are trading a breakout and waiting for momentum confirmation (e.g. "Buy Stop above Resistance").
-
 ${STRATEGY_CONTEXT}
 
 ## CORE INSTRUCTIONS:
@@ -162,12 +153,11 @@ ${STRATEGY_CONTEXT}
     When providing a trade, use this format:
     **TRADE SETUP**
     -   Instrument: [Name]
-    -   Action: [BUY / SELL]
-    -   Type: [MARKET / LIMIT / STOP]  <-- Specifying Entry Type is MANDATORY
-    -   Entry: [Price]
+    -   Action: [BUY/SELL]
+    -   Entry: [Price] (Must be close to Current Live Price)
     -   Stop Loss (SL): [Price]
     -   Take Profit (TP): [Price] (If Synthetic, verify it meets the $15 profit target rule).
-    **Reasoning:** [Explain logic relative to the entry type. E.g., 'Using Buy Limit to catch the retest of the FVG.']
+    **Reasoning:** [Reason based on Strategy Guide, Injected Trend, or Image Analysis]
 
 3.  **Communication:**
     -   Be "Very Sure". No wishy-washy language.
@@ -237,26 +227,14 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ user, activeView, onExecuteTrade 
         // Regex to extract parameters more robustly
         const instrumentMatch = text.match(/Instrument:\s*([A-Z0-9\/\.\s_]+)/i);
         const actionMatch = text.match(/Action:\s*(BUY|SELL)/i);
-        const typeMatch = text.match(/Type:\s*(MARKET|LIMIT|STOP)/i);
         const entryMatch = text.match(/Entry:\s*([\d\.]+)/i);
         const slMatch = text.match(/Stop Loss.*:\s*([\d\.]+)/i);
         const tpMatch = text.match(/Take Profit.*:\s*([\d\.]+)/i);
 
         if (instrumentMatch && actionMatch && entryMatch && slMatch && tpMatch) {
-            // Determine entry type if explicitly stated, otherwise assume MARKET
-            let entryType: 'MARKET' | 'LIMIT' | 'STOP' = 'MARKET';
-            if (typeMatch) {
-                entryType = typeMatch[1].toUpperCase() as 'MARKET' | 'LIMIT' | 'STOP';
-            } else if (text.toLowerCase().includes('limit')) {
-                entryType = 'LIMIT';
-            } else if (text.toLowerCase().includes('stop')) {
-                entryType = 'STOP';
-            }
-
             return {
                 instrument: instrumentMatch[1].trim(),
                 type: actionMatch[1].toUpperCase() as 'BUY' | 'SELL',
-                entryType: entryType,
                 entry: parseFloat(entryMatch[1]),
                 sl: parseFloat(slMatch[1]),
                 tp: parseFloat(tpMatch[1]),
@@ -269,7 +247,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ user, activeView, onExecuteTrade 
         onExecuteTrade({
             instrument: tradeData.instrument,
             type: tradeData.type,
-            entryType: tradeData.entryType,
             entryPrice: tradeData.entry,
             stopLoss: tradeData.sl,
             takeProfit: tradeData.tp,
@@ -564,7 +541,6 @@ INSTRUCTION:
                                     ) : (
                                         <>
                                             ⚡ Trade {msg.tradeData.instrument} {msg.tradeData.type}
-                                            {msg.tradeData.entryType !== 'MARKET' && ` (${msg.tradeData.entryType})`}
                                         </>
                                     )}
                                 </button>
