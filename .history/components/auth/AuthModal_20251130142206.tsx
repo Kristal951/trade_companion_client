@@ -224,7 +224,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
               </label>
               <div className="relative">
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-mid-text">
-                  <Icon name="password" className="w-6 h-6" />
+                  <Icon name="password" className="w-6 h-5" />
                 </div>
                 <input
                   type="password"

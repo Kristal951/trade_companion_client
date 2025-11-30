@@ -3,6 +3,7 @@ import Icon from "../ui/Icon";
 import useAppStore from "@/store/useStore";
 import Toast from "../ui/Toast";
 import DatePicker from "react-datepicker";
+import { FaRegCalendarAlt } from "react-icons/fa";
 import "react-datepicker/dist/react-datepicker.css";
 import "../ui/index.css";
 
@@ -224,7 +225,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
               </label>
               <div className="relative">
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-mid-text">
-                  <Icon name="password" className="w-6 h-6" />
+                  <Icon name="password" className="w-5 h-5" />
                 </div>
                 <input
                   type="password"

@@ -3,7 +3,7 @@ import LandingPage from "./components/onboarding/LandingPage";
 import DashboardPage from "./components/dashboard/DashboardPage";
 import AIChatbot from "./components/widgets/AIChatWidget";
 import Toast from "./components/ui/Toast";
-import { PlanName, DashboardView, TradeRecord, User } from "./types";
+import { PlanName, DashboardView, TradeRecord } from "./types";
 import ScreenshotDetector from "./components/ui/ScreenshotDetector";
 import { instrumentDefinitions } from "./config/instruments";
 import useAppStore from "./store/useStore";
@@ -18,7 +18,6 @@ export const App: React.FC = () => {
     message: string;
     type: "success" | "info" | "error";
   } | null>(null);
-
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window !== "undefined" && localStorage.getItem("theme")) {
       return localStorage.getItem("theme") as "light" | "dark";
@@ -32,22 +31,27 @@ export const App: React.FC = () => {
     return "light";
   });
 
-  const [activeTrades, setActiveTrades] = useState<TradeRecord[]>([]);
-
-  // Sync activeTrades from localStorage when user changes
-  useEffect(() => {
-    if (user) {
-      try {
-        const savedTrades = localStorage.getItem(`active_trades_${user.email}`);
-        setActiveTrades(savedTrades ? JSON.parse(savedTrades) : []);
-      } catch (e) {
-        console.error("Failed to parse active trades", e);
-        setActiveTrades([]);
-      }
-    } else {
-      setActiveTrades([]);
+  const [activeTrades, setActiveTrades] = useState<TradeRecord[]>(() => {
+    if (!user) return [];
+    try {
+      const saved = localStorage.getItem(`active_trades_${user.email}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Failed to parse active trades", e);
+      return [];
     }
-  }, [user]);
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      root.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [theme]);
 
   // Persist activeTrades whenever they change
   useEffect(() => {
@@ -59,26 +63,34 @@ export const App: React.FC = () => {
     }
   }, [activeTrades, user]);
 
-  // Apply theme
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      root.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [theme]);
-
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
   };
 
-  const handleLoginRequest = (userData: User) => {
-    console.log(userData)
-    showToast(`Welcome back, ${userData.name.split(" ")[0]}!`, "success");
+  const handleLoginRequest = (userDetails: { name: string; email: string }) => {
+    const newUser = {
+      ...user,
+      name: userDetails.name,
+      email: userDetails.email,
+      isMentor: true,
+    };
+    setUser(newUser);
+
+    try {
+      const savedTrades = localStorage.getItem(
+        `active_trades_${newUser.email}`
+      );
+      if (savedTrades) {
+        setActiveTrades(JSON.parse(savedTrades));
+      } else {
+        setActiveTrades([]);
+      }
+    } catch (e) {
+      setActiveTrades([]);
+    }
+
     setActiveView("dashboard");
+    showToast(`Welcome back, ${userDetails.name.split(" ")[0]}!`, "success");
   };
 
   const handleLogout = () => {
@@ -118,9 +130,12 @@ export const App: React.FC = () => {
     reasoning: string;
   }) => {
     if (!user) return;
-    if (
-      activeTrades.some((t) => t.instrument === tradeDetails.instrument)
-    ) {
+
+    // Check for duplicate trade
+    const alreadyExists = activeTrades.some(
+      (t) => t.instrument === tradeDetails.instrument
+    );
+    if (alreadyExists) {
       showToast(
         `You already have an active trade for ${tradeDetails.instrument}`,
         "error"
@@ -128,7 +143,7 @@ export const App: React.FC = () => {
       return;
     }
 
-    // Load user settings
+    // Retrieve user settings for lot size calc
     let currentEquity = 10000;
     let riskPct = 1.0;
     try {
@@ -140,12 +155,12 @@ export const App: React.FC = () => {
         localStorage.getItem(`currentEquity_${user.email}`) || settings.balance
       );
       riskPct = parseFloat(settings.risk);
-    } catch {
+    } catch (e) {
       console.warn("Failed to parse user settings, using defaults");
     }
 
-    // Calculate lot size
-    let lotSize = 0.01;
+    // Calculate Lot Size
+    let lotSize = 0.01; // Default
     let riskAmount = 0;
 
     try {
@@ -158,7 +173,7 @@ export const App: React.FC = () => {
         const stopLossPips = stopDistPrice / instrumentProps.pipStep;
         const contractSize = instrumentProps.contractSize;
 
-        let pipValueInUSDForOneLot = 10;
+        let pipValueInUSDForOneLot = 10; // Default approx
         if (instrumentProps.quoteCurrency === "USD") {
           pipValueInUSDForOneLot = instrumentProps.pipStep * contractSize;
         } else if (instrumentProps.quoteCurrency === "JPY") {
@@ -169,6 +184,7 @@ export const App: React.FC = () => {
         const totalRiskPerLot = stopLossPips * pipValueInUSDForOneLot;
         if (totalRiskPerLot > 0) {
           lotSize = riskAmount / totalRiskPerLot;
+          // Safe Guard for NaN
           if (isNaN(lotSize)) lotSize = 0.01;
           lotSize = Math.max(0.01, parseFloat(lotSize.toFixed(2)));
         }
@@ -189,11 +205,11 @@ export const App: React.FC = () => {
       takeProfit: tradeDetails.takeProfit,
       confidence: tradeDetails.confidence,
       reasoning: tradeDetails.reasoning,
-      lotSize,
+      lotSize: lotSize,
       riskAmount: isNaN(riskAmount) ? 0 : parseFloat(riskAmount.toFixed(2)),
       technicalReasoning: "Manual AI Execution from Chat",
-      takeProfit1: tradeDetails.takeProfit,
-      timestamp: new Date().toISOString(),
+      takeProfit1: tradeDetails.takeProfit, // Mapped from takeProfit for TradeRecord compatibility
+      timestamp: new Date().toISOString(), // Required by Signal/TradeRecord interface
     };
 
     setActiveTrades((prev) => [newTrade, ...prev]);
@@ -208,7 +224,11 @@ export const App: React.FC = () => {
       <>
         <LandingPage onLoginRequest={handleLoginRequest} />
         {toast && (
-          <Toast message={toast.message} type={toast.type} onClose={closeToast} />
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={closeToast}
+          />
         )}
       </>
     );

@@ -77,6 +77,7 @@ export const App: React.FC = () => {
 
   const handleLoginRequest = (userData: User) => {
     console.log(userData)
+    setUser(userData);
     showToast(`Welcome back, ${userData.name.split(" ")[0]}!`, "success");
     setActiveView("dashboard");
   };

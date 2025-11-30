@@ -11,7 +11,6 @@ import useAppStore from "./store/useStore";
 export const App: React.FC = () => {
   const user = useAppStore((state) => state.user);
   const setUser = useAppStore((state) => state.setUser);
-  console.log(user)
 
   const [activeView, setActiveView] = useState<DashboardView>("dashboard");
   const [toast, setToast] = useState<{
@@ -76,7 +75,8 @@ export const App: React.FC = () => {
   };
 
   const handleLoginRequest = (userData: User) => {
-    console.log(userData)
+    console.log(user)
+    setUser(userData);
     showToast(`Welcome back, ${userData.name.split(" ")[0]}!`, "success");
     setActiveView("dashboard");
   };
