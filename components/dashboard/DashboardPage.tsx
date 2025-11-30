@@ -3874,6 +3874,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
                 />
                 <img src={user.avatar || user.image  || `https://i.pravatar.cc/150?u=${user.email}`} alt="User Avatar" className="w-10 h-10 rounded-full" />
 
+
             </div>
         </header>
         
