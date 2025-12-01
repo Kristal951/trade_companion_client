@@ -31,6 +31,7 @@ interface AppState {
 
   signup: (data: { name: string; email: string; password: string; age: string }) => Promise<User>;
   signIn: (data: { email: string; password: string;}) => Promise<User>;
+  handleGoogleSignIn: (data: object) => Promise<User>;
 }
 
 const useAppStore = create<AppState>()(
@@ -116,6 +117,35 @@ const useAppStore = create<AppState>()(
           });
 
           return user;
+        } catch (err) {
+          setError(true);
+          addNotification({
+            id: Date.now().toString(),
+            message: "SignIn failed. Please try again.",
+            read: false,
+          });
+
+          throw err;
+        } finally {
+          setLoading(false);
+        }
+      },
+      handleGoogleSignIn: async (data: any) => {
+        const { setLoading, setError, addNotification } = get();
+
+        try {
+          setLoading(true);
+          setError(false);
+          console.log(data)
+
+          const res = await API.post("/api/user/google_login", data);
+          addNotification({
+            id: Date.now().toString(),
+            message: " Google SignIn successful!",
+            read: false,
+          });
+
+          return res.data;
         } catch (err) {
           setError(true);
           addNotification({

@@ -1840,6 +1840,7 @@ const VerificationSettings: React.FC<{ showToast: (msg: string, type: 'success' 
             {children}
         </div>
     );
+    
 
     return (
         <div className="p-6 bg-light-surface rounded-lg border border-light-gray text-dark-text animate-fade-in-right">
@@ -3378,6 +3379,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
   const [selectedEducationArticle, setSelectedEducationArticle] = useState<EducationArticle | null>(null);
   const [isAccountMenuOpen, setAccountMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  console.log(user)
   
   // Tracks if the user is currently viewing the app in Mentor mode (if eligible)
   const [isMentorMode, setIsMentorMode] = useState(false);
