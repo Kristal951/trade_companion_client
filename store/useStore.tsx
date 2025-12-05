@@ -73,11 +73,9 @@ const useAppStore = create<AppState>()(
 
           const res = await API.post("/api/user/register", data);
           const user = res.data.user ?? res.data;
-          console.log(user)
 
           setUser(user);
-          console.log(user)
-
+  
           addNotification({
             id: Date.now().toString(),
             message: "Signup successful!",
@@ -108,8 +106,7 @@ const useAppStore = create<AppState>()(
 
           const res = await API.post("/api/user/login", data);
           const user = res.data.user
-          console.log(user)
-
+  
           addNotification({
             id: Date.now().toString(),
             message: "SignIn successful!",
@@ -136,7 +133,6 @@ const useAppStore = create<AppState>()(
         try {
           setLoading(true);
           setError(false);
-          console.log(data)
 
           const res = await API.post("/api/user/google_login", data);
           addNotification({

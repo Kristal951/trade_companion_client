@@ -57,10 +57,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
     if (m < 0 || (m === 0 && today.getDate() < date.getDate())) {
       calculatedAge--;
     }
-    console.log(calculatedAge);
     await setAge(calculatedAge);
     await setFormData({ ...formData, age: calculatedAge.toString() });
-    console.log(formData);
 
     if (calculatedAge < 18) {
       showToast(

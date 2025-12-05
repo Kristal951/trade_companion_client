@@ -10,7 +10,6 @@ export const API = axios.create({
 
 API.interceptors.response.use(
   (response) => response,
-  console.log(import.meta.env.VITE_SERVER_API_URI ),
   (error) => {
     console.error("API Error:", error);
     return Promise.reject(error);

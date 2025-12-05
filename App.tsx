@@ -10,8 +10,7 @@ import useAppStore from "./store/useStore";
 
 export const App: React.FC = () => {
   const user = useAppStore((state) => state.user);
-  const setUser = useAppStore((state) => state.setUser);
-  console.log(user)
+  const setUser = useAppStore((state) => state.setUser)
 
   const [activeView, setActiveView] = useState<DashboardView>("dashboard");
   const [toast, setToast] = useState<{ message: string; type: "success" | "info" | "error" } | null>(null);

@@ -3379,7 +3379,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user, setUser, onLogout, 
   const [selectedEducationArticle, setSelectedEducationArticle] = useState<EducationArticle | null>(null);
   const [isAccountMenuOpen, setAccountMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  console.log(user)
   
   // Tracks if the user is currently viewing the app in Mentor mode (if eligible)
   const [isMentorMode, setIsMentorMode] = useState(false);
