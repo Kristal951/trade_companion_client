@@ -2237,7 +2237,6 @@ const VerificationSettings: React.FC<{
 const ProfileSettings: React.FC<SettingsProps> = ({
   user,
   updateUser,
-  setUser,
   showToast,
   loading,
 }) => {
@@ -4775,47 +4774,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
   const [tradeHistory, setTradeHistory] = useState<TradeRecord[]>(() =>
     JSON.parse(localStorage.getItem(TRADE_HISTORY_KEY) || "[]")
   );
-  const [notifications, setNotifications] = useState<Notification[]>(() => {
-    const saved = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) || "[]");
-    if (saved.length > 0) return saved;
-    return [
-      {
-        id: "promo-1",
-        message: "Premium plan is 20% off this week!",
-        timestamp: new Date().toISOString(),
-        isRead: false,
-        linkTo: "settings",
-        type: "promo",
-      },
-      {
-        id: "update-1",
-        message: "The Analytics page has been updated with new charts.",
-        timestamp: new Date(Date.now() - 86400000).toISOString(),
-        isRead: true,
-        linkTo: "analytics",
-        type: "app_update",
-      },
-    ];
-  });
+  const notifications = useAppStore(
+    (state) => state.notifications
+  );
+  const addNotification = useAppStore(
+    (state) => state.addNotification
+  );
 
   // NEW: State for Floating P/L
   const [floatingPnL, setFloatingPnL] = useState(0);
 
   const { canUseFeature, incrementUsage } = useUsageTracker(user);
-
-  const addNotification = useCallback(
-    (notification: Omit<Notification, "id" | "timestamp" | "isRead">) => {
-      const newNotif: Notification = {
-        ...notification,
-        id: new Date().toISOString(),
-        timestamp: new Date().toISOString(),
-        isRead: false,
-      };
-      setNotifications((prev) => [newNotif, ...prev]);
-      showToast(notification.message, "info");
-    },
-    [showToast]
-  );
 
   // Sync isMentorMode with user capability only initially or when user changes
   useEffect(() => {
@@ -4942,8 +4911,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
               linkTo: "ai_signals",
               type: "signal",
             };
-            setNotifications((prev) => [newNotification, ...prev]);
-            showToast(newNotification.message, "success");
+            addNotification(newNotification);
 
             if (
               user.cTraderConfig?.isConnected &&
@@ -5628,7 +5596,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             </label>
             <NotificationBell
               notifications={notifications}
-              setNotifications={setNotifications}
+              addNotification={addNotification}
               onViewChange={onViewChange}
             />
             <img

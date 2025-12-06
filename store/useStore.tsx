@@ -1,13 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { User } from "@/types";
+import { User, Notification } from "@/types";
 import { API, updateUserAPI } from "@/utils";
-
-export interface Notification {
-  id: string;
-  message: string;
-  read: boolean;
-}
 
 interface AppState {
   user: User | null;
@@ -28,6 +22,7 @@ interface AppState {
   notifications: Notification[];
   addNotification: (n: Notification) => void;
   markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => void;
   clearNotifications: () => void;
 
   signup: (data: {
@@ -75,13 +70,26 @@ const useAppStore = create<AppState>()(
 
       notifications: [],
       addNotification: (notification) =>
-        set((s) => ({ notifications: [...s.notifications, notification] })),
+        set((s) => {
+          const exists = s.notifications.some((n) => n.id === notification.id);
+          const updated = exists
+            ? s.notifications
+            : [...s.notifications, notification];
+          console.log(updated);
+          console.log(localStorage);
+          return { notifications: updated };
+        }),
 
       markNotificationRead: (id) =>
+        set((s) => {
+          const updated = s.notifications.map((n) =>
+            n.id === id ? { ...n, isRead: true } : n
+          );
+          return { notifications: updated };
+        }),
+      markAllNotificationsRead: () =>
         set((s) => ({
-          notifications: s.notifications.map((n) =>
-            n.id === id ? { ...n, read: true } : n
-          ),
+          notifications: s.notifications.map((n) => ({ ...n, isRead: true })),
         })),
 
       clearNotifications: () => set({ notifications: [] }),
@@ -96,24 +104,20 @@ const useAppStore = create<AppState>()(
           const res = await API.post("/api/user/register", data);
           const user = res.data.user ?? res.data;
 
-          setUser(user, true); // ✔ always replace on signup
+          setUser(user, true);
 
           addNotification({
             id: Date.now().toString(),
             message: "Signup successful!",
-            read: false,
+            isRead: false,
+            timestamp: new Date().toISOString(),
+            linkTo: "dashboard",
+            type: "app_update",
           });
 
           return user;
         } catch (err) {
           setError(true);
-
-          addNotification({
-            id: Date.now().toString(),
-            message: "Signup failed. Please try again.",
-            read: false,
-          });
-
           throw err;
         } finally {
           setLoading(false);
@@ -135,18 +139,15 @@ const useAppStore = create<AppState>()(
           addNotification({
             id: Date.now().toString(),
             message: "SignIn successful!",
-            read: false,
+            isRead: false,
+            timestamp: new Date().toISOString(),
+            linkTo: "dashboard",
+            type: "app_update",
           });
 
           return user;
         } catch (err) {
           setError(true);
-          addNotification({
-            id: Date.now().toString(),
-            message: "SignIn failed. Please try again.",
-            read: false,
-          });
-
           throw err;
         } finally {
           setLoading(false);
@@ -162,23 +163,20 @@ const useAppStore = create<AppState>()(
 
           const res = await API.post("/api/user/google_login", data);
 
-          setUser(res.data, true); // ✔ replace full object
+          setUser(res.data, true); 
 
           addNotification({
             id: Date.now().toString(),
             message: "Google SignIn successful!",
-            read: false,
+            isRead: false,
+            timestamp: new Date().toISOString(),
+            linkTo: "dashboard",
+            type: "app_update",
           });
 
           return res.data;
         } catch (err) {
           setError(true);
-          addNotification({
-            id: Date.now().toString(),
-            message: "SignIn failed. Please try again.",
-            read: false,
-          });
-
           throw err;
         } finally {
           setLoading(false);
@@ -192,18 +190,8 @@ const useAppStore = create<AppState>()(
           setError(false);
           await API.post("/api/user/logout");
           clearUser();
-          addNotification({
-            id: Date.now().toString(),
-            message: "Logout successful!",
-            read: false,
-          });
         } catch (err) {
           setError(true);
-          addNotification({
-            id: Date.now().toString(),
-            message: "Logout failed. Please try again.",
-            read: false,
-          });
           throw err;
         } finally {
           setLoading(false);
@@ -234,19 +222,33 @@ const useAppStore = create<AppState>()(
           });
 
           const updatedUser = res.data.user;
-          setUser(updatedUser, true);
+          setUser(
+            {
+              name: updatedUser.name,
+              email: updatedUser.email,
+              subscribedPlan: updatedUser.subscribedPlan || "FREE",
+              avatar: updatedUser.picture || updatedUser.avatar,
+            },
+            true
+          );
 
           addNotification({
             id: Date.now().toString(),
-            message: "Profile updated successfully!",
-            read: false,
+            message: "Profile Updated successfully!",
+            isRead: false,
+            timestamp: new Date().toISOString(),
+            linkTo: "dashboard",
+            type: "app_update",
           });
         } catch (err) {
           setError(true);
           addNotification({
             id: Date.now().toString(),
-            message: "Profile update failed.",
-            read: false,
+            message: "Profile Updated unsuccessfully, Please try again.",
+            isRead: false,
+            timestamp: new Date().toISOString(),
+            linkTo: "dashboard",
+            type: "app_update",
           });
           throw err;
         } finally {
@@ -262,6 +264,7 @@ const useAppStore = create<AppState>()(
         user: state.user,
         isLoggedIn: state.isLoggedIn,
         darkMode: state.darkMode,
+        notifications: state.notifications,
       }),
     }
   )

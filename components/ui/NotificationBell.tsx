@@ -1,35 +1,37 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Notification, DashboardView, NotificationType } from '../../types';
 import Icon from './Icon';
+import useAppStore from '@/store/useStore';
 
 interface NotificationBellProps {
     notifications: Notification[];
-    setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
+    addNotification: React.Dispatch<React.SetStateAction<Notification[]>>;
     onViewChange: (view: DashboardView) => void;
 }
 
-const NotificationBell: React.FC<NotificationBellProps> = ({ notifications, setNotifications, onViewChange }) => {
+const NotificationBell: React.FC<NotificationBellProps> = ({ notifications, addNotification, onViewChange }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const markNotificationRead = useAppStore((state) => state.markNotificationRead);
+    const clearNotifications = useAppStore((state) => state.clearNotifications);
+    const markAllNotificationsRead = useAppStore((state) => state.markAllNotificationsRead);
 
-    const unreadCount = notifications.filter(n => !n.isRead).length;
+    const unreadCount = notifications?.filter(n => !n.isRead).length;
 
     const handleToggle = () => setIsOpen(!isOpen);
 
     const handleNotificationClick = (notification: Notification) => {
-        setNotifications(prev =>
-            prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n)
-        );
+       markNotificationRead(notification.id);
         onViewChange(notification.linkTo);
         setIsOpen(false);
     };
 
     const handleMarkAllAsRead = () => {
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        markAllNotificationsRead();
     };
     
     const handleClearAll = () => {
-        setNotifications([]);
+        clearNotifications();
         setIsOpen(false);
     };
 
