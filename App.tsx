@@ -11,6 +11,9 @@ import useAppStore from "./store/useStore";
 export const App: React.FC = () => {
   const user = useAppStore((state) => state.user);
   const setUser = useAppStore((state) => state.setUser)
+  const logout = useAppStore((state) => state.logout)
+  const updateUser = useAppStore((state) => state.updateUser)
+  const loading = useAppStore((state) => state.loading)
 
   const [activeView, setActiveView] = useState<DashboardView>("dashboard");
   const [toast, setToast] = useState<{ message: string; type: "success" | "info" | "error" } | null>(null);
@@ -48,7 +51,7 @@ export const App: React.FC = () => {
   const closeToast = () => setToast(null);
 
   const handleLoginRequest = (user) => {
-    setUser(user);
+    setUser(user, true);
     try {
       const savedTrades = localStorage.getItem(`active_trades_${user.email}`);
       setActiveTrades(savedTrades ? JSON.parse(savedTrades) : []);
@@ -59,7 +62,13 @@ export const App: React.FC = () => {
     showToast(`Welcome back, ${user.name.split(" ")[0]}!`, "success");
   };
 
-  const handleLogout = () => setUser(null);
+  const handleLogout = async () =>{
+    console.log(user)
+    await logout();
+    setActiveTrades([]);
+    setActiveView("dashboard");
+    showToast("You have been logged out.", "info");
+  }
   const handleViewChange = (view: DashboardView) => setActiveView(view);
 
   const handleScreenshotAttempt = () => {
@@ -155,12 +164,14 @@ export const App: React.FC = () => {
           setUser={setUser}
           onLogout={handleLogout}
           activeView={activeView}
+          updateUser={updateUser}
           onViewChange={handleViewChange}
           showToast={showToast}
           theme={theme}
           toggleTheme={toggleTheme}
           activeTrades={activeTrades}
           setActiveTrades={setActiveTrades}
+          loading={loading}
         />
       </ScreenshotDetector>
       <AIChatbot user={user} activeView={activeView} onExecuteTrade={handleExecuteTrade} />

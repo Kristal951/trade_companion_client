@@ -15,3 +15,7 @@ API.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export const updateUserAPI = (email, updates) => {
+  return API.put("/api/user/update", { email, updates });
+};
