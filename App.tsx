@@ -10,18 +10,23 @@ import useAppStore from "./store/useStore";
 
 export const App: React.FC = () => {
   const user = useAppStore((state) => state.user);
-  const setUser = useAppStore((state) => state.setUser)
-  const logout = useAppStore((state) => state.logout)
-  const updateUser = useAppStore((state) => state.updateUser)
-  const loading = useAppStore((state) => state.loading)
+  const setUser = useAppStore((state) => state.setUser);
+  const logout = useAppStore((state) => state.logout);
+  const updateUser = useAppStore((state) => state.updateUser);
+  const loading = useAppStore((state) => state.loading);
 
   const [activeView, setActiveView] = useState<DashboardView>("dashboard");
-  const [toast, setToast] = useState<{ message: string; type: "success" | "info" | "error" } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "info" | "error";
+  } | null>(null);
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window === "undefined") return "light";
     const saved = localStorage.getItem("theme") as "light" | "dark";
     if (saved) return saved;
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
   });
   const [activeTrades, setActiveTrades] = useState<TradeRecord[]>(() => {
     if (!user) return [];
@@ -42,12 +47,20 @@ export const App: React.FC = () => {
 
   // Persist trades
   useEffect(() => {
-    if (user) localStorage.setItem(`active_trades_${user.email}`, JSON.stringify(activeTrades));
+    if (user)
+      localStorage.setItem(
+        `active_trades_${user.email}`,
+        JSON.stringify(activeTrades)
+      );
   }, [activeTrades, user]);
 
-  const toggleTheme = () => setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  const toggleTheme = () =>
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
 
-  const showToast = (message: string, type: "success" | "info" | "error" = "info") => setToast({ message, type });
+  const showToast = (
+    message: string,
+    type: "success" | "info" | "error" = "info"
+  ) => setToast({ message, type });
   const closeToast = () => setToast(null);
 
   const handleLoginRequest = (user) => {
@@ -62,13 +75,17 @@ export const App: React.FC = () => {
     showToast(`Welcome back, ${user.name.split(" ")[0]}!`, "success");
   };
 
-  const handleLogout = async () =>{
-    console.log(user)
-    await logout();
+  const handleLogout = async () => {
+    try {
+          await logout();
     setActiveTrades([]);
     setActiveView("dashboard");
     showToast("You have been logged out.", "info");
-  }
+    } catch (error) {
+      console.log(error)
+      showToast("There was an error logging you out, try again later.", "error");
+    }
+  };
   const handleViewChange = (view: DashboardView) => setActiveView(view);
 
   const handleScreenshotAttempt = () => {
@@ -91,7 +108,10 @@ export const App: React.FC = () => {
     if (!user) return;
 
     if (activeTrades.some((t) => t.instrument === tradeDetails.instrument)) {
-      showToast(`You already have an active trade for ${tradeDetails.instrument}`, "error");
+      showToast(
+        `You already have an active trade for ${tradeDetails.instrument}`,
+        "error"
+      );
       return;
     }
 
@@ -99,8 +119,13 @@ export const App: React.FC = () => {
     let currentEquity = 10000;
     let riskPct = 1.0;
     try {
-      const settings = JSON.parse(localStorage.getItem(`tradeSettings_${user.email}`) || '{"balance":"10000","risk":"1.0"}');
-      currentEquity = parseFloat(localStorage.getItem(`currentEquity_${user.email}`) || settings.balance);
+      const settings = JSON.parse(
+        localStorage.getItem(`tradeSettings_${user.email}`) ||
+          '{"balance":"10000","risk":"1.0"}'
+      );
+      currentEquity = parseFloat(
+        localStorage.getItem(`currentEquity_${user.email}`) || settings.balance
+      );
       riskPct = parseFloat(settings.risk);
     } catch {}
 
@@ -111,14 +136,21 @@ export const App: React.FC = () => {
     try {
       const props = instrumentDefinitions[tradeDetails.instrument];
       if (props) {
-        const stopPips = Math.abs(tradeDetails.entryPrice - tradeDetails.stopLoss) / props.pipStep;
-        const pipValue = props.quoteCurrency === "USD"
-          ? props.pipStep * props.contractSize
-          : props.quoteCurrency === "JPY"
-          ? (props.pipStep * props.contractSize) / 150
-          : 10;
+        const stopPips =
+          Math.abs(tradeDetails.entryPrice - tradeDetails.stopLoss) /
+          props.pipStep;
+        const pipValue =
+          props.quoteCurrency === "USD"
+            ? props.pipStep * props.contractSize
+            : props.quoteCurrency === "JPY"
+            ? (props.pipStep * props.contractSize) / 150
+            : 10;
         const totalRisk = stopPips * pipValue;
-        if (totalRisk > 0) lotSize = Math.max(0.01, parseFloat((riskAmount / totalRisk).toFixed(2)));
+        if (totalRisk > 0)
+          lotSize = Math.max(
+            0.01,
+            parseFloat((riskAmount / totalRisk).toFixed(2))
+          );
       }
     } catch (err) {
       console.error("Lot calculation failed", err);
@@ -144,14 +176,23 @@ export const App: React.FC = () => {
     };
 
     setActiveTrades((prev) => [newTrade, ...prev]);
-    showToast(`${tradeDetails.instrument} ${tradeDetails.type} executed successfully!`, "success");
+    showToast(
+      `${tradeDetails.instrument} ${tradeDetails.type} executed successfully!`,
+      "success"
+    );
   };
 
   if (!user) {
     return (
       <>
         <LandingPage onLoginRequest={handleLoginRequest} />
-        {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={closeToast}
+          />
+        )}
       </>
     );
   }
@@ -174,8 +215,39 @@ export const App: React.FC = () => {
           loading={loading}
         />
       </ScreenshotDetector>
-      <AIChatbot user={user} activeView={activeView} onExecuteTrade={handleExecuteTrade} />
-      {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
+      <AIChatbot
+        user={user}
+        activeView={activeView}
+        onExecuteTrade={handleExecuteTrade}
+      />
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={closeToast} />
+      )}
+      {loading && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in-right">
+          <svg
+            className="animate-spin h-5 w-5 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25 w-20 h-20"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          <p>Logging You Out...</p>
+        </div>
+      )}
     </>
   );
 };

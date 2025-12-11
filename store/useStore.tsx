@@ -8,7 +8,8 @@ interface AppState {
   isLoggedIn: boolean;
   setUser: (user: User | Partial<User>, replace?: boolean) => void;
   clearUser: () => void;
-  updateUser: (updates: Partial<User>) => Promise<User>;
+  updateUser: (updates: Partial<User>) => void;
+  verifyEmailCode: (code: string) => Promise<User>;
 
   loading: boolean;
   setLoading: (loading: boolean) => void;
@@ -30,7 +31,7 @@ interface AppState {
     email: string;
     password: string;
     age: string;
-  }) => Promise<User>;
+  }) => Promise<void>;
   signIn: (data: { email: string; password: string }) => Promise<User>;
   logout: () => Promise<void>;
   handleGoogleSignIn: (data: object) => Promise<User>;
@@ -75,8 +76,6 @@ const useAppStore = create<AppState>()(
           const updated = exists
             ? s.notifications
             : [...s.notifications, notification];
-          console.log(updated);
-          console.log(localStorage);
           return { notifications: updated };
         }),
 
@@ -95,16 +94,13 @@ const useAppStore = create<AppState>()(
       clearNotifications: () => set({ notifications: [] }),
 
       signup: async (data) => {
-        const { setUser, setLoading, setError, addNotification } = get();
+        const { setLoading, setError, addNotification } = get();
 
         try {
           setLoading(true);
           setError(false);
-
-          const res = await API.post("/api/user/register", data);
-          const user = res.data.user ?? res.data;
-
-          setUser(user, true);
+          await API.post("/api/user/register", data);
+          console.log(data)
 
           addNotification({
             id: Date.now().toString(),
@@ -115,7 +111,6 @@ const useAppStore = create<AppState>()(
             type: "app_update",
           });
 
-          return user;
         } catch (err) {
           setError(true);
           throw err;
@@ -134,7 +129,7 @@ const useAppStore = create<AppState>()(
           const res = await API.post("/api/user/login", data);
           const user = res.data.user;
 
-          setUser(user, true); // ✔ replace full object when signing in
+          setUser(user, true); 
 
           addNotification({
             id: Date.now().toString(),
@@ -163,7 +158,7 @@ const useAppStore = create<AppState>()(
 
           const res = await API.post("/api/user/google_login", data);
 
-          setUser(res.data, true); 
+          setUser(res.data, true);
 
           addNotification({
             id: Date.now().toString(),
@@ -255,6 +250,23 @@ const useAppStore = create<AppState>()(
           setLoading(false);
         }
       },
+      verifyEmailCode: async (code) => {
+        const { setLoading, setError, setUser } = get();
+        try {
+          setLoading(true);
+          setError(false);
+
+          const res = await API.post("/api/user/verify_email", { code });
+          setUser(res.data.user, true);
+          return res.data.user;
+
+      }catch (err) {
+          setError(true);
+          throw err;
+        } finally {
+          setLoading(false);
+        }
+      }
     }),
 
     {

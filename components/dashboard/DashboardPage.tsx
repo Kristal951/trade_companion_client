@@ -5444,7 +5444,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         <div className="relative mt-auto pt-4 border-t border-light-gray">
           <button
             onClick={() => setAccountMenuOpen(!isAccountMenuOpen)}
-            className={`w-full flex items-center p-3 rounded-lg hover:bg-light-hover ${
+            className={`w-full h-full flex items-center ${isSidebarCollapsed ? 'p-0' : 'p-3'} rounded-lg hover:bg-light-hover ${
               isSidebarCollapsed ? "justify-center" : ""
             }`}
           >
