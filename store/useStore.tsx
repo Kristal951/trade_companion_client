@@ -10,6 +10,7 @@ interface AppState {
   clearUser: () => void;
   updateUser: (updates: Partial<User>) => void;
   verifyEmailCode: (code: string) => Promise<User>;
+  resendVerificationCode: () => Promise<void>;
 
   loading: boolean;
   setLoading: (loading: boolean) => void;
@@ -266,7 +267,20 @@ const useAppStore = create<AppState>()(
         } finally {
           setLoading(false);
         }
-      }
+      },
+      resendVerificationCode: async () => {
+        const { setLoading, setError } = get();
+        try {
+          setLoading(true);
+          setError(false);
+          await API.get("/api/user/resend_verification_code");
+        } catch (err) {
+          setError(true);
+          throw err;
+        } finally {
+          setLoading(false);
+        }
+      },
     }),
 
     {

@@ -13,7 +13,7 @@ interface VerifyEmailProps {
 const VerifyEmail: React.FC<VerifyEmailProps> = ({
   email,
   onVerify,
-  onResend,
+  onResendCode,
   onClose,
   loading = false,
   isOpen,
@@ -93,6 +93,15 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({
       onClose();
   };
 
+  const handleResend = async () => {
+    try {
+      await onResendCode();
+      setTimer(60);
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
   return (
     <div className="flex flex-col items-center text-center px-4 py-6 relative">
       <button
@@ -165,10 +174,7 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({
           </span>
         ) : (
           <button
-            onClick={() => {
-              onResend();
-              setTimer(60);
-            }}
+            onClick={handleResend}
             className="text-primary font-semibold hover:underline"
           >
             Resend Code

@@ -8,7 +8,6 @@ import "../ui/index.css";
 import { GoogleLogin } from "@react-oauth/google";
 import { a } from "framer-motion/client";
 import VerifyEmail from "./VerifyEmail";
-import { set } from "react-datepicker/dist/dist/date_utils.js";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -44,6 +43,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const signIn = useAppStore((state) => state.signIn);
   const handleGoogleSignIn = useAppStore((state) => state.handleGoogleSignIn);
   const onVerify = useAppStore((state) => state.verifyEmailCode);
+  const resendVerificationCode = useAppStore((state) => state.resendVerificationCode);
   const loading = useAppStore((state) => state.loading);
   const setLoading = useAppStore((state) => state.setLoading);
   const error = useAppStore((state) => state.error);
@@ -408,6 +408,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           onAuthSuccess={onAuthSuccess}
           onVerify={onVerify}
           loading={loading}
+          onResendCode={resendVerificationCode}
         />
       )}
 
