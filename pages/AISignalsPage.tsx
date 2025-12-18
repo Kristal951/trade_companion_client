@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Signal, User, TradeRecord, PlanName, DashboardView } from '../../types';
-import Icon from '../ui/Icon';
-import { useUsageTracker } from '../../hooks/useUsageTracker';
+import { Signal, User, TradeRecord, PlanName, DashboardView } from '../types';
+import Icon from '../components/ui/Icon';
+import { useUsageTracker } from '@/hooks/useUsageTracker';
 
 // --- HELPER & CHILD COMPONENTS ---
 

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Icon from "../ui/Icon";
+import useAppStore from "@/store/useStore";
+import { useOutletContext } from "react-router-dom";
 
 interface VerifyEmailProps {
   email: string;
@@ -8,38 +10,22 @@ interface VerifyEmailProps {
   onClose: () => void;
   loading?: boolean;
   isOpen: boolean;
+  onAuthSuccess: (user: any) => Promise<void>;
+  showToast: (msg: string, type?: "success" | "error") => void;
 }
 
-const VerifyEmail: React.FC<VerifyEmailProps> = ({
-  email,
-  onVerify,
-  onResendCode,
-  onClose,
-  loading = false,
-  isOpen,
-  onAuthSuccess
-}) => {
+const VerifyEmail: React.FC<VerifyEmailProps> = () => {
   const [otp, setOtp] = useState(Array(6).fill(""));
   const [timer, setTimer] = useState(60);
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
+  const onVerify = useAppStore((state) => state.verifyEmailCode);
+  const onResendCode = useAppStore((state) => state.resendVerificationCode);
+  const loading = useAppStore((state) => state.loading);
+  const { showToast, onAuthSuccess } = useOutletContext() as any
 
   useEffect(() => {
     inputsRef.current[0]?.focus();
   }, []);
-
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
-
-   if (!isOpen) return null;
 
   useEffect(() => {
     if (timer === 0) return;
@@ -80,17 +66,25 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({
   };
 
   const handleSubmit = async () => {
-    const code = otp.join("");
-   const res = await onVerify(code);
-    const user = res;
+    try {
+      const code = otp.join("");
+      const res = await onVerify(code);
+      const user = res;
 
-    await  onAuthSuccess({
+      await onAuthSuccess({
         name: user.name,
         email: user.email,
         plan: user.subscribedPlan || "FREE",
-        image: user.image || user.avatar,
+        image: user.avatar,
       });
-      onClose();
+    } catch (error) {
+      console.log(error);
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Authentication failed. Please try again.";
+      showToast(errorMessage, "error");
+    }
   };
 
   const handleResend = async () => {
@@ -98,25 +92,18 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({
       await onResendCode();
       setTimer(60);
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
-  }
+  };
 
   return (
-    <div className="flex flex-col items-center text-center px-4 py-6 relative">
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 flex items-center text-mid-text hover:text-dark-text transition-colors z-20 p-2 rounded-full hover:bg-light-hover"
-      >
-        <Icon name="close" className="w-6 h-6" />
-      </button>
-
+    <div className="flex flex-col items-center text-center px-4 py-6">
       <h2 className="text-3xl font-bold text-dark-text mb-2">
         Verify Your Email
       </h2>
       <p className="text-mid-text mb-6">
         We sent a 6-digit verification code to{" "}
-        <span className="font-semibold">{email}</span>
+        {/* <span className="font-semibold">{email}</span> */}
       </p>
 
       <div className="flex gap-3 mb-6">

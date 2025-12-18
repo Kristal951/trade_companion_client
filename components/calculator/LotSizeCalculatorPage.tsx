@@ -26,7 +26,7 @@ const getGreeting = (name: string) => {
     return `${greeting}, ${username}! 👋`;
 }
 
-const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) => {
+export const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({ user }) => {
     const { canUseFeature, incrementUsage, getUsageInfo } = useUsageTracker(user);
     const [accountCurrency, setAccountCurrency] = useState('USD');
     const [accountBalance, setAccountBalance] = useState('10000');

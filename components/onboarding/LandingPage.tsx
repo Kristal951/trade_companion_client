@@ -203,13 +203,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
 
   return (
     <div className="bg-light-bg min-h-screen text-dark-text">
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        initialMode={authMode}
-        onAuthSuccess={onLoginRequest}
-      />
-
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 bg-light-surface/80 backdrop-blur-sm z-50 shadow-sm">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">

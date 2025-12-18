@@ -2,19 +2,20 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Notification, DashboardView, NotificationType } from '../../types';
 import Icon from './Icon';
 import useAppStore from '@/store/useStore';
+import { useNavigate } from 'react-router-dom';
 
 interface NotificationBellProps {
     notifications: Notification[];
     addNotification: React.Dispatch<React.SetStateAction<Notification[]>>;
-    onViewChange: (view: DashboardView) => void;
 }
 
-const NotificationBell: React.FC<NotificationBellProps> = ({ notifications, addNotification, onViewChange }) => {
+const NotificationBell: React.FC<NotificationBellProps> = ({ notifications, addNotification }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const markNotificationRead = useAppStore((state) => state.markNotificationRead);
     const clearNotifications = useAppStore((state) => state.clearNotifications);
     const markAllNotificationsRead = useAppStore((state) => state.markAllNotificationsRead);
+    const navigate = useNavigate()
 
     const unreadCount = notifications?.filter(n => !n.isRead).length;
 
@@ -22,7 +23,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ notifications, addN
 
     const handleNotificationClick = (notification: Notification) => {
        markNotificationRead(notification.id);
-        onViewChange(notification.linkTo);
+        navigate(`/${notification.linkTo}`);
         setIsOpen(false);
     };
 

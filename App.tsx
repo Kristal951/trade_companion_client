@@ -1,12 +1,29 @@
 import React, { useState, useEffect } from "react";
 import LandingPage from "./components/onboarding/LandingPage";
-import DashboardPage from "./components/dashboard/DashboardPage";
+import {
+  AnalyticsPage,
+  EducationPage,
+} from "./components/dashboard/DashboardPage";
 import AIChatbot from "./components/widgets/AIChatWidget";
 import Toast from "./components/ui/Toast";
 import ScreenshotDetector from "./components/ui/ScreenshotDetector";
 import { DashboardView, TradeRecord } from "./types";
 import { instrumentDefinitions } from "./config/instruments";
 import useAppStore from "./store/useStore";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import MentorProfilePage from "./components/mentors/MentorProfilePage";
+import LotSizeCalculatorPage from "./components/calculator/LotSizeCalculatorPage";
+import MarketChartPage from "./components/dashboard/MarketChartPage";
+import AISignalsPage from "./pages/AISignalsPage";
+import MentorPage from "./pages/MentorPage";
+import DashboardContainer from "./pages/dashboard/DashboardContainer";
+import VerifyEmail from "./components/auth/VerifyEmail";
+import ForgotPassword from "./components/auth/ForgotPassword";
+import AuthLayout from "./components/auth/AuthLayout";
+import LoginForm from "./components/auth/LoginForm";
+import RootLayout from "./RootLayout";
+import SignupForm from "./components/auth/SignupForm";
+import ResetPassword from "./components/auth/ResetPassword";
 
 export const App: React.FC = () => {
   const user = useAppStore((state) => state.user);
@@ -37,6 +54,10 @@ export const App: React.FC = () => {
       return [];
     }
   });
+  const [isAccountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMentorMode, setIsMentorMode] = useState(false);
+  const [tradeHistory, setTradeHistory] = useState<TradeRecord[]>([]);
 
   // Theme effect
   useEffect(() => {
@@ -54,8 +75,28 @@ export const App: React.FC = () => {
       );
   }, [activeTrades, user]);
 
+  useEffect(() => {
+    setIsMentorMode(user?.isMentor || false);
+  }, [isMentorMode, user]);
+
   const toggleTheme = () =>
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
+
+  const navigate = useNavigate();
+
+  const toggleMentorMode = () => {
+    const newMode = !isMentorMode;
+    setIsMentorMode(newMode);
+    setAccountMenuOpen(false);
+
+    // Todo: Switch sidebar links based on mode
+    // Automatically switch view to the main dashboard of the respective mode
+    // if (newMode) {
+    //   onViewChange("mentor_dashboard");
+    // } else {
+    //   onViewChange("dashboard");
+    // }
+  };
 
   const showToast = (
     message: string,
@@ -68,25 +109,27 @@ export const App: React.FC = () => {
     try {
       const savedTrades = localStorage.getItem(`active_trades_${user.email}`);
       setActiveTrades(savedTrades ? JSON.parse(savedTrades) : []);
+      navigate("/dashboard");
     } catch {
       setActiveTrades([]);
     }
-    setActiveView("dashboard");
     showToast(`Welcome back, ${user.name.split(" ")[0]}!`, "success");
   };
 
   const handleLogout = async () => {
     try {
-          await logout();
-    setActiveTrades([]);
-    setActiveView("dashboard");
-    showToast("You have been logged out.", "info");
+      await logout();
+      setActiveTrades([]);
+      setActiveView("dashboard");
+      showToast("You have been logged out.", "info");
     } catch (error) {
-      console.log(error)
-      showToast("There was an error logging you out, try again later.", "error");
+      console.log(error);
+      showToast(
+        "There was an error logging you out, try again later.",
+        "error"
+      );
     }
   };
-  const handleViewChange = (view: DashboardView) => setActiveView(view);
 
   const handleScreenshotAttempt = () => {
     showToast(
@@ -182,10 +225,121 @@ export const App: React.FC = () => {
     );
   };
 
-  if (!user) {
-    return (
-      <>
-        <LandingPage onLoginRequest={handleLoginRequest} />
+  // if (!user) {
+  //   return (
+  //     <>
+  //       <AuthLayout />
+  //       {toast && (
+  //         <Toast
+  //           message={toast.message}
+  //           type={toast.type}
+  //           onClose={closeToast}
+  //         />
+  //       )}
+  //     </>
+  //   );
+  // }
+
+  return (
+    <div className="w-full h-screen flex flex-col">
+      <section
+        className={`flex-1 relative transition-all duration-300 flex flex-col h-screen overflow-hidden`}
+      >
+        <ScreenshotDetector onScreenshotAttempt={handleScreenshotAttempt}>
+          <Routes>
+            {/* Public routes */}
+            <Route
+              path="auth"
+              element={
+                <AuthLayout
+                  onAuthSuccess={handleLoginRequest}
+                  showToast={showToast}
+                />
+              }
+            >
+              <Route index element={<Navigate to="signIn" replace />} />
+              <Route path="signIn" element={<LoginForm />} />
+              <Route path="signUp" element={<SignupForm />} />
+              <Route path="verify-email" element={<VerifyEmail />} />
+              <Route path="forgot-password" element={<ForgotPassword />} />
+              <Route path="reset-password/:token" element={<ResetPassword />} />
+            </Route>
+
+            {/* Protected routes */}
+            <Route
+              element={
+                user ? (
+                  <RootLayout
+                    user={user}
+                    toggleTheme={toggleTheme}
+                    theme={theme}
+                    isSidebarCollapsed={isSidebarCollapsed}
+                    setIsSidebarCollapsed={setIsSidebarCollapsed}
+                    activeTrades={activeTrades}
+                    isMentorMode={isMentorMode}
+                    setAccountMenuOpen={setAccountMenuOpen}
+                    onLogout={handleLogout}
+                    isAccountMenuOpen={isAccountMenuOpen}
+                  />
+                ) : (
+                  <Navigate to="/auth/signIn" replace />
+                )
+              }
+            >
+              <Route
+                path="dashboard"
+                element={
+                  <DashboardContainer
+                    user={user}
+                    activeTrades={activeTrades}
+                    tradeHistory={tradeHistory}
+                  />
+                }
+              />
+              <Route
+                path="ai_signals"
+                element={
+                  <AISignalsPage
+                    user={user}
+                    activeTrades={activeTrades}
+                    showToast={showToast}
+                    tradeHistory={tradeHistory}
+                  />
+                }
+              />
+              <Route path="mentors" element={<MentorPage user={user} />} />
+              <Route path="mentor/:mentorId" element={<MentorProfilePage />} />
+              <Route path="education" element={<EducationPage />} />
+              <Route path="analytics" element={<AnalyticsPage user={user} />} />
+              <Route path="ls_calculator" element={<LotSizeCalculatorPage />} />
+              <Route path="market_chart" element={<MarketChartPage />} />
+            </Route>
+
+            {/* Landing page */}
+            <Route
+              path="/"
+              element={
+                user ? (
+                  <Navigate to="/dashboard" replace />
+                ) : (
+                  <LandingPage onLoginRequest={handleLoginRequest} />
+                )
+              }
+            />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </ScreenshotDetector>
+
+        {user && (
+          <AIChatbot
+            user={user}
+            activeView={activeView}
+            onExecuteTrade={handleExecuteTrade}
+          />
+        )}
+
         {toast && (
           <Toast
             message={toast.message}
@@ -193,61 +347,32 @@ export const App: React.FC = () => {
             onClose={closeToast}
           />
         )}
-      </>
-    );
-  }
-
-  return (
-    <>
-      <ScreenshotDetector onScreenshotAttempt={handleScreenshotAttempt}>
-        <DashboardPage
-          user={user}
-          setUser={setUser}
-          onLogout={handleLogout}
-          activeView={activeView}
-          updateUser={updateUser}
-          onViewChange={handleViewChange}
-          showToast={showToast}
-          theme={theme}
-          toggleTheme={toggleTheme}
-          activeTrades={activeTrades}
-          setActiveTrades={setActiveTrades}
-          loading={loading}
-        />
-      </ScreenshotDetector>
-      <AIChatbot
-        user={user}
-        activeView={activeView}
-        onExecuteTrade={handleExecuteTrade}
-      />
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={closeToast} />
-      )}
-      {loading && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in-right">
-          <svg
-            className="animate-spin h-5 w-5 text-white"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25 w-20 h-20"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          <p>Logging You Out...</p>
-        </div>
-      )}
-    </>
+        {/* {loading && (
+            <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in-right">
+              <svg
+                className="animate-spin h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25 w-20 h-20"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              <p>Logging You Out...</p>
+            </div>
+          )} */}
+      </section>
+    </div>
   );
 };

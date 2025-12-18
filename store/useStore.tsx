@@ -9,6 +9,11 @@ interface AppState {
   setUser: (user: User | Partial<User>, replace?: boolean) => void;
   clearUser: () => void;
   updateUser: (updates: Partial<User>) => void;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (data: {
+    token: string;
+    newPassword: string;
+  }) => Promise<void>;
   verifyEmailCode: (code: string) => Promise<User>;
   resendVerificationCode: () => Promise<void>;
 
@@ -101,7 +106,7 @@ const useAppStore = create<AppState>()(
           setLoading(true);
           setError(false);
           await API.post("/api/user/register", data);
-          console.log(data)
+          console.log(data);
 
           addNotification({
             id: Date.now().toString(),
@@ -111,7 +116,6 @@ const useAppStore = create<AppState>()(
             linkTo: "dashboard",
             type: "app_update",
           });
-
         } catch (err) {
           setError(true);
           throw err;
@@ -130,7 +134,7 @@ const useAppStore = create<AppState>()(
           const res = await API.post("/api/user/login", data);
           const user = res.data.user;
 
-          setUser(user, true); 
+          setUser(user, true);
 
           addNotification({
             id: Date.now().toString(),
@@ -260,8 +264,7 @@ const useAppStore = create<AppState>()(
           const res = await API.post("/api/user/verify_email", { code });
           setUser(res.data.user, true);
           return res.data.user;
-
-      }catch (err) {
+        } catch (err) {
           setError(true);
           throw err;
         } finally {
@@ -279,6 +282,37 @@ const useAppStore = create<AppState>()(
           throw err;
         } finally {
           setLoading(false);
+        }
+      },
+
+      forgotPassword: async (email: string) => {
+        const { setLoading, setError } = get();
+        try {
+          setLoading(true);
+          setError(false);
+          const res = await API.post("/api/user/forgot_password", { email });
+          return res;
+        } catch (error) {
+          console.log(error);
+          setError(true);
+          throw error;
+        } finally {
+          setLoading(false);
+        }
+      },
+
+      resetPassword: async (data: any) => {
+        const { setLoading, setError } = get();
+        const { token } = data;
+        try {
+          setLoading(true);
+          setError(false);
+          const res = await API.post(`/api/user/reset_password/${token}`, data);
+          return res;
+        } catch (error) {
+          console.log(error);
+          setError(true);
+          throw error;
         }
       },
     }),
