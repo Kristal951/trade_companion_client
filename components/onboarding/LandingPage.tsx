@@ -9,6 +9,7 @@ import illustration3 from "../../assets/Illustrations/illustration_3.png";
 import illustration4 from "../../assets/Illustrations/illustration_4.png";
 import illustration5 from "../../assets/Illustrations/illustration_5.png";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 const MOCK_MENTORS: Mentor[] = [
   {
@@ -240,18 +241,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
             </a>
           </nav>
           <div className="flex items-center space-x-4">
-            <button
-              onClick={openLogin}
+            <Link
+              to='/auth/signIn'
               className="text-primary hover:text-primary-hover font-semibold transition-colors"
             >
               Login
-            </button>
-            <button
-              onClick={openSignup}
+            </Link>
+            <Link
+              to='/auth/signUp'
               className="bg-primary hover:bg-primary-hover text-white font-semibold py-2 px-4 rounded-lg transition-colors"
             >
               Get Started
-            </button>
+            </Link>
           </div>
         </div>
       </header>
