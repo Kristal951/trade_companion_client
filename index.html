@@ -1,45 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trade Companion</title>
     <style>
       :root {
-        --color-primary: #6366F1;
-        --color-primary-hover: #4F46E5;
-        --color-secondary: #6B7280;
-        --color-accent: #9333EA;
-        --color-success: #22C55E;
-        --color-danger: #EF4444;
-        --color-warning: #FACC15;
-        --color-info: #3B82F6;
-        --color-bg: #F9FAFB;
-        --color-surface: #FFFFFF;
-        --color-hover: #F3F4F6;
-        --color-text: #1F2937;
-        --color-text-mid: #4B5563;
-        --color-border-light: #E5E7EB;
-        --color-border-dark: #D1D5DB;
+        --color-primary: #6366f1;
+        --color-primary-hover: #4f46e5;
+        --color-secondary: #6b7280;
+        --color-accent: #9333ea;
+        --color-success: #22c55e;
+        --color-danger: #ef4444;
+        --color-warning: #facc15;
+        --color-info: #3b82f6;
+        --color-bg: #f9fafb;
+        --color-surface: #ffffff;
+        --color-hover: #f3f4f6;
+        --color-text: #1f2937;
+        --color-text-mid: #4b5563;
+        --color-border-light: #e5e7eb;
+        --color-border-dark: #d1d5db;
       }
 
       html.dark {
-        --color-primary: #818CF8;
-        --color-primary-hover: #6366F1;
-        --color-secondary: #9CA3AF;
-        --color-accent: #A855F7;
-        --color-success: #4ADE80;
-        --color-danger: #F87171;
-        --color-warning: #FBBF24;
-        --color-info: #60A5FA;
+        --color-primary: #818cf8;
+        --color-primary-hover: #6366f1;
+        --color-secondary: #9ca3af;
+        --color-accent: #a855f7;
+        --color-success: #4ade80;
+        --color-danger: #f87171;
+        --color-warning: #fbbf24;
+        --color-info: #60a5fa;
         --color-bg: #111827; /* gray-900 */
-        --color-surface: #1F2937; /* gray-800 */
+        --color-surface: #1f2937; /* gray-800 */
         --color-hover: #374151; /* gray-700 */
-        --color-text: #F9FAFB; /* gray-50 */
-        --color-text-mid: #9CA3AF; /* gray-400 */
+        --color-text: #f9fafb; /* gray-50 */
+        --color-text-mid: #9ca3af; /* gray-400 */
         --color-border-light: #374151; /* gray-700 */
-        --color-border-dark: #4B5563; /* gray-600 */
+        --color-border-dark: #4b5563; /* gray-600 */
       }
 
       body {
@@ -47,9 +47,10 @@
         color: var(--color-text);
         transition: background-color 0.3s ease, color 0.3s ease;
       }
-      
+
       @media print {
-        .no-print, .no-print * {
+        .no-print,
+        .no-print * {
           display: none !important;
         }
       }
@@ -75,8 +76,8 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: #87CEEB; /* Day: Light Sky Blue */
-        transition: background-color .4s ease-in-out;
+        background-color: #87ceeb; /* Day: Light Sky Blue */
+        transition: background-color 0.4s ease-in-out;
         border-radius: 30px;
       }
 
@@ -84,17 +85,17 @@
         position: absolute;
         content: "";
         height: 24px; /* Thumb height */
-        width: 24px;  /* Thumb width */
-        left: 3px;    /* Thumb padding */
-        bottom: 3px;  /* Thumb padding */
+        width: 24px; /* Thumb width */
+        left: 3px; /* Thumb padding */
+        bottom: 3px; /* Thumb padding */
         background-color: white;
-        transition: transform .4s ease-in-out;
+        transition: transform 0.4s ease-in-out;
         border-radius: 50%;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
       }
 
       .theme-toggle-input:checked + .theme-toggle-slider {
-        background-color: #4A5568; /* Night: Gray-700 */
+        background-color: #4a5568; /* Night: Gray-700 */
       }
 
       .theme-toggle-input:checked + .theme-toggle-slider:before {
@@ -105,7 +106,7 @@
       .theme-toggle-icon {
         position: absolute;
         pointer-events: none;
-        transition: opacity .4s ease-in-out, transform .4s ease-in-out;
+        transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
         width: 18px;
         height: 18px;
         top: 6px; /* (track height - icon height) / 2 */
@@ -116,97 +117,172 @@
         opacity: 1;
         transform: scale(1) rotate(0deg);
       }
-      
+
       .moon-icon {
         right: 6px;
         opacity: 0;
         transform: scale(0.5) rotate(90deg);
       }
-      
+
       .theme-toggle-input:checked ~ .sun-icon {
         opacity: 0;
         transform: scale(0.5) rotate(-90deg);
       }
-      
+
       .theme-toggle-input:checked ~ .moon-icon {
         opacity: 1;
         transform: scale(1) rotate(0deg);
       }
-
     </style>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
-        darkMode: 'class',
+        darkMode: "class",
         theme: {
           extend: {
             colors: {
-              'primary': 'var(--color-primary)',
-              'primary-hover': 'var(--color-primary-hover)',
-              'secondary': 'var(--color-secondary)',
-              'accent': 'var(--color-accent)',
-              'success': 'var(--color-success)',
-              'danger': 'var(--color-danger)',
-              'warning': 'var(--color-warning)',
-              'info': 'var(--color-info)',
-              'light-bg': 'var(--color-bg)',
-              'light-surface': 'var(--color-surface)',
-              'light-hover': 'var(--color-hover)',
-              'dark-text': 'var(--color-text)',
-              'mid-text': 'var(--color-text-mid)',
-              'light-gray': 'var(--color-border-light)',
-              'dark-gray': 'var(--color-border-dark)',
-              'chart-purple': '#A78BFA',
-              'chart-blue': '#60A5FA',
-              'chart-green': '#34D399',
-              'chart-red': '#FB7185',
+              primary: "var(--color-primary)",
+              "primary-hover": "var(--color-primary-hover)",
+              secondary: "var(--color-secondary)",
+              accent: "var(--color-accent)",
+              success: "var(--color-success)",
+              danger: "var(--color-danger)",
+              warning: "var(--color-warning)",
+              info: "var(--color-info)",
+              "light-bg": "var(--color-bg)",
+              "light-surface": "var(--color-surface)",
+              "light-hover": "var(--color-hover)",
+              "dark-text": "var(--color-text)",
+              "mid-text": "var(--color-text-mid)",
+              "light-gray": "var(--color-border-light)",
+              "dark-gray": "var(--color-border-dark)",
+              "chart-purple": "#A78BFA",
+              "chart-blue": "#60A5FA",
+              "chart-green": "#34D399",
+              "chart-red": "#FB7185",
+
+              // Fintech Landing Page Specifics
+              "fintech-bg": "#020617", // Slate 950
+              "fintech-card": "#0f172a", // Slate 900
+              "fintech-border": "#1e293b", // Slate 800
+              "neon-green": "#10B981", // Emerald 500
+              "neon-blue": "#3B82F6", // Blue 500
             },
             keyframes: {
-              'fade-in-right': {
-                '0%': { opacity: '0', transform: 'translateX(20px)' },
-                '100%': { opacity: '1', transform: 'translateX(0)' },
+              "fade-in-right": {
+                "0%": { opacity: "0", transform: "translateX(20px)" },
+                "100%": { opacity: "1", transform: "translateX(0)" },
+              },
+              float: {
+                "0%, 100%": { transform: "translateY(0)" },
+                "50%": { transform: "translateY(-15px)" },
+              },
+              scroll: {
+                "0%": { transform: "translateX(0)" },
+                "100%": { transform: "translateX(-50%)" },
+              },
+              wave: {
+                "0%": { transform: "rotate(0.0deg)" },
+                "10%": { transform: "rotate(14.0deg)" },
+                "20%": { transform: "rotate(-8.0deg)" },
+                "30%": { transform: "rotate(14.0deg)" },
+                "40%": { transform: "rotate(-4.0deg)" },
+                "50%": { transform: "rotate(10.0deg)" },
+                "60%": { transform: "rotate(0.0deg)" },
+                "100%": { transform: "rotate(0.0deg)" },
+              },
+              run: {
+                "0%, 100%": { transform: "translateY(0) skewX(0deg)" },
+                "25%": { transform: "translateY(-10px) skewX(-5deg)" },
+                "75%": { transform: "translateY(-5px) skewX(5deg)" },
+              },
+              "arm-run-l": {
+                "0%, 100%": { transform: "rotate(45deg)" },
+                "50%": { transform: "rotate(-45deg)" },
+              },
+              "arm-run-r": {
+                "0%, 100%": { transform: "rotate(-45deg)" },
+                "50%": { transform: "rotate(45deg)" },
+              },
+              skip: {
+                "0%": { transform: "translateY(0) rotate(0deg)" },
+                "25%": { transform: "translateY(-20px) rotate(5deg)" },
+                "50%": { transform: "translateY(0) rotate(0deg)" },
+                "75%": { transform: "translateY(-10px) rotate(-5deg)" },
+                "100%": { transform: "translateY(0) rotate(0deg)" },
+              },
+              "file-up": {
+                "0%": {
+                  transform: "translateY(100px) scale(0.5)",
+                  opacity: "0",
+                },
+                "20%": { opacity: "1" },
+                "100%": {
+                  transform: "translateY(-200px) scale(1)",
+                  opacity: "0",
+                },
+              },
+              "search-eyes": {
+                "0%, 100%": { transform: "translateX(-8px)" },
+                "50%": { transform: "translateX(8px)" },
+              },
+              "hands-sort": {
+                "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
+                "25%": { transform: "translateY(-15px) rotate(-10deg)" },
+                "75%": { transform: "translateY(15px) rotate(10deg)" },
+              },
+              scratch: {
+                "0%, 100%": { transform: "rotate(0deg)" },
+                "50%": { transform: "rotate(20deg)" },
               },
             },
             animation: {
-              'fade-in-right': 'fade-in-right 0.3s ease-out forwards',
+              "fade-in-right": "fade-in-right 0.3s ease-out forwards",
+              float: "float 6s ease-in-out infinite",
+              scroll: "scroll 30s linear infinite",
+              wave: "wave 2s linear infinite",
+              run: "run 0.4s linear infinite",
+              "arm-run-l": "arm-run-l 0.4s linear infinite",
+              "arm-run-r": "arm-run-r 0.4s linear infinite",
+              skip: "skip 0.6s ease-in-out infinite",
+              "file-up": "file-up 1.5s linear infinite",
+              "search-eyes": "search-eyes 0.4s ease-in-out infinite",
+              "hands-sort": "hands-sort 0.4s ease-in-out infinite",
+              scratch: "scratch 0.5s ease-in-out infinite",
             },
-          }
+          },
         },
         plugins: [
-            function ({ addUtilities }) {
-                const newUtilities = {
-                    '.glassmorphism': {
-                        'background-color': 'rgba(255, 255, 255, 0.7)',
-                        'backdrop-filter': 'blur(10px)',
-                        'border': '1px solid var(--color-border-dark)',
-                        'box-shadow': '0 4px 6px rgba(0, 0, 0, 0.1)',
-                    },
-                    '.dark .glassmorphism': {
-                        'background-color': 'rgba(30, 30, 30, 0.7)',
-                        'border': '1px solid var(--color-border-dark)',
-                    }
-                };
-                addUtilities(newUtilities, ['responsive', 'hover']);
-            }
-        ]
-      }
+          function ({ addUtilities }) {
+            const newUtilities = {
+              ".glassmorphism": {
+                "background-color": "rgba(255, 255, 255, 0.7)",
+                "backdrop-filter": "blur(10px)",
+                border: "1px solid var(--color-border-dark)",
+                "box-shadow": "0 4px 6px rgba(0, 0, 0, 0.1)",
+              },
+              ".dark .glassmorphism": {
+                "background-color": "rgba(30, 30, 30, 0.7)",
+                border: "1px solid var(--color-border-dark)",
+              },
+              ".fintech-glass": {
+                background: "rgba(15, 23, 42, 0.6)",
+                "backdrop-filter": "blur(12px)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+              },
+            };
+            addUtilities(newUtilities, ["responsive", "hover"]);
+          },
+        ],
+      };
     </script>
-<script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "recharts": "https://aistudiocdn.com/recharts@^3.3.0",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
-    "lightweight-charts": "https://esm.sh/lightweight-charts@4.2.0"
-  }
-}
-</script>
-<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-</head>
-<body class="bg-light-bg text-dark-text">
+    <script
+      type="text/javascript"
+      src="https://s3.tradingview.com/tv.js"
+    ></script>
+  </head>
+  <body class="bg-light-bg text-dark-text">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
-</body>
+  </body>
 </html>

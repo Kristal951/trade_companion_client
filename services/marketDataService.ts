@@ -1,4 +1,5 @@
 
+import { TopSignal } from '@/types';
 import { instrumentDefinitions } from '../config/instruments';
 
 // API Key Rotation Logic for Twelve Data
@@ -301,5 +302,90 @@ export const fetchMarketContext = async (instrument: string, depth: number = 50)
         candles: candles,
         trend: 'UNKNOWN', // Will be calculated by consumer if needed
         details: isMock ? 'Using Placeholder Data. Verify with Search.' : 'Live API Price.'
+    };
+};
+
+export const fetchTopPerformer = async (): Promise<TopSignal> => {
+    // 1. Get a random date within last 3 days to simulate "Previous Top Pick" or "Best recent trade"
+    // Using a seeded random based on today's date to keep it consistent for the day.
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    let seed = todayStr.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    
+    const random = () => {
+        const x = Math.sin(seed++) * 10000;
+        return x - Math.floor(x);
+    };
+
+    const daysAgo = Math.floor(random() * 3) + 1; // 1 to 3 days ago
+    const date = new Date();
+    date.setDate(date.getDate() - daysAgo);
+
+    // 3. Pool of high-volatility instruments likely to be top performers
+    const instruments = [
+        { name: 'XAU/USD', basePrice: 2300, spread: 25 }, // Gold usually has big moves
+        { name: 'BTC/USD', basePrice: 65000, spread: 1500 }, // Bitcoin
+        { name: 'US500', basePrice: 5200, spread: 60 }, // S&P 500 (US500 in definitions)
+        { name: 'GBP/JPY', basePrice: 190, spread: 1.5 }, // Guppy
+        { name: 'US100', basePrice: 18000, spread: 250 }, // Nasdaq (US100 in definitions)
+    ];
+
+    // 4. Select instrument deterministically
+    const selectedInst = instruments[Math.floor(random() * instruments.length)];
+    const direction = random() > 0.5 ? 'BUY' : 'SELL';
+    
+    // 5. Generate Profit (between $800 and $2,500 for a standard lot equivalent)
+    const profitUSD = Math.floor(800 + (random() * 1700)); 
+    
+    // 6. Calculate Prices based on profit
+    // Profit = (Exit - Entry) * ContractSize * Lots
+    // Simplified: We just set realistic price distance
+    
+    let entryPrice = selectedInst.basePrice + (random() * selectedInst.spread);
+    // Adjust entry slightly to look "clean"
+    if (selectedInst.name.includes('JPY') || selectedInst.name.includes('USD')) {
+        entryPrice = parseFloat(entryPrice.toFixed(2));
+    } else {
+        entryPrice = parseFloat(entryPrice.toFixed(4));
+    }
+
+    // Determine exit based on profit. 
+    // Standard Lot (1.0) approx $10/pip for FX, $1/point for Indices/Crypto usually scaled.
+    // For visual simplicity on the landing page, we calculate the move magnitude relative to price.
+    // Approx 0.5% to 1.5% move for a big win.
+    const movePercent = (0.5 + random()) / 100; 
+    const moveAmount = entryPrice * movePercent;
+    
+    let exitPrice = direction === 'BUY' ? entryPrice + moveAmount : entryPrice - moveAmount;
+    
+    // Formatting
+    if (selectedInst.name.includes('JPY') || selectedInst.name === 'XAU/USD' || selectedInst.name === 'US500' || selectedInst.name === 'US100') {
+        exitPrice = parseFloat(exitPrice.toFixed(2));
+    } else if (selectedInst.name === 'BTC/USD') {
+        exitPrice = parseFloat(exitPrice.toFixed(0));
+    } else {
+        exitPrice = parseFloat(exitPrice.toFixed(5));
+    }
+
+    // 7. Time generation
+    // Target active trading hours (08:00 - 17:00) based on seed
+    const hour = 8 + Math.floor(random() * 10);
+    const minute = Math.floor(random() * 60);
+    date.setHours(hour, minute, 0, 0);
+
+    // 8. Calculate Pips
+    // Use instrument definition for pip step
+    const def = instrumentDefinitions[selectedInst.name];
+    const pipStep = def ? def.pipStep : 0.0001;
+    const pips = Math.abs(exitPrice - entryPrice) / pipStep;
+
+    return {
+        instrument: selectedInst.name,
+        type: direction,
+        entryPrice,
+        exitPrice,
+        profit: profitUSD,
+        pips: Math.round(pips),
+        timestamp: date.toISOString()
     };
 };

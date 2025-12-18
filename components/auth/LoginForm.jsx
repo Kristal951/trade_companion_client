@@ -6,7 +6,7 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 const LoginForm = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const { setIsLogin, onAuthSuccess } = useOutletContext();
+  const { setIsLogin, onAuthSuccess, showToast } = useOutletContext();
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -33,8 +33,13 @@ const LoginForm = () => {
         plan: user.subscribedPlan || "FREE",
         image: user.picture || user.avatar,
       });
-    } catch (error) {
-      console.log(error);
+    } catch (err) {
+      console.log(err);
+       const errorMessage =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Authentication failed. Please try again.";
+      showToast(errorMessage, "error");
     }
   };
 

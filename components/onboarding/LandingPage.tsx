@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Plan, PlanName, Mentor, Review, FAQ } from "../../types";
 import Icon from "../ui/Icon";
 import { PLAN_FEATURES } from "../../config/plans";
-import AuthModal from "../auth/AuthModal";
 import illustration1 from "../../assets/Illustrations/illustration_1.png";
 import illustration2 from "../../assets/Illustrations/illustration_2.png";
 import illustration3 from "../../assets/Illustrations/illustration_3.png";
@@ -10,6 +9,10 @@ import illustration4 from "../../assets/Illustrations/illustration_4.png";
 import illustration5 from "../../assets/Illustrations/illustration_5.png";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import Header from "./Header";
+import { fetchTopPerformer, getLivePrices } from "@/services/marketDataService";
+import { INITIAL_TICKER, ROBOT_SOLILOQUY, TICKER_SYMBOLS } from "./utils";
+import Footer from "./Footer";
 
 const MOCK_MENTORS: Mentor[] = [
   {
@@ -152,10 +155,82 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
   const [isYearly, setIsYearly] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [mentorSearchQuery, setMentorSearchQuery] = useState("");
+  const [topSignal, setTopSignal] = useState(null);
+  const [soliloquyIndex, setSoliloquyIndex] = useState(0);
+  const [tickerItems, setTickerItems] = useState<any[]>(INITIAL_TICKER);
+
+  useEffect(() => {
+    const fetchTicker = async () => {
+      try {
+        const prices = await getLivePrices(TICKER_SYMBOLS);
+
+        const newItems = TICKER_SYMBOLS.map((symbol) => {
+          const data = prices[symbol];
+          const price = data?.price;
+
+          let displayPrice = "---";
+          if (price !== null && price !== undefined) {
+            if (
+              symbol.includes("JPY") ||
+              symbol === "XAU/USD" ||
+              symbol.includes("US500")
+            ) {
+              displayPrice = price.toFixed(2);
+            } else if (symbol.includes("BTC") || symbol.includes("ETH")) {
+              displayPrice = price.toLocaleString("en-US", {
+                maximumFractionDigits: 2,
+              });
+            } else {
+              displayPrice = price.toFixed(5);
+            }
+          }
+
+          // Simulate daily change % deterministically based on symbol name since API doesn't provide it
+          const hash = symbol
+            .split("")
+            .reduce((a, b) => a + b.charCodeAt(0), 0);
+          const isPositive = hash % 2 === 0;
+          const changeVal = ((hash % 150) / 100).toFixed(2);
+
+          return {
+            pair: symbol,
+            price: displayPrice,
+            change: `${isPositive ? "+" : "-"}${changeVal}%`,
+            isPositive,
+          };
+        });
+        setTickerItems(newItems);
+      } catch (error) {
+        console.error("Failed to update ticker", error);
+      }
+    };
+
+    fetchTicker(); // Initial fetch
+    // Update every 24 hours (86400000ms) to save API calls
+    const interval = setInterval(fetchTicker, 86400000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const loadTopSignal = async () => {
+      try {
+        const signal = await fetchTopPerformer();
+        setTopSignal(signal);
+      } catch (e) {
+        console.error("Failed to fetch top signal", e);
+      }
+    };
+    loadTopSignal();
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSoliloquyIndex((prev) => (prev + 1) % ROBOT_SOLILOQUY.length);
+    }, 4000); // Change message every 4 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   // Auth Modal State
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
 
   const cardVariant = {
     hidden: { opacity: 0, y: 40 },
@@ -184,16 +259,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
     setOpenFaq(openFaq === index ? null : index);
   };
 
-  const openLogin = () => {
-    setAuthMode("login");
-    setIsAuthModalOpen(true);
-  };
-
-  const openSignup = () => {
-    setAuthMode("signup");
-    setIsAuthModalOpen(true);
-  };
-
   const filteredMentors = MOCK_MENTORS.filter(
     (mentor) =>
       mentor.name.toLowerCase().includes(mentorSearchQuery.toLowerCase()) ||
@@ -203,80 +268,207 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
   );
 
   return (
-    <div className="bg-light-bg min-h-screen text-dark-text">
+    <div className="bg-light-bg min-h-screen text-dark-text overflow-y-scroll">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-light-surface/80 backdrop-blur-sm z-50 shadow-sm">
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary">Trade Companion</h1>
-          <nav className="hidden md:flex items-center space-x-6">
-            <a
-              href="#features"
-              className="text-mid-text hover:text-primary transition-colors"
-            >
-              Features
-            </a>
-            <a
-              href="#education"
-              className="text-mid-text hover:text-primary transition-colors"
-            >
-              Education
-            </a>
-            <a
-              href="#mentors"
-              className="text-mid-text hover:text-primary transition-colors"
-            >
-              Mentors
-            </a>
-            <a
-              href="#pricing"
-              className="text-mid-text hover:text-primary transition-colors"
-            >
-              Pricing
-            </a>
-            <a
-              href="#faq"
-              className="text-mid-text hover:text-primary transition-colors"
-            >
-              FAQ
-            </a>
-          </nav>
-          <div className="flex items-center space-x-4">
-            <Link
-              to='/auth/signIn'
-              className="text-primary hover:text-primary-hover font-semibold transition-colors"
-            >
-              Login
-            </Link>
-            <Link
-              to='/auth/signUp'
-              className="bg-primary hover:bg-primary-hover text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-            >
-              Get Started
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main>
+        <div className="absolute top-0 left-0 w-full h-[100vh] overflow-hidden pointer-events-none z-0">
+          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-neon-blue/10 rounded-full blur-[120px]"></div>
+          <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[100px]"></div>
+        </div>
         {/* Hero Section */}
-        <section
-          style={{ height: "100vh" }}
-          className="pt-32 pb-20 text-center bg-light-hover"
-        >
-          <div className="container mx-auto px-6 items-center justify-center flex flex-col h-full">
-            <h2 className="text-5xl md:text-6xl font-extrabold leading-tight mb-4 text-dark-text">
-              Trade Smarter, Not Harder
-            </h2>
-            <p className="text-xl text-mid-text max-w-3xl mx-auto mb-8">
-              Leverage AI-powered signals and expert mentorship to elevate your
-              Forex trading performance.
-            </p>
-            <button
-              onClick={openSignup}
-              className="bg-primary hover:bg-primary-hover text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105"
-            >
-              Start Your Free Trial
-            </button>
+        <section className="relative z-10 pt-40 pb-20 container mx-auto px-6">
+          <div className="flex flex-col lg:flex-row items-center gap-16">
+            {/* Left: Text Content */}
+            <div className="lg:w-1/2 text-center lg:text-left space-y-8">
+              <div className="inline-flex items-center px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700 text-neon-green text-xs font-bold uppercase tracking-wide mb-2">
+                <span className="w-2 h-2 rounded-full bg-neon-green mr-2 animate-pulse"></span>
+                AI-Powered Trading Live
+              </div>
+              <h1 className="text-5xl md:text-7xl font-extrabold leading-tight tracking-tight text-white">
+                Master the Markets with{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-green">
+                  Intelligence
+                </span>
+              </h1>
+              <p className="text-lg text-slate-400 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                Stop guessing. Start trading with high-precision AI signals and
+                copy top-tier mentors. Institutional-grade tools, now for
+                everyone.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
+                <Link
+                  to="/auth/signUp"
+                  className="w-full sm:w-auto px-8 py-4 bg-neon-blue hover:bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-1"
+                >
+                  Start Free Trial
+                </Link>
+              </div>
+
+              {/* Previous AI Top Pick Card (Replacing user icons) */}
+              {topSignal && (
+                <div className="pt-6 animate-fade-in-right">
+                  <div className="inline-block relative">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-neon-green to-neon-blue rounded-xl blur opacity-25"></div>
+                    <div className="relative bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center gap-6 shadow-xl">
+                      <div className="flex flex-col items-center justify-center bg-slate-800 rounded-lg p-2 w-14 h-14">
+                        <span className="text-2xl">🏆</span>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">
+                          Previous AI top pic
+                        </p>
+                        <div className="flex items-baseline gap-3">
+                          <h4 className="text-xl font-bold text-white">
+                            {topSignal.instrument}
+                          </h4>
+                          <span
+                            className={`text-xs font-bold px-2 py-0.5 rounded ${
+                              topSignal.type === "BUY"
+                                ? "bg-green-500/20 text-green-400"
+                                : "bg-red-500/20 text-red-400"
+                            }`}
+                          >
+                            {topSignal.type}
+                          </span>
+                        </div>
+                        <p className="text-sm font-medium mt-1">
+                          <span className="text-neon-green font-bold text-lg">
+                            +{topSignal.pips} Pips
+                          </span>
+                          <span className="text-slate-500 ml-1">Gain</span>
+                        </p>
+                      </div>
+                      <div className="hidden sm:block border-l border-slate-800 pl-6">
+                        <p className="text-xs text-slate-500">
+                          Entry:{" "}
+                          <span className="text-slate-300">
+                            {topSignal.entryPrice}
+                          </span>
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          Exit:{" "}
+                          <span className="text-slate-300">
+                            {topSignal.exitPrice}
+                          </span>
+                        </p>
+                        <div className="flex items-center gap-1 text-slate-400 text-xs mt-1">
+                          <Icon name="clock" className="w-3 h-3" />
+                          {new Date(topSignal.timestamp).toLocaleDateString(
+                            [],
+                            { month: "short", day: "numeric" }
+                          )}{" "}
+                          •{" "}
+                          {new Date(topSignal.timestamp).toLocaleTimeString(
+                            [],
+                            { hour: "2-digit", minute: "2-digit" }
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right: Cartoon Animation */}
+            <div className="lg:w-1/2 relative w-full flex justify-center">
+              <div className="relative w-full max-w-lg h-[450px] flex items-center justify-center perspective-1000">
+                {/* Abstract glow behind */}
+                <div className="absolute inset-0 bg-neon-blue/20 blur-[100px] rounded-full"></div>
+
+                {/* REMOVED FLOATING COINS AND ICONS HERE */}
+
+                {/* THE 3D ROBOT CONTAINER (REPLACED OLD BOT) */}
+                <div
+                  className="relative z-10 animate-float"
+                  style={{ animationDuration: "6s" }}
+                >
+                  {/* Soliloquy Speech Bubble */}
+                  <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-64 bg-white p-4 rounded-2xl rounded-bl-none shadow-[0_0_20px_rgba(59,130,246,0.3)] z-50 animate-float transition-all duration-500">
+                    <p
+                      key={soliloquyIndex}
+                      className="text-slate-800 text-sm font-semibold leading-relaxed relative z-10 animate-fade-in-right"
+                    >
+                      "{ROBOT_SOLILOQUY[soliloquyIndex]}"
+                    </p>
+                    {/* Bubble Tail */}
+                    <div className="absolute -bottom-3 left-0 w-0 h-0 border-l-[15px] border-l-white border-b-[15px] border-b-transparent"></div>
+                    {/* Decorative Elements */}
+                    <div className="absolute top-2 right-2 w-2 h-2 bg-neon-blue rounded-full animate-ping"></div>
+                  </div>
+
+                  {/* 3D Head */}
+                  <div className="w-40 h-40 rounded-[2.5rem] bg-gradient-to-br from-slate-200 via-slate-300 to-slate-500 shadow-[inset_5px_5px_15px_rgba(255,255,255,0.8),inset_-5px_-5px_15px_rgba(0,0,0,0.3),0_20px_40px_rgba(0,0,0,0.4)] relative mx-auto z-20 flex items-center justify-center">
+                    {/* Gloss Highlight */}
+                    <div className="absolute top-4 left-6 w-10 h-6 bg-white/60 rounded-full blur-[2px] transform -rotate-45"></div>
+
+                    {/* Antenna */}
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-3 h-10 bg-gradient-to-r from-slate-400 to-slate-600 rounded-full -z-10 shadow-lg"></div>
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full shadow-[0_0_20px] bg-green-400 shadow-green-400 transition-colors duration-500"></div>
+
+                    {/* Face Screen (Inset) */}
+                    <div className="w-32 h-24 bg-[#0a0a0a] rounded-[1.2rem] shadow-[inset_0_0_15px_rgba(0,0,0,1),0_1px_2px_rgba(255,255,255,0.1)] flex items-center justify-center gap-4 relative overflow-hidden border border-slate-800">
+                      {/* Screen Glare */}
+                      <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-gradient-to-br from-white/5 to-transparent transform rotate-45 pointer-events-none"></div>
+
+                      {/* Idle Eyes */}
+                      <div className="w-7 h-9 bg-blue-400 rounded-full shadow-[0_0_15px_#60a5fa] animate-pulse relative">
+                        <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full"></div>
+                      </div>
+                      <div className="w-7 h-9 bg-blue-400 rounded-full shadow-[0_0_15px_#60a5fa] animate-pulse relative">
+                        <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-white rounded-full"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3D Body */}
+                  <div className="w-32 h-28 bg-gradient-to-br from-slate-200 via-slate-300 to-slate-500 rounded-[2rem] mx-auto -mt-6 pt-8 relative z-10 shadow-[inset_5px_5px_15px_rgba(255,255,255,0.8),inset_-5px_-5px_15px_rgba(0,0,0,0.3),0_20px_40px_rgba(0,0,0,0.4)]">
+                    {/* Chest Light */}
+                    <div className="w-12 h-12 bg-[#0a0a0a] rounded-full mx-auto flex items-center justify-center shadow-[inset_0_0_5px_rgba(0,0,0,1)] border border-slate-700">
+                      <div className="w-6 h-6 rounded-full shadow-[0_0_15px] bg-blue-400 shadow-blue-400"></div>
+                    </div>
+                  </div>
+
+                  {/* 3D Arms (Floaters) */}
+                  {/* Left Arm */}
+                  <div className="absolute w-12 h-24 bg-gradient-to-br from-slate-200 to-slate-400 rounded-full shadow-xl transition-all duration-500 ease-in-out z-30 top-28 -left-8 rotate-12"></div>
+
+                  {/* Right Arm */}
+                  <div className="absolute w-12 h-24 bg-gradient-to-br from-slate-200 to-slate-400 rounded-full shadow-xl origin-top-left transition-all duration-500 ease-in-out z-30 top-28 -right-8 rotate-[-12deg]"></div>
+
+                  {/* Shadow Disc */}
+                  <div className="w-32 h-4 bg-black/40 rounded-[100%] blur-md mx-auto mt-8 animate-pulse"></div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="w-full bg-slate-900 border-y border-slate-800 overflow-hidden py-3">
+          <div className="flex animate-scroll hover:pause w-[200%]">
+            {[...tickerItems, ...tickerItems, ...tickerItems].map(
+              (item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center space-x-2 mx-8 min-w-max"
+                >
+                  <span className="text-slate-300 font-bold">{item.pair}</span>
+                  <span className="text-white font-mono">{item.price}</span>
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded ${
+                      item.isPositive
+                        ? "bg-green-500/20 text-green-400"
+                        : "bg-red-500/20 text-red-400"
+                    }`}
+                  >
+                    {item.change}
+                  </span>
+                </div>
+              )
+            )}
           </div>
         </section>
 
@@ -550,12 +742,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
                     <p className="text-mid-text text-sm mb-4">
                       Trades: {mentor.instruments.join(", ")}
                     </p>
-                    <button
-                      onClick={openSignup}
+                    <Link
+                      to="/auth/signUp"
                       className="w-full bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold py-2 px-4 rounded-lg transition-colors"
                     >
                       View Profile
-                    </button>
+                    </Link>
                   </div>
                 ))}
               </div>
@@ -639,8 +831,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
                       </li>
                     ))}
                   </ul>
-                  <button
-                    onClick={openSignup}
+                  <Link
+                    to="/auth/signUp"
                     className={`w-full font-bold py-3 px-6 rounded-lg transition-colors mt-auto ${
                       plan.name === PlanName.Pro
                         ? "bg-primary text-white hover:bg-primary-hover"
@@ -648,7 +840,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
                     }`}
                   >
                     {plan.monthlyPrice > 0 ? "Choose Plan" : "Start for Free"}
-                  </button>
+                  </Link>
                 </div>
               ))}
             </div>
@@ -732,18 +924,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-light-surface border-t border-light-gray py-8">
-        <div className="container mx-auto px-6 text-center text-mid-text">
-          <p>
-            &copy; {new Date().getFullYear()} Trade Companion. All Rights
-            Reserved.
-          </p>
-          <p className="text-sm mt-2">
-            Trading Forex involves significant risk. This is not financial
-            advice.
-          </p>
-        </div>
-      </footer>
+      <Footer/>
     </div>
   );
 };

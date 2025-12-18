@@ -15,6 +15,16 @@ export interface User {
   };
 }
 
+export interface TopSignal {
+  instrument: string;
+  type: 'BUY' | 'SELL';
+  entryPrice: number;
+  exitPrice: number;
+  profit: number; // USD profit for 1 standard lot
+  pips: number; // Gain in pips
+  timestamp: string; // Full ISO timestamp
+}
+
 export enum PlanName {
   Free = "Free",
   Basic = "Basic",
