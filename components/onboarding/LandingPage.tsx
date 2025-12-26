@@ -13,6 +13,9 @@ import Header from "./Header";
 import { fetchTopPerformer, getLivePrices } from "@/services/marketDataService";
 import { INITIAL_TICKER, ROBOT_SOLILOQUY, TICKER_SYMBOLS } from "./utils";
 import Footer from "./Footer";
+import FeatureBlock from "./FeatureCard";
+import FeatureCard from "./FeatureCard";
+import EducationCard from "./EducationCard";
 
 const MOCK_MENTORS: Mentor[] = [
   {
@@ -441,7 +444,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
                   {/* Shadow Disc */}
                   <div className="w-32 h-4 bg-black/40 rounded-[100%] blur-md mx-auto mt-8 animate-pulse"></div>
                 </div>
-
               </div>
             </div>
           </div>
@@ -475,135 +477,46 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
         {/* {Features Section} */}
         <section id="features" className="py-20 bg-light-bg">
           <div className="conatiner flex-col flex gap-8 items-center px-6 mx-auto">
-            <motion.div
-              variants={blockVariantLeft}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: false, amount: 0.5 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="max-w-6xl w-full h-[400px] grid grid-cols-1 md:grid-cols-2 gap-12 justify-center items-center"
-            >
-              <div className="flex w-full h-max items-center justify-center">
-                <img
-                  src={illustration1}
-                  alt="Illustration"
-                  className="w-[80%] max-w-md mr-4"
-                />
-              </div>
-              <div className="flex gap-4 flex-col text-left items-start justify-center h-full">
-                <h1 className="text-4xl font-bold text-center mb-4 text-dark-text text-left">
-                  Signal Generation
-                </h1>
-                <p className="text-mid-text">
-                  Get Signals from both our verified professionals and also from
-                  our own crafted and well fed Signal generator model.
-                </p>
-              </div>
-            </motion.div>
+            <FeatureCard
+              title="Signal Generation"
+              description="Get Signals from both our verified professionals and also from our own crafted and well fed Signal generator model."
+              image={illustration1}
+              variant={blockVariantLeft}
+            />
 
-            <motion.div
-              variants={blockVariantRight}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: false, amount: 0.5 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="max-w-6xl w-full h-[400px] grid grid-cols-1 md:grid-cols-2 gap-12 justify-center items-center mt-12"
-            >
-              <div className="flex gap-4 flex-col items-end justify-center h-full md:order-1 order-2">
-                <h1 className="text-4xl font-bold text-center mb-4 text-dark-text text-right">
-                  Learn how to use signals from professionals
-                </h1>
-                <p className="text-mid-text text-right">
-                  We don't just give you signals, we teach you how to use and
-                  understand them.
-                </p>
-              </div>
-              <div className="flex w-full h-max items-center justify-center md:order-2 order-1">
-                <img
-                  src={illustration2}
-                  alt="Illustration"
-                  className="w-[90%] max-w-md mr-4"
-                />
-              </div>
-            </motion.div>
+            <FeatureCard
+              title="Learn how to use signals from professionals"
+              description=" We don't just give you signals, we teach you how to use and
+                  understand them."
+              image={illustration2}
+              variant={blockVariantLeft}
+              reverse
+            />
 
-            <motion.div
-              variants={blockVariantLeft}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: false, amount: 0.5 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="max-w-6xl w-full h-[400px] grid grid-cols-1 md:grid-cols-2 gap-12 justify-center items-center"
-            >
-              <div className="flex w-full h-max items-center justify-center">
-                <img
-                  src={illustration3}
-                  alt="Illustration"
-                  className="w-[80%] max-w-md mr-4"
-                />
-              </div>
-              <div className="flex gap-4 flex-col text-left items-start justify-center h-full">
-                <h1 className="text-4xl font-bold text-center mb-4 text-dark-text text-left">
-                  Accurate Signals and Lot Sizes
-                </h1>
-                <p className="text-mid-text">
-                  Our signals and lot sizes are accurate. They are tested and
-                  trusted by over 300+ people.
-                </p>
-              </div>
-            </motion.div>
+            <FeatureCard
+              title="Accurate Signals and Lot Sizes"
+              description="  Our signals and lot sizes are accurate. They are tested and
+                  trusted by over 300+ people."
+              image={illustration3}
+              variant={blockVariantLeft}
+            />
 
-            <motion.div
-              variants={blockVariantRight}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: false, amount: 0.5 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="max-w-6xl w-full h-[400px] grid grid-cols-1 md:grid-cols-2 gap-12 justify-center items-center mt-12"
-            >
-              <div className="flex gap-4 flex-col items-end justify-center h-full md:order-1 order-2">
-                <h1 className="text-4xl font-bold text-center mb-4 text-dark-text text-left">
-                  You Earn - We Earn
-                </h1>
-                <p className="text-mid-text text-right">
-                  We have your profit in mind, we earn as you earn. You making
-                  money from our signals are our top priority.
-                </p>
-              </div>
-              <div className="flex w-full h-max items-center justify-center md:order-2 order-1">
-                <img
-                  src={illustration4}
-                  alt="Illustration"
-                  className="w-[90%] max-w-md mr-4"
-                />
-              </div>
-            </motion.div>
+            <FeatureCard
+              title=" You Earn - We Earn"
+              description="  We have your profit in mind, we earn as you earn. You making
+                  money from our signals are our top priority."
+              image={illustration4}
+              variant={blockVariantLeft}
+              reverse
+            />
 
-            <motion.div
-              variants={blockVariantLeft}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: false, amount: 0.5 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="max-w-6xl w-full h-[400px] grid grid-cols-1 md:grid-cols-2 gap-12 justify-center items-center"
-            >
-              <div className="flex w-full h-max items-center justify-center">
-                <img
-                  src={illustration5}
-                  alt="Illustration"
-                  className="w-[80%] max-w-md mr-4"
-                />
-              </div>
-              <div className="flex gap-4 flex-col text-left items-start justify-center h-full">
-                <h1 className="text-4xl font-bold text-center mb-4 text-dark-text text-left">
-                  Identify Risky Trades
-                </h1>
-                <p className="text-mid-text">
-                  We help you identify risky and loss-full trades with ease and
-                  no stress.
-                </p>
-              </div>
-            </motion.div>
+            <FeatureCard
+              title=" Identify Risky Trades"
+              description="  We help you identify risky and loss-full trades with ease and
+                  no stress."
+              image={illustration5}
+              variant={blockVariantLeft}
+            />
           </div>
         </section>
 
@@ -617,7 +530,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
               viewport={{ once: false }}
               className="text-center mb-16"
             >
-              <h3 className="text-4xl font-bold text-dark-text">
+              <h3 className="text-3xl md:text-4xl font-bold text-dark-text">
                 Knowledge is Power
               </h3>
               <p className="text-mid-text mt-4">
@@ -634,60 +547,27 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
               viewport={{ once: false }}
               className="grid md:grid-cols-3 gap-8"
             >
-              {/* Card 1 */}
-              <motion.div
-                variants={cardVariant}
-                transition={{ duration: 0.6 }}
-                className="bg-light-surface p-8 rounded-xl shadow-md border border-light-gray text-center"
-              >
-                <Icon
-                  name="education"
-                  className="w-14 h-14 text-primary mx-auto mb-4"
-                />
-                <h4 className="text-2xl font-semibold text-dark-text">
-                  Forex 101
-                </h4>
-                <p className="text-mid-text mt-2">
-                  Master the basics, from pips and lots to market structure.
-                </p>
-              </motion.div>
+              <EducationCard
+                cardVariant={cardVariant}
+                iconName="education"
+                title="Forex 101"
+                subText="Master the basics, from pips and lots to market structure."
+              />
 
-              {/* Card 2 */}
-              <motion.div
-                variants={cardVariant}
-                transition={{ duration: 0.6 }}
-                className="bg-light-surface p-8 rounded-xl shadow-md border border-light-gray text-center"
-              >
-                <Icon
-                  name="analytics"
-                  className="w-14 h-14 text-primary mx-auto mb-4"
-                />
-                <h4 className="text-2xl font-semibold text-dark-text">
-                  Technical Analysis
-                </h4>
-                <p className="text-mid-text mt-2">
-                  Learn to read charts, identify patterns, and use indicators.
-                </p>
-              </motion.div>
+              <EducationCard
+                cardVariant={cardVariant}
+                iconName="analytics"
+                title=" Technical Analysis"
+                subText="Learn to read charts, identify patterns, and use indicators."
+              />
 
-              {/* Card 3 */}
-              <motion.div
-                variants={cardVariant}
-                transition={{ duration: 0.6 }}
-                className="bg-light-surface p-8 rounded-xl shadow-md border border-light-gray text-center"
-              >
-                <Icon
-                  name="billing"
-                  className="w-14 h-14 text-primary mx-auto mb-4"
-                />
-                <h4 className="text-2xl font-semibold text-dark-text">
-                  Risk Management
-                </h4>
-                <p className="text-mid-text mt-2">
-                  Discover strategies to protect your capital and trade
-                  sustainably.
-                </p>
-              </motion.div>
+              <EducationCard
+                cardVariant={cardVariant}
+                iconName="billing"
+                title=" Risk Management"
+                subText=" Discover strategies to protect your capital and trade
+                  sustainably."
+              />
             </motion.div>
           </div>
         </section>
@@ -924,7 +804,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
       </main>
 
       {/* Footer */}
-      <Footer/>
+      <Footer />
     </div>
   );
 };

@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from "react";
 import LandingPage from "./components/onboarding/LandingPage";
-import {
-  AnalyticsPage,
-  EducationPage,
-} from "./components/dashboard/DashboardPage";
+import { EducationPage } from "./components/dashboard/DashboardPage";
 import AIChatbot from "./components/widgets/AIChatWidget";
 import Toast from "./components/ui/Toast";
 import ScreenshotDetector from "./components/ui/ScreenshotDetector";
@@ -24,6 +21,8 @@ import LoginForm from "./components/auth/LoginForm";
 import RootLayout from "./RootLayout";
 import SignupForm from "./components/auth/SignupForm";
 import ResetPassword from "./components/auth/ResetPassword";
+import { AnalyticsPage } from "./pages/Analytics";
+import { getLivePrices } from "./services/marketDataService";
 
 export const App: React.FC = () => {
   const user = useAppStore((state) => state.user);
@@ -31,6 +30,7 @@ export const App: React.FC = () => {
   const logout = useAppStore((state) => state.logout);
   const updateUser = useAppStore((state) => state.updateUser);
   const loading = useAppStore((state) => state.loading);
+  const IsLoggingOut = useAppStore((state) => state.IsLoggingOut);
 
   const [activeView, setActiveView] = useState<DashboardView>("dashboard");
   const [toast, setToast] = useState<{
@@ -58,8 +58,21 @@ export const App: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMentorMode, setIsMentorMode] = useState(false);
   const [tradeHistory, setTradeHistory] = useState<TradeRecord[]>([]);
+  const [floatingPnL, setFloatingPnL] = useState(0);
+  const navigate = useNavigate();
 
-  // Theme effect
+  useEffect(() => {
+    if (!user) {
+      navigate("/");
+    }
+  }, [user]);
+
+  const EQUITY_KEY = `currentEquity_${user?.email}`;
+  const currentBalance = parseFloat(
+    localStorage.getItem(EQUITY_KEY) || "10000"
+  );
+  const liveEquity = currentBalance + floatingPnL;
+
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("dark", theme === "dark");
@@ -82,8 +95,6 @@ export const App: React.FC = () => {
   const toggleTheme = () =>
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
 
-  const navigate = useNavigate();
-
   const toggleMentorMode = () => {
     const newMode = !isMentorMode;
     setIsMentorMode(newMode);
@@ -103,6 +114,174 @@ export const App: React.FC = () => {
     type: "success" | "info" | "error" = "info"
   ) => setToast({ message, type });
   const closeToast = () => setToast(null);
+
+  // --- Live Trade Monitoring & Equity Calculation ---
+  useEffect(() => {
+    // Running this more frequently to update equity
+    const monitorInterval = setInterval(async () => {
+      if (activeTrades.length === 0) {
+        setFloatingPnL(0);
+        return;
+      }
+
+      const uniqueInstruments: string[] = Array.from(
+        new Set(activeTrades.map((t: TradeRecord) => t.instrument))
+      );
+      const livePrices = await getLivePrices(uniqueInstruments);
+
+      let totalFloating = 0;
+
+      // Update trades with individual floating PnL
+      const updatedActiveTrades = activeTrades.map((trade) => {
+        const priceData = livePrices[trade.instrument];
+        // Return trade as-is if no price data available
+        if (!priceData || priceData.price === null) return trade;
+
+        // NEW: If data is mock (network interrupted), preserve current PnL state
+        // instead of recalculating based on potentially stale/static mock data.
+        if (priceData.isMock) {
+          if (typeof trade.pnl === "number") {
+            totalFloating += trade.pnl;
+          }
+          return trade;
+        }
+
+        const currentPrice = priceData.price;
+
+        // Calculate Floating P/L
+        const instrumentDef = instrumentDefinitions[trade.instrument];
+        const contractSize = instrumentDef.contractSize;
+        const lotSize = trade.lotSize || 0;
+        const direction = trade.type === "BUY" ? 1 : -1;
+
+        let tradePnL =
+          (currentPrice - trade.entryPrice) *
+          (lotSize * contractSize) *
+          direction;
+
+        // Simplified conversion to USD
+        if (instrumentDef.quoteCurrency === "JPY") {
+          tradePnL /= 150;
+        } else if (instrumentDef.quoteCurrency === "CHF") {
+          tradePnL /= 0.9;
+        } else if (instrumentDef.quoteCurrency === "CAD") {
+          tradePnL /= 1.35;
+        } else if (instrumentDef.quoteCurrency === "GBP") {
+          tradePnL *= 1.25;
+        }
+
+        totalFloating += tradePnL;
+
+        // Return updated trade object with current price
+        return { ...trade, pnl: tradePnL, currentPrice: currentPrice };
+      });
+
+      setFloatingPnL(totalFloating);
+
+      const closedTradeItems: {
+        trade: TradeRecord;
+        outcome: "win" | "loss";
+        exitPrice: number;
+      }[] = [];
+
+      updatedActiveTrades.forEach((trade) => {
+        const priceData = livePrices[trade.instrument];
+        if (!priceData || priceData.price === null) return;
+
+        // NEW: CRITICAL CHECK - Do not close trades if data is mock/fallback due to network error
+        if (priceData.isMock) return;
+
+        const currentPrice = priceData.price;
+
+        let isWin = false;
+        let isLoss = false;
+
+        if (trade.type === "BUY") {
+          isWin = currentPrice >= trade.takeProfit;
+          isLoss = currentPrice <= trade.stopLoss;
+        } else {
+          // SELL
+          isWin = currentPrice <= trade.takeProfit;
+          isLoss = currentPrice >= trade.stopLoss;
+        }
+
+        if (isWin) {
+          closedTradeItems.push({
+            trade,
+            outcome: "win",
+            exitPrice: trade.takeProfit,
+          });
+        } else if (isLoss) {
+          closedTradeItems.push({
+            trade,
+            outcome: "loss",
+            exitPrice: trade.stopLoss,
+          });
+        }
+      });
+
+      if (closedTradeItems.length > 0) {
+        const closedTradeIds = new Set(
+          closedTradeItems.map((item) => item.trade.id)
+        );
+        const newActiveTrades = updatedActiveTrades.filter(
+          (t) => !closedTradeIds.has(t.id)
+        );
+
+        let currentEquity = parseFloat(
+          localStorage.getItem(EQUITY_KEY) || "10000"
+        );
+        const newHistoryItems: TradeRecord[] = [];
+
+        closedTradeItems.forEach((item) => {
+          const { trade, outcome, exitPrice } = item;
+          const instrumentProps = instrumentDefinitions[trade.instrument];
+          const contractSize = instrumentProps?.contractSize || 100000;
+          const lotSize = trade.lotSize || 0;
+
+          // Re-calculate final PnL for closing to be precise at exit price
+          let pnl =
+            (exitPrice - trade.entryPrice) *
+            (lotSize * contractSize) *
+            (trade.type === "BUY" ? 1 : -1);
+
+          if (instrumentProps.quoteCurrency === "JPY") pnl /= 150;
+          else if (instrumentProps.quoteCurrency === "CHF") pnl /= 0.9;
+          else if (instrumentProps.quoteCurrency === "CAD") pnl /= 1.35;
+          else if (instrumentProps.quoteCurrency === "GBP") pnl *= 1.25;
+
+          currentEquity += pnl;
+
+          showToast(
+            `${
+              trade.instrument
+            } trade closed as a ${outcome}. P&L: $${pnl.toFixed(2)}`,
+            outcome === "win" ? "success" : "error"
+          );
+
+          newHistoryItems.push({
+            ...trade,
+            status: outcome,
+            pnl,
+            finalEquity: currentEquity,
+            dateClosed: new Date().toISOString(),
+          });
+        });
+
+        // BATCH UPDATE STATE
+        setActiveTrades(newActiveTrades);
+        setTradeHistory((prev) => [...newHistoryItems, ...prev]);
+        localStorage.setItem(EQUITY_KEY, currentEquity.toString());
+        // Force storage event update if needed
+        window.dispatchEvent(new Event("storage"));
+      } else {
+        // If no trades closed, update active trades to reflect floating PnL in UI
+        setActiveTrades(updatedActiveTrades);
+      }
+    }, 5000); // Check every 5 seconds for "Live" feel
+
+    return () => clearInterval(monitorInterval);
+  }, [activeTrades, showToast, EQUITY_KEY, setActiveTrades]);
 
   const handleLoginRequest = (user) => {
     setUser(user, true);
@@ -225,21 +404,6 @@ export const App: React.FC = () => {
     );
   };
 
-  // if (!user) {
-  //   return (
-  //     <>
-  //       <AuthLayout />
-  //       {toast && (
-  //         <Toast
-  //           message={toast.message}
-  //           type={toast.type}
-  //           onClose={closeToast}
-  //         />
-  //       )}
-  //     </>
-  //   );
-  // }
-
   return (
     <div className="w-full h-screen flex flex-col">
       <section
@@ -248,6 +412,7 @@ export const App: React.FC = () => {
         <ScreenshotDetector onScreenshotAttempt={handleScreenshotAttempt}>
           <Routes>
             {/* Public routes */}
+            <Route path="/" element={<LandingPage/>}/>
             <Route
               path="auth"
               element={
@@ -257,7 +422,7 @@ export const App: React.FC = () => {
                 />
               }
             >
-              <Route index element={<Navigate to="signIn" replace />} />
+              <Route element={<Navigate to="signIn" replace />} />
               <Route path="signIn" element={<LoginForm />} />
               <Route path="signUp" element={<SignupForm />} />
               <Route path="verify-email" element={<VerifyEmail />} />
@@ -293,6 +458,8 @@ export const App: React.FC = () => {
                     user={user}
                     activeTrades={activeTrades}
                     tradeHistory={tradeHistory}
+                    liveEquity={liveEquity}
+                    floatingPnL={floatingPnL}
                   />
                 }
               />
@@ -310,9 +477,24 @@ export const App: React.FC = () => {
               <Route path="mentors" element={<MentorPage user={user} />} />
               <Route path="mentor/:mentorId" element={<MentorProfilePage />} />
               <Route path="education" element={<EducationPage />} />
-              <Route path="analytics" element={<AnalyticsPage user={user} />} />
-              <Route path="ls_calculator" element={<LotSizeCalculatorPage />} />
-              <Route path="market_chart" element={<MarketChartPage />} />
+              <Route
+                path="analytics"
+                element={
+                  <AnalyticsPage
+                    user={user}
+                    floatingPnL={floatingPnL}
+                    liveEquity={liveEquity}
+                  />
+                }
+              />
+              <Route
+                path="ls_calculator"
+                element={<LotSizeCalculatorPage user={user} />}
+              />
+              <Route
+                path="market_chart"
+                element={<MarketChartPage theme={theme} />}
+              />
             </Route>
 
             {/* Landing page */}
@@ -346,6 +528,12 @@ export const App: React.FC = () => {
             type={toast.type}
             onClose={closeToast}
           />
+        )}
+
+        {IsLoggingOut && (
+          <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent" />
+          </div>
         )}
       </section>
     </div>

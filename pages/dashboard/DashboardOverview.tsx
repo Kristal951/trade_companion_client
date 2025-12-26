@@ -157,7 +157,7 @@ const DashboardOverview: React.FC<Props> = ({
     //   const totalTrades = signals.length;
 
   return (
-    <div className="p-4 bg-light-bg min-h-[calc(100vh-64px)]">
+    <div className="p-4 mb-4 bg-light-bg min-h-[calc(100vh-64px)]">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div
           onClick={() => navigate('/analytics')}

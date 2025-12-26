@@ -3,7 +3,7 @@ import useAppStore from "@/store/useStore";
 import { useState, useEffect } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 
-const AuthLayout = ({onAuthSuccess, showToast}) => {
+const AuthLayout = ({ onAuthSuccess, showToast }) => {
   const loading = useAppStore((state) => state.loading);
   const setUser = useAppStore((state) => state.setUser);
 
@@ -17,8 +17,55 @@ const AuthLayout = ({onAuthSuccess, showToast}) => {
     location.pathname.includes("signUp");
 
   useEffect(() => {
+    if (isLogin) {
+      setRobotState("greeting");
+    } else {
+      setRobotState("jumping");
+    }
+  }, []);
+  const handleFocus = (field) => {
+    if (isForgotPassword) {
+      setRobotState("thinking");
+      return;
+    }
+
+    // If coming from an error state, reset to neutral interaction
+    if (robotState === "sad") {
+      setRobotState("idle");
+    }
+
+    switch (field) {
+      case "password":
+        setRobotState("hiding");
+        break;
+      case "name":
+        setRobotState("skipping");
+        break;
+      case "dob":
+        setRobotState("jumping");
+        break;
+      case "email":
+        setRobotState("idle");
+        break;
+      default:
+        setRobotState(isLogin ? "idle" : "excited");
+    }
+  };
+
+  const handleBlur = () => {
+    // Reset to context default on blur, unless showing an error
+    if (!isLoading && !error) {
+      if (isForgotPassword) {
+        setRobotState("thinking");
+      } else {
+        setRobotState(isLogin ? "greeting" : "idle");
+      }
+    }
+  };
+
+  useEffect(() => {
     setIsLogin(location.pathname.includes("signIn"));
-  }, [location.pathname]);
+  }, [location.pathname, isLogin]);
 
   const toggleUrl = () => {
     const nextIsLogin = !isLogin;
@@ -81,10 +128,14 @@ const AuthLayout = ({onAuthSuccess, showToast}) => {
     }
   };
 
+  useEffect(() => {
+    navigate("/auth/signIn");
+  }, []);
+
   return (
     <div className="fixed inset-0 z-[100] overflow-hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in-right">
-      <div className="w-full max-w-5xl bg-[#0f1115] rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-800 flex flex-col md:flex-row relative min-h-[650px]">
-        <div className="w-full md:w-1/2 relative bg-gradient-to-b from-[#1a1d26] to-[#0f1115] overflow-hidden flex flex-col items-center justify-center p-8 md:p-0 min-h-[300px] md:min-h-full transition-colors duration-700">
+      <div className="w-full md:max-w-5xl bg-transparent boder-0 md:bg-[#0f1115] rounded-[2.5rem] overflow-hidden shadow-xl md:border md:border-slate-800 flex flex-col md:flex-row relative h-full md:min-h-[650px]">
+        <div className="w-full hidden md:flex md:w-1/2 relative bg-gradient-to-b from-[#1a1d26] to-[#0f1115] overflow-hidden flex flex-col items-center justify-center p-8 md:p-0 min-h-[300px] md:min-h-full transition-colors duration-700">
           <div
             className={`absolute top-[-20%] left-[-20%] w-[500px] h-[500px] rounded-full blur-[120px] transition-colors duration-700 ${
               robotState === "hiding"
@@ -100,6 +151,7 @@ const AuthLayout = ({onAuthSuccess, showToast}) => {
                 : "bg-blue-600/20"
             }`}
           ></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px]"></div>
 
           <div
             className={`absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] opacity-50 transition-transform duration-[10s] ${
@@ -108,6 +160,32 @@ const AuthLayout = ({onAuthSuccess, showToast}) => {
                 : ""
             }`}
           ></div>
+
+          {robotState === "searching" && (
+            <>
+              <div
+                className="absolute bottom-0 left-1/4 w-12 h-16 bg-white/10 border border-white/30 rounded flex items-center justify-center animate-file-up"
+                style={{ animationDelay: "0s" }}
+              >
+                <div className="w-8 h-1 bg-white/30 mb-1"></div>
+                <div className="w-6 h-1 bg-white/30"></div>
+              </div>
+              <div
+                className="absolute bottom-0 right-1/4 w-10 h-14 bg-blue-500/20 border border-blue-400/30 rounded flex items-center justify-center animate-file-up"
+                style={{ animationDelay: "0.5s", left: "60%" }}
+              >
+                <div className="w-6 h-1 bg-blue-400/30 mb-1"></div>
+                <div className="w-4 h-1 bg-blue-400/30"></div>
+              </div>
+              <div
+                className="absolute bottom-0 left-1/3 w-14 h-20 bg-white/5 border border-white/20 rounded flex items-center justify-center animate-file-up"
+                style={{ animationDelay: "1s" }}
+              >
+                <div className="w-10 h-1 bg-white/20 mb-1"></div>
+                <div className="w-8 h-1 bg-white/20"></div>
+              </div>
+            </>
+          )}
 
           <div
             className={`relative z-10 transition-transform duration-500 ease-out 
@@ -402,7 +480,7 @@ const AuthLayout = ({onAuthSuccess, showToast}) => {
           </div>
         </div>
 
-        <div className="w-full md:w-1/2 p-8 md:p-12 bg-[#0f1115] relative flex flex-col justify-center">
+        <div className="w-full md:w-1/2 p-2 md:p-12  md:bg-[#0f1115] relative flex flex-col justify-center">
           {isAuthForm && (
             <div className="text-center mb-8 w-full">
               <h3 className="text-2xl font-bold text-white mb-2">
@@ -445,7 +523,16 @@ const AuthLayout = ({onAuthSuccess, showToast}) => {
             </div>
           )}
 
-          <Outlet context={{setIsLogin, showToast, onAuthSuccess}} />
+          <Outlet
+            context={{
+              setIsLogin,
+              showToast,
+              onAuthSuccess,
+              handleFocus,
+              handleBlur,
+              setRobotState,
+            }}
+          />
 
           {isAuthForm && (
             <div className="flex w-full justify-center items-center mt-2 h-[100px]">

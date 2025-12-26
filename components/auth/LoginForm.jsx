@@ -6,7 +6,7 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 const LoginForm = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const { setIsLogin, onAuthSuccess, showToast } = useOutletContext();
+  const { setIsLogin, onAuthSuccess, showToast, handleFocus, setRobotState} = useOutletContext();
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -21,6 +21,7 @@ const LoginForm = () => {
   const signIn = useAppStore((state) => state.signIn);
 
   const handleSubmit = async (e) => {
+    setRobotState('searching')
     try {
       e.preventDefault();
       const user = await signIn({
@@ -35,6 +36,7 @@ const LoginForm = () => {
       });
     } catch (err) {
       console.log(err);
+      setRobotState('sad')
        const errorMessage =
         err.response?.data?.error ||
         err.response?.data?.message ||
@@ -54,6 +56,7 @@ const LoginForm = () => {
             type="email"
             name="email"
             value={formData.email}
+            onFocus={()=> handleFocus('email')}
             onChange={handleChange}
             placeholder="Email Address"
             className="w-full pl-10 p-3 bg-light-hover border border-light-gray rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-dark-text transition-all"
@@ -70,6 +73,7 @@ const LoginForm = () => {
             type={showPassword ? "text" : "password"}
             name="password"
             value={formData.password}
+             onFocus={()=> handleFocus('password')}
             onChange={handleChange}
             placeholder="••••••••"
             className="w-full pl-10 pr-10 p-3 bg-light-hover border border-light-gray rounded-lg 

@@ -1,21 +1,22 @@
-import React, {useEffect} from "react";
+import React, { useEffect } from "react";
 import NotificationBell from "./NotificationBell";
 import useAppStore from "@/store/useStore";
+import { RiMenu2Line } from "react-icons/ri";
 
-const Header = ({ toggleTheme, theme, user}) => {
+const Header = ({ toggleTheme, theme, user, setShowMobileMenu, showMobileMenu}) => {
   const NOTIFICATIONS_KEY = `notifications_${user.email}`;
   const notifications = useAppStore((state) => state.notifications);
   useEffect(() => {
     localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
   }, [notifications, NOTIFICATIONS_KEY]);
-  const addNotification = useAppStore(
-    (state) => state.addNotification
-  );
+  const addNotification = useAppStore((state) => state.addNotification);
 
   return (
     <header className="bg-light-surface border-b border-light-gray p-4 flex justify-between items-center flex-shrink-0">
+      <button className="md:hidden p-1 rounded-md hover:bg-light-hover text-mid-text " onClick={()=> setShowMobileMenu(!showMobileMenu)}>
+        <RiMenu2Line size={25}/>
+      </button>
       <h1 className="text-2xl font-bold text-dark-text capitalize">
-        {/* {activeView.replace(/_/g, " ")} */}
       </h1>
       <div className="flex items-center space-x-4">
         <label htmlFor="theme-toggle" className="theme-toggle-label no-print">
@@ -69,7 +70,7 @@ const Header = ({ toggleTheme, theme, user}) => {
             `https://i.pravatar.cc/150?u=${user.email}`
           }
           alt="User Avatar"
-          className="w-10 h-10 rounded-full"
+          className="w-10 h-10 rounded-full hidden md:flex"
         />
       </div>
     </header>

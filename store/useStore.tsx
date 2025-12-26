@@ -16,6 +16,8 @@ interface AppState {
   }) => Promise<void>;
   verifyEmailCode: (code: string) => Promise<User>;
   resendVerificationCode: () => Promise<void>;
+  IsLoggingOut: boolean;
+  setIsLoggingOut: (IsLoggingOut: boolean) => void;
 
   loading: boolean;
   setLoading: (loading: boolean) => void;
@@ -48,6 +50,8 @@ const useAppStore = create<AppState>()(
     (set, get) => ({
       user: null,
       isLoggedIn: false,
+      IsLoggingOut: false,
+      setIsLoggingOut: (IsLoggingOut) => set({ IsLoggingOut }),
 
       setUser: (userData, replace = false) =>
         set((state) => {
@@ -184,9 +188,16 @@ const useAppStore = create<AppState>()(
       },
 
       logout: async () => {
-        const { clearUser, setLoading, setError, addNotification } = get();
+        const {
+          clearUser,
+          setLoading,
+          setError,
+          addNotification,
+          setIsLoggingOut,
+        } = get();
         try {
           setLoading(true);
+          setIsLoggingOut(true);
           setError(false);
           await API.post("/api/user/logout");
           clearUser();
@@ -195,6 +206,7 @@ const useAppStore = create<AppState>()(
           throw err;
         } finally {
           setLoading(false);
+          setIsLoggingOut(false);
         }
       },
 
