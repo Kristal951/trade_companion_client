@@ -474,52 +474,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
           </div>
         </section>
 
-        {/* {Features Section} */}
-        <section id="features" className="py-20 bg-light-bg">
-          <div className="conatiner flex-col flex gap-8 items-center px-6 mx-auto">
-            <FeatureCard
-              title="Signal Generation"
-              description="Get Signals from both our verified professionals and also from our own crafted and well fed Signal generator model."
-              image={illustration1}
-              variant={blockVariantLeft}
-            />
-
-            <FeatureCard
-              title="Learn how to use signals from professionals"
-              description=" We don't just give you signals, we teach you how to use and
-                  understand them."
-              image={illustration2}
-              variant={blockVariantLeft}
-              reverse
-            />
-
-            <FeatureCard
-              title="Accurate Signals and Lot Sizes"
-              description="  Our signals and lot sizes are accurate. They are tested and
-                  trusted by over 300+ people."
-              image={illustration3}
-              variant={blockVariantLeft}
-            />
-
-            <FeatureCard
-              title=" You Earn - We Earn"
-              description="  We have your profit in mind, we earn as you earn. You making
-                  money from our signals are our top priority."
-              image={illustration4}
-              variant={blockVariantLeft}
-              reverse
-            />
-
-            <FeatureCard
-              title=" Identify Risky Trades"
-              description="  We help you identify risky and loss-full trades with ease and
-                  no stress."
-              image={illustration5}
-              variant={blockVariantLeft}
-            />
-          </div>
-        </section>
-
         {/* Education Section */}
         <section id="education" className="py-20 bg-light-hover">
           <div className="container mx-auto px-6">

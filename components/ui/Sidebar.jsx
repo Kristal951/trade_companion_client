@@ -54,7 +54,7 @@ const Sidebar = ({
           {showMobileMenu ? (
             <button
               onClick={toggleMenu}
-              className="p-1 rounded-md hover:bg-light-hover text-mid-text mx-auto"
+              className="p-1 rounded-md md:hidden hover:bg-light-hover text-mid-text mx-auto"
             >
               <Icon name="close" className="w-6 h-6" />
             </button>
