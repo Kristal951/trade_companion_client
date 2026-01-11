@@ -1,4 +1,17 @@
-import React, {useState} from 'react'
+import BillingSettings from "@/components/ui/BillingSettings";
+import CTraderSettings from "@/components/ui/CTrader";
+import NotificationSettings from "@/components/ui/NotificationSettings";
+import ProfileSettings from "@/components/ui/ProfileSettings";
+import { User } from "@/types";
+import React, { useState } from "react";
+
+interface SettingsProps {
+  user: User;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  showToast: (message: string, type?: "success" | "info" | "error") => void;
+  updateUser: (updatedData: Partial<User>) => void;
+  loading: boolean;
+}
 
 const SettingsPage: React.FC<SettingsProps> = ({
   user,
@@ -69,12 +82,12 @@ const SettingsPage: React.FC<SettingsProps> = ({
             showToast={showToast}
           />
         )}
-        {activeTab === "verification" && (
+        {/* {activeTab === "verification" && (
           <VerificationSettings showToast={showToast} />
-        )}
+        )} */}
       </div>
     </div>
   );
 };
 
-export default SettingsPage
+export default SettingsPage;

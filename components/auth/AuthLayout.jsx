@@ -1,20 +1,44 @@
-import { Outlet, Navigate, useNavigate, useLocation } from "react-router-dom";
+import {
+  Outlet,
+  Navigate,
+  useNavigate,
+  useLocation,
+  useMatch,
+} from "react-router-dom";
 import useAppStore from "@/store/useStore";
 import { useState, useEffect } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 
 const AuthLayout = ({ onAuthSuccess, showToast }) => {
   const loading = useAppStore((state) => state.loading);
-  const setUser = useAppStore((state) => state.setUser);
+  const error = useAppStore((state) => state.error);
+  const isLogin = useMatch("/auth/signIn") !== null;
+  const isSignup = useMatch("/auth/signUp") !== null;
+  const isAuthForm = isLogin || isSignup;
 
   const [robotState, setRobotState] = useState("idle");
-  const [isLogin, setIsLogin] = useState(true);
+
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const isAuthForm =
-    location.pathname.includes("signIn") ||
-    location.pathname.includes("signUp");
+  const selectedPlan =
+    location.state?.selectedPlan ||
+    localStorage.getItem("selectedPlan") ||
+    "Free";
+
+  useEffect(() => {
+    if (selectedPlan) localStorage.setItem("selectedPlan", selectedPlan);
+  }, [selectedPlan]);
+
+  useEffect(() => {
+    if (location.pathname === "/auth") {
+      if (selectedPlan && selectedPlan !== "Free") {
+        navigate("/auth/signup", { state: { selectedPlan } });
+      } else {
+        navigate("/auth/signIn", { state: { selectedPlan } });
+      }
+    }
+  }, [location.pathname, navigate, selectedPlan]);
 
   useEffect(() => {
     if (isLogin) {
@@ -28,8 +52,6 @@ const AuthLayout = ({ onAuthSuccess, showToast }) => {
       setRobotState("thinking");
       return;
     }
-
-    // If coming from an error state, reset to neutral interaction
     if (robotState === "sad") {
       setRobotState("idle");
     }
@@ -53,8 +75,7 @@ const AuthLayout = ({ onAuthSuccess, showToast }) => {
   };
 
   const handleBlur = () => {
-    // Reset to context default on blur, unless showing an error
-    if (!isLoading && !error) {
+    if (!loading && !error) {
       if (isForgotPassword) {
         setRobotState("thinking");
       } else {
@@ -63,13 +84,9 @@ const AuthLayout = ({ onAuthSuccess, showToast }) => {
     }
   };
 
-  useEffect(() => {
-    setIsLogin(location.pathname.includes("signIn"));
-  }, [location.pathname, isLogin]);
-
   const toggleUrl = () => {
     const nextIsLogin = !isLogin;
-    setIsLogin(nextIsLogin);
+
     navigate(nextIsLogin ? "/auth/signIn" : "/auth/signUp");
   };
 
@@ -112,12 +129,17 @@ const AuthLayout = ({ onAuthSuccess, showToast }) => {
     try {
       const res = await handleGoogleSignIn({ token: response });
       const user = res.user ?? res;
-      onAuthSuccess({
-        name: user.name,
-        email: user.email,
-        plan: user.subscribedPlan || "FREE",
-        image: user.picture || user.avatar,
-      });
+      if (selectedPlan && selectedPlan !== "free") {
+        navigate(`/subscribe/${selectedPlan}`, {
+          state: { email: user.email, name: user.name },
+        });
+      }
+      // onAuthSuccess({
+      //   name: user.name,
+      //   email: user.email,
+      //   plan: user.subscribedPlan || "FREE",
+      //   image: user.picture || user.avatar,
+      // });
     } catch (error) {
       console.log(error);
       const errorMessage =
@@ -127,10 +149,6 @@ const AuthLayout = ({ onAuthSuccess, showToast }) => {
       showToast(errorMessage, "error");
     }
   };
-
-  useEffect(() => {
-    navigate("/auth/signIn");
-  }, []);
 
   return (
     <div className="fixed inset-0 z-[100] overflow-hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in-right">
@@ -525,12 +543,12 @@ const AuthLayout = ({ onAuthSuccess, showToast }) => {
 
           <Outlet
             context={{
-              setIsLogin,
               showToast,
               onAuthSuccess,
               handleFocus,
               handleBlur,
               setRobotState,
+              selectedPlan,
             }}
           />
 

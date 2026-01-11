@@ -1,11 +1,14 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { User, Notification } from "@/types";
+import { User, Notification, Plan } from "@/types";
 import { API, updateUserAPI } from "@/utils";
 
 interface AppState {
   user: User | null;
   isLoggedIn: boolean;
+  plans: Plan;
+  getPlans: () => Promise<Plan[]>;
+  getPlanById: (planID: string) => Promise<Plan>;
   setUser: (user: User | Partial<User>, replace?: boolean) => void;
   clearUser: () => void;
   updateUser: (updates: Partial<User>) => void;
@@ -313,6 +316,42 @@ const useAppStore = create<AppState>()(
         }
       },
 
+      getPlans: async () => {
+        const { setLoading, setError } = get();
+        try {
+          setLoading(true);
+          setError(false);
+
+          const res = await API.get("/api/plans/getPlans");
+          console.log(res)
+          const plans = res.data;
+          set({ plans });
+          return plans;
+        } catch (error) {
+          console.error("Failed to fetch plans:", error);
+          setError(true);
+          throw error;
+        } finally {
+          setLoading(false);
+        }
+      },
+      getPlanById: async (planID: string) => {
+        const { setLoading, setError } = get();
+        console.log(planID);
+        try {
+          setLoading(true);
+          setError(false);
+          const res = await API.get(`/api/plans/getPlan/${planID}`);
+          return res.data;
+        } catch (error) {
+          console.log(error);
+          setError(true);
+          throw error;
+        } finally {
+          setLoading(false);
+        }
+      },
+
       resetPassword: async (data: any) => {
         const { setLoading, setError } = get();
         const { token } = data;
@@ -325,6 +364,30 @@ const useAppStore = create<AppState>()(
           console.log(error);
           setError(true);
           throw error;
+        } finally {
+          setLoading(false);
+        }
+      },
+
+      startUserSubscription: async (data: any) => {
+        const { setLoading, setError } = get();
+        const { name, email, planKey, planID} = data;
+        try {
+          setLoading(true);
+          setError(false);
+          const res = await API.post("/api/plans/startSubscriptionPayment", {
+            name,
+            email,
+            planKey,
+            planID
+          });
+          return res
+        } catch (error) {
+          console.log(error);
+          setError(true);
+          throw error;
+        }finally{
+          setLoading(false)
         }
       },
     }),

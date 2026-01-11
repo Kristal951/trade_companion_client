@@ -23,6 +23,8 @@ import SignupForm from "./components/auth/SignupForm";
 import ResetPassword from "./components/auth/ResetPassword";
 import { AnalyticsPage } from "./pages/Analytics";
 import { getLivePrices } from "./services/marketDataService";
+import SubscriptionPage from "./pages/SubscriptionPage";
+import SettingsPage from "./pages/SettingsPage";
 
 export const App: React.FC = () => {
   const user = useAppStore((state) => state.user);
@@ -411,8 +413,7 @@ export const App: React.FC = () => {
       >
         <ScreenshotDetector onScreenshotAttempt={handleScreenshotAttempt}>
           <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<LandingPage/>}/>
+            <Route path="/" element={<LandingPage />} />
             <Route
               path="auth"
               element={
@@ -431,6 +432,12 @@ export const App: React.FC = () => {
             </Route>
 
             {/* Protected routes */}
+            {user && (
+              <Route
+                path="subscribe/:planName"
+                element={<SubscriptionPage showToast={showToast} />}
+              />
+            )}
             <Route
               element={
                 user ? (
@@ -494,6 +501,18 @@ export const App: React.FC = () => {
               <Route
                 path="market_chart"
                 element={<MarketChartPage theme={theme} />}
+              />
+              <Route
+                path="settings"
+                element={
+                  <SettingsPage
+                    user={user}
+                    setUser={setUser}
+                    showToast={showToast}
+                    updateUser={updateUser}
+                    loading={loading}
+                  />
+                }
               />
             </Route>
 

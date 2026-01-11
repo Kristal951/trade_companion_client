@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Icon from "../ui/Icon";
 import useAppStore from "@/store/useStore";
-import { useOutletContext } from "react-router-dom";
+import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 
 interface VerifyEmailProps {
   email: string;
@@ -17,11 +17,16 @@ interface VerifyEmailProps {
 const VerifyEmail: React.FC<VerifyEmailProps> = () => {
   const [otp, setOtp] = useState(Array(6).fill(""));
   const [timer, setTimer] = useState(60);
+  const location = useLocation();
+  const navigate = useNavigate();
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
   const onVerify = useAppStore((state) => state.verifyEmailCode);
   const onResendCode = useAppStore((state) => state.resendVerificationCode);
   const loading = useAppStore((state) => state.loading);
-  const { showToast, onAuthSuccess } = useOutletContext() as any
+  const { showToast, onAuthSuccess } = useOutletContext() as any;
+  const selectedPlan = location.state?.selectedPlan || "Free";
+  const email = location.state?.email || "unknown email";
+  const name = location.state?.name || "uknown user";
 
   useEffect(() => {
     inputsRef.current[0]?.focus();
@@ -71,12 +76,19 @@ const VerifyEmail: React.FC<VerifyEmailProps> = () => {
       const res = await onVerify(code);
       const user = res;
 
-      await onAuthSuccess({
-        name: user.name,
-        email: user.email,
-        plan: user.subscribedPlan || "FREE",
-        image: user.avatar,
-      });
+      if (selectedPlan && selectedPlan !== "Free") {
+        navigate(`/subscribe/${selectedPlan}`, {
+          replace: true,
+          state: { name, email },
+        });
+      }
+
+      // await onAuthSuccess({
+      //   name: user.name,
+      //   email: user.email,
+      //   plan: user.subscribedPlan || "FREE",
+      //   image: user.avatar,
+      // });
     } catch (error) {
       console.log(error);
       const errorMessage =
@@ -103,7 +115,7 @@ const VerifyEmail: React.FC<VerifyEmailProps> = () => {
       </h2>
       <p className="text-mid-text mb-6">
         We sent a 6-digit verification code to{" "}
-        {/* <span className="font-semibold">{email}</span> */}
+        <span className="font-semibold">{email}</span>
       </p>
 
       <div className="flex gap-3 mb-6">
@@ -129,26 +141,7 @@ const VerifyEmail: React.FC<VerifyEmailProps> = () => {
         disabled={loading || otp.some((digit) => digit === "")}
       >
         {loading ? (
-          <svg
-            className="animate-spin h-5 w-5 text-white mx-auto"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
+          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
         ) : (
           "Verify Email"
         )}

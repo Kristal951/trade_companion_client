@@ -4,7 +4,7 @@ import useAppStore from "@/store/useStore";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "../ui/index.css";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 
 const SignupForm = () => {
   const [formData, setFormData] = useState({
@@ -19,11 +19,8 @@ const SignupForm = () => {
   const loading = useAppStore((state) => state.loading);
   const signup = useAppStore((state) => state.signup);
   const navigate = useNavigate();
-  const { setIsLogin, showToast, handleFocus, handleBlur } = useOutletContext();
-
-  useEffect(() => {
-    setIsLogin(false);
-  }, []);
+  const { showToast, handleFocus, handleBlur, selectedPlan } =
+    useOutletContext();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -55,10 +52,12 @@ const SignupForm = () => {
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        age: formData.age,
+        age: Number(formData.age),
       });
 
-      navigate("/auth/verify-email");
+      navigate("/auth/verify-email", {
+        state: { selectedPlan, email: formData.email, name: formData.name },
+      });
     } catch (err) {
       console.log(err);
       const errorMessage =
@@ -126,33 +125,24 @@ const SignupForm = () => {
           </button>
         </div>
         <div className="group">
-          <div className="relative transition-all duration-300">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-5 h-5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
-                />
-              </svg>
+          <div className="relative">
+            {/* Calendar Icon */}
+            <div
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-mid-text"
+              style={{ zIndex: 100 }}
+            >
+              <Icon name="calendar" className="w-5 h-5" />
             </div>
-            <input
-              type="date"
-              name="dob"
-              value={formData.dob}
-              onChange={checkAge}
-              onFocus={() => handleFocus("dob")}
-              onBlur={handleBlur}
-              max={new Date().toISOString().split("T")[0]}
+
+            <DatePicker
+              selected={Dob}
+              onChange={(date) => checkAge(date)}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="Date of Birth"
               className="w-full pl-10 p-3 bg-light-hover border border-light-gray rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-dark-text transition-all"
-              style={{ colorScheme: "dark" }}
+              showYearDropdown
+              scrollableYearDropdown
+              yearDropdownItemNumber={100}
             />
           </div>
         </div>

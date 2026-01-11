@@ -9,10 +9,6 @@ const LoginForm = () => {
   const { setIsLogin, onAuthSuccess, showToast, handleFocus, setRobotState} = useOutletContext();
   const navigate = useNavigate()
 
-  useEffect(() => {
-    setIsLogin(true);
-  }, []);
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };

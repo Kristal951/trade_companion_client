@@ -51,15 +51,18 @@ const Sidebar = ({
             <h1 className="text-2xl font-bold text-primary">Trade Companion</h1>
           )}
 
-          {showMobileMenu ? (
+          {showMobileMenu && (
             <button
               onClick={toggleMenu}
               className="p-1 rounded-md md:hidden hover:bg-light-hover text-mid-text mx-auto"
             >
               <Icon name="close" className="w-6 h-6" />
             </button>
-          ) : (
-            <button
+          )}
+          
+          {
+            !showMobileMenu  && (
+ <button
               onClick={() => setIsSidebarCollapsed((prev) => !prev)}
               className={`p-1 rounded-md hover:bg-light-hover text-mid-text ${
                 isSidebarCollapsed && "mx-auto"
@@ -70,7 +73,9 @@ const Sidebar = ({
                 className="w-6 h-6"
               />
             </button>
-          )}
+            )
+          }
+          
         </div>
 
         {/* Navigation */}
@@ -86,28 +91,24 @@ const Sidebar = ({
                 icon="dashboard"
                 label="Dashboard"
                 isCollapsed={isSidebarCollapsed}
-                onClick={toggleMenu}
               />
               <SidebarNavLink
                 to="followers"
                 icon="followers"
                 label="Followers"
                 isCollapsed={isSidebarCollapsed}
-                onClick={toggleMenu}
               />
               <SidebarNavLink
                 to="analytics"
                 icon="analytics"
                 label="Analytics"
                 isCollapsed={isSidebarCollapsed}
-                onClick={toggleMenu}
               />
               <SidebarNavLink
                 to="mentor_payouts"
                 icon="payouts"
                 label="Payouts"
                 isCollapsed={isSidebarCollapsed}
-                onClick={toggleMenu}
               />
             </div>
           ) : (
@@ -126,7 +127,7 @@ const Sidebar = ({
                   icon="dashboard"
                   label="Dashboard"
                   isCollapsed={isSidebarCollapsed}
-                  onClick={toggleMenu}
+
                 />
                 <SidebarNavLink
                   to="ai_signals"
@@ -134,28 +135,28 @@ const Sidebar = ({
                   label="AI Signals"
                   badgeCount={activeTrades.length}
                   isCollapsed={isSidebarCollapsed}
-                  onClick={toggleMenu}
+
                 />
                 <SidebarNavLink
                   to="mentors"
                   icon="mentors"
                   label="Mentors"
                   isCollapsed={isSidebarCollapsed}
-                  onClick={toggleMenu}
+
                 />
                 <SidebarNavLink
                   to="education"
                   icon="education"
                   label="Education"
                   isCollapsed={isSidebarCollapsed}
-                  onClick={toggleMenu}
+
                 />
                 <SidebarNavLink
                   to="analytics"
                   icon="analytics"
                   label="Analytics"
                   isCollapsed={isSidebarCollapsed}
-                  onClick={toggleMenu}
+
                 />
               </div>
 
@@ -173,14 +174,14 @@ const Sidebar = ({
                   icon="calculator"
                   label="Lot Size Calculator"
                   isCollapsed={isSidebarCollapsed}
-                  onClick={toggleMenu}
+
                 />
                 <SidebarNavLink
                   to="market_chart"
                   icon="chart-bar"
                   label="Market Chart"
                   isCollapsed={isSidebarCollapsed}
-                  onClick={toggleMenu}
+
                 />
               </div>
             </>
@@ -192,7 +193,6 @@ const Sidebar = ({
           <button
             onClick={() => {
               setAccountMenuOpen((prev) => !prev);
-              toggleMenu();
             }}
             className={`w-full flex items-center justify-start rounded-lg hover:bg-light-hover ${
               isSidebarCollapsed ? "justify-center p-2" : "p-3"
@@ -235,7 +235,7 @@ const Sidebar = ({
               }`}
             >
               <a
-                href="#"
+                href="/settings"
                 className="flex items-center px-4 py-2 text-sm text-dark-text hover:bg-light-hover"
               >
                 <Icon name="settings" className="w-5 h-5 mr-2 text-mid-text" />

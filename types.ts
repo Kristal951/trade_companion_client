@@ -15,6 +15,17 @@ export interface User {
   };
 }
 
+export interface Plan {
+  id: string;                     
+  name: string;                   
+  amount: number;              
+  features: string[];             
+  currency: string;               
+  interval: "monthly" | "yearly"; 
+  flutterwave_plan_id: string;    
+}
+
+
 export interface TopSignal {
   instrument: string;
   type: 'BUY' | 'SELL';
@@ -30,13 +41,6 @@ export enum PlanName {
   Basic = "Basic",
   Pro = "Pro",
   Premium = "Premium",
-}
-
-export interface Plan {
-  name: PlanName;
-  monthlyPrice: number;
-  yearlyPrice: number;
-  features: string[];
 }
 
 export interface Payout {
