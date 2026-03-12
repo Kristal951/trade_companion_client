@@ -73,27 +73,29 @@ const VerifyEmail: React.FC<VerifyEmailProps> = () => {
   const handleSubmit = async () => {
     try {
       const code = otp.join("");
-      const res = await onVerify(code);
-      const user = res;
+
+      const user = await onVerify(code);
 
       if (selectedPlan && selectedPlan !== "Free") {
         navigate(`/subscribe/${selectedPlan}`, {
           replace: true,
-          state: { name, email },
+          state: { name: user.name, email: user.email },
         });
+        return;
       }
 
-      // await onAuthSuccess({
-      //   name: user.name,
-      //   email: user.email,
-      //   plan: user.subscribedPlan || "FREE",
-      //   image: user.avatar,
-      // });
-    } catch (error) {
+      await onAuthSuccess({
+        name: user.name,
+        email: user.email,
+        plan: user.subscribedPlan || "FREE",
+        image: user.avatar,
+        isMentor: user.isMentor,
+      });
+    } catch (error: any) {
       console.log(error);
       const errorMessage =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
         "Authentication failed. Please try again.";
       showToast(errorMessage, "error");
     }
@@ -103,8 +105,13 @@ const VerifyEmail: React.FC<VerifyEmailProps> = () => {
     try {
       await onResendCode();
       setTimer(60);
+      showToast("Verification code has been resent.", "success");
     } catch (error) {
       console.log(error);
+      showToast(
+        "Could not resend verification code, please try again",
+        "error",
+      );
     }
   };
 
@@ -137,7 +144,7 @@ const VerifyEmail: React.FC<VerifyEmailProps> = () => {
 
       <button
         onClick={handleSubmit}
-        className="w-full py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition-all disabled:opacity-50"
+        className="w-full py-3 bg-primary text-white rounded-xl flex items-center justify-center font-semibold hover:bg-primary-dark transition-all disabled:opacity-50"
         disabled={loading || otp.some((digit) => digit === "")}
       >
         {loading ? (

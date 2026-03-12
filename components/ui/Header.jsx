@@ -4,7 +4,7 @@ import useAppStore from "@/store/useStore";
 import { RiMenu2Line } from "react-icons/ri";
 
 const Header = ({ toggleTheme, theme, user, setShowMobileMenu, showMobileMenu}) => {
-  const NOTIFICATIONS_KEY = `notifications_${user.email}`;
+  const NOTIFICATIONS_KEY = `notifications_${user?.email}`;
   const notifications = useAppStore((state) => state.notifications);
   useEffect(() => {
     localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
@@ -65,9 +65,9 @@ const Header = ({ toggleTheme, theme, user, setShowMobileMenu, showMobileMenu}) 
         />
         <img
           src={
-            user.avatar ||
-            user.image ||
-            `https://i.pravatar.cc/150?u=${user.email}`
+            user?.avatar ||
+            user?.image ||
+            `https://i.pravatar.cc/150?u=${user?.email}`
           }
           alt="User Avatar"
           className="w-10 h-10 rounded-full hidden md:flex"

@@ -32,8 +32,7 @@ const ResetPassword = () => {
 
     try {
       const res = await resetPassword(data);
-      console.log(res);
-
+  
       if (!res.ok) {
         showToast(data.error || "Failed to reset password", "error");
         return;

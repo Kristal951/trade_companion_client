@@ -10,6 +10,8 @@ import { INITIAL_TICKER, ROBOT_SOLILOQUY, TICKER_SYMBOLS } from "./utils";
 import Footer from "./Footer";
 import EducationCard from "./EducationCard";
 import useAppStore from "@/store/useStore";
+import { basename } from "path";
+import PlanCard from "../ui/PlanCard";
 
 const MOCK_MENTORS: Mentor[] = [
   {
@@ -68,7 +70,7 @@ const MOCK_REVIEWS: Review[] = [
   },
 ];
 
-const PlanCardSkeleton = () => {
+export const PlanCardSkeleton = () => {
   return (
     <div className="relative p-6 rounded-2xl bg-slate-900 border border-slate-800 animate-pulse">
       <div className="h-6 w-24 bg-slate-700 rounded mb-4" />
@@ -294,13 +296,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
     (mentor) =>
       mentor.name.toLowerCase().includes(mentorSearchQuery.toLowerCase()) ||
       mentor.instruments.some((instrument) =>
-        instrument.toLowerCase().includes(mentorSearchQuery.toLowerCase())
-      )
+        instrument.toLowerCase().includes(mentorSearchQuery.toLowerCase()),
+      ),
   );
 
   return (
-    <div className="bg-light-bg min-h-screen text-dark-text overflow-y-scroll">
-      {/* Header */}
+    <div className="bg-[#111827] min-h-screen text-white overflow-y-scroll">
       <Header />
 
       <main>
@@ -308,10 +309,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
           <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-neon-blue/10 rounded-full blur-[120px]"></div>
           <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[100px]"></div>
         </div>
-        {/* Hero Section */}
         <section className="relative z-10 pt-40 pb-20 container mx-auto px-6">
           <div className="flex flex-col lg:flex-row items-center gap-16">
-            {/* Left: Text Content */}
             <div className="lg:w-1/2 text-center lg:text-left space-y-8">
               <div className="inline-flex items-center px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700 text-neon-green text-xs font-bold uppercase tracking-wide mb-2">
                 <span className="w-2 h-2 rounded-full bg-neon-green mr-2 animate-pulse"></span>
@@ -337,7 +336,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
                 </Link>
               </div>
 
-              {/* Previous AI Top Pick Card (Replacing user icons) */}
               {topSignal && (
                 <div className="pt-6 animate-fade-in-right">
                   <div className="inline-block relative">
@@ -388,12 +386,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
                           <Icon name="clock" className="w-3 h-3" />
                           {new Date(topSignal.timestamp).toLocaleDateString(
                             [],
-                            { month: "short", day: "numeric" }
+                            { month: "short", day: "numeric" },
                           )}{" "}
                           •{" "}
                           {new Date(topSignal.timestamp).toLocaleTimeString(
                             [],
-                            { hour: "2-digit", minute: "2-digit" }
+                            { hour: "2-digit", minute: "2-digit" },
                           )}
                         </div>
                       </div>
@@ -497,12 +495,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
                     {item.change}
                   </span>
                 </div>
-              )
+              ),
             )}
           </div>
         </section>
 
-        <section id="features" className="py-24 container mx-auto px-6">
+        <section
+          id="features"
+          className="py-24 bg-[#111827] container mx-auto px-6"
+        >
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
               The Complete Ecosystem
@@ -601,7 +602,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
         </section>
 
         {/* Education Section */}
-        <section id="education" className="py-20 bg-light-hover">
+        <section id="education" className="py-20 bg-[#111827]">
           <div className="container mx-auto px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -610,7 +611,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
               viewport={{ once: false }}
               className="text-center mb-16"
             >
-              <h3 className="text-3xl md:text-4xl font-bold text-dark-text">
+              <h3 className="text-3xl md:text-4xl font-bold">
                 Knowledge is Power
               </h3>
               <p className="text-mid-text mt-4">
@@ -653,9 +654,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
         </section>
 
         {/* Top Mentors Section */}
-        <section id="mentors" className="py-20 bg-light-bg">
+        <section id="mentors" className="py-20 bg-[#111827]">
           <div className="container mx-auto px-6">
-            <h3 className="text-4xl font-bold text-center mb-4 text-dark-text">
+            <h3 className="text-4xl font-bold text-center mb-4">
               Meet Our Top Mentors
             </h3>
             <div className="max-w-xl mx-auto mb-12">
@@ -664,7 +665,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
                 placeholder="Search by name or instrument (e.g., John, EUR/USD)..."
                 value={mentorSearchQuery}
                 onChange={(e) => setMentorSearchQuery(e.target.value)}
-                className="w-full px-5 py-3 bg-light-surface border border-light-gray rounded-full focus:ring-2 focus:ring-primary focus:outline-none transition-shadow text-dark-text shadow-sm"
+                className="w-full px-5 py-3 bg-light-surface border border-light-gray rounded-full focus:ring-2 focus:ring-primary focus:outline-none transition-shadow shadow-sm"
               />
             </div>
             {filteredMentors.length > 0 ? (
@@ -672,16 +673,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
                 {filteredMentors.map((mentor) => (
                   <div
                     key={mentor.id}
-                    className="bg-light-surface rounded-lg overflow-hidden text-center p-6 transform hover:-translate-y-2 transition-transform duration-300 shadow-md border border-light-gray"
+                    className="bg-[#111827] rounded-lg overflow-hidden text-center p-6 transform hover:-translate-y-2 transition-transform duration-300 shadow-md border border-light-gray"
                   >
                     <img
                       src={mentor.avatar}
                       alt={mentor.name}
                       className="w-32 h-32 rounded-full mx-auto mb-4 border-4 border-primary"
                     />
-                    <h4 className="text-xl font-bold text-dark-text">
-                      {mentor.name}
-                    </h4>
+                    <h4 className="text-xl font-bold">{mentor.name}</h4>
                     <p className="text-primary mb-2">
                       {mentor.experience} Years Experience
                     </p>
@@ -720,9 +719,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
         </section>
 
         {/* Pricing Section */}
-        <section id="pricing" className="py-20 bg-light-hover">
+        <section id="pricing" className="py-20 bg-[#111827]">
           <div className="container mx-auto px-6 text-center">
-            <h3 className="text-4xl font-bold mb-4 text-dark-text">
+            <h3 className="text-4xl font-bold mb-4">
               Flexible Plans for Everyone
             </h3>
             <p className="text-mid-text mb-8">
@@ -771,77 +770,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
                     if (!activePlan) return null;
 
                     return (
-                      <div
-                        key={activePlan._id}
-                        className={`relative p-8 rounded-2xl border flex flex-col ${
-                          plan.name === PlanName.Pro
-                            ? "bg-slate-900 border-neon-blue shadow-2xl shadow-neon-blue/10 scale-105 z-10"
-                            : "bg-fintech-card border-fintech-border text-slate-300"
-                        }`}
-                      >
-                        {plan.name === PlanName.Pro && (
-                          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-neon-blue text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-                            Most Popular
-                          </div>
-                        )}
-
-                        <h3
-                          className={`text-xl font-bold mb-4 ${
-                            plan.name === PlanName.Pro
-                              ? "text-white"
-                              : "text-slate-200"
-                          }`}
-                        >
-                          {plan.name}
-                        </h3>
-
-                        <div className="mb-6">
-                          {plan.type === "free" ? (
-                            <p className="text-4xl font-extrabold my-4 text-dark-text">
-                              Free
-                            </p>
-                          ) : (
-                            <p className="text-4xl font-extrabold my-4 text-dark-text">
-                              ${activePlan.amount}
-                              <span className="text-base font-normal text-mid-text">
-                                {isYearly ? "/year" : "/month"}
-                              </span>
-                            </p>
-                          )}
-                        </div>
-
-                        <ul className="space-y-4 mb-8 flex-1">
-                          {plan.features.map((feature, i) => (
-                            <li key={i} className="flex items-start text-sm">
-                              <Icon
-                                name="check"
-                                className={`w-5 h-5 mr-3 ${
-                                  plan.name === PlanName.Pro
-                                    ? "text-neon-blue"
-                                    : "text-slate-600"
-                                }`}
-                              />
-                              <span className="text-slate-400">{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
-
-                        <Link
-                          to="/auth"
-                          state={{
-                            selectedPlan: activePlan.name
-                              .toLowerCase()
-                              .replace(/\s+/g, "_"),
-                          }}
-                          className={`w-full py-3 rounded-xl font-bold transition-all ${
-                            plan.name === PlanName.Pro
-                              ? "bg-neon-blue hover:bg-blue-600 text-white shadow-lg"
-                              : "bg-slate-800 hover:bg-slate-700 text-white"
-                          }`}
-                        >
-                          Choose {plan.name}
-                        </Link>
-                      </div>
+                      <PlanCard
+                        activePlan={activePlan}
+                        plan={plan}
+                        isYearly={isYearly}
+                      />
                     );
                   })}
             </div>
@@ -849,20 +782,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
         </section>
 
         {/* FAQ Section */}
-        <section id="faq" className="py-20 bg-light-hover">
+        <section id="faq" className="py-20 bg-[#111827]">
           <div className="container mx-auto px-6 max-w-3xl">
-            <h3 className="text-4xl font-bold text-center mb-12 text-dark-text">
+            <h3 className="text-4xl font-bold text-center mb-12">
               Frequently Asked Questions
             </h3>
             <div className="space-y-4">
               {Faqs.map((faq, index) => (
                 <div
                   key={index}
-                  className="bg-light-surface rounded-lg shadow-md border border-light-gray"
+                  className="bg-[#111827] rounded-lg shadow-md border border-light-gray"
                 >
                   <button
                     onClick={() => toggleFaq(index)}
-                    className="w-full flex justify-between items-center text-left p-5 font-semibold text-dark-text"
+                    className="w-full flex justify-between items-center text-left p-5 font-semibold"
                   >
                     <span>{faq.q}</span>
                     <Icon

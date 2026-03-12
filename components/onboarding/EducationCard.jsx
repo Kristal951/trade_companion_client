@@ -7,13 +7,13 @@ const EducationCard = ({cardVariant, iconName, title, subText}) => {
       <motion.div
         variants={cardVariant}
         transition={{ duration: 0.6 }}
-        className="bg-light-surface p-8 rounded-xl shadow-md border border-light-gray text-center"
+        className="bg-[#111827] p-8 rounded-xl shadow-md border border-light-gray text-center"
       >
         <Icon
           name={iconName}
           className="w-14 h-14 text-primary mx-auto mb-4"
         />
-        <h4 className="text-2xl font-semibold text-dark-text">{title}</h4>
+        <h4 className="text-2xl font-semibold">{title}</h4>
         <p className="text-mid-text mt-2">
          {subText}
         </p>

@@ -1,39 +1,47 @@
-
-
 export interface User {
+  id: string;
+  _id?: string;
+  picture?: string;
+  subscribedPlan?: string;
   name: string;
   email: string;
   avatar?: string;
   telegramNumber?: string;
-  subscribedPlan?: PlanName;
+  plan?: PlanName;
   isMentor: boolean;
+  isSubscribed?: boolean;
+  subscriptionStatus?: string | null;
+  subscriptionMethod?: "stripe" | "manual" | "promo" | "apple" | "google_play" | null;
+  subscriptionPriceKey?: string | null;
+  subscriptionInterval?: string | null;
+  subscriptionCurrentPeriodEnd?: string | null;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  stripeCheckoutSessionId?: string | null;
   cTraderConfig?: {
     accountId: string;
-    accessToken: string;
     isConnected: boolean;
     autoTradeEnabled: boolean;
   };
 }
 
 export interface Plan {
-  id: string;                     
-  name: string;                   
-  amount: number;              
-  features: string[];             
-  currency: string;               
-  interval: "monthly" | "yearly"; 
-  flutterwave_plan_id: string;    
+  id: string;
+  name: string;
+  amount: number;
+  features: string[];
+  currency: string;
+  interval: "monthly" | "yearly";
 }
-
 
 export interface TopSignal {
   instrument: string;
-  type: 'BUY' | 'SELL';
+  type: "BUY" | "SELL";
   entryPrice: number;
   exitPrice: number;
-  profit: number; // USD profit for 1 standard lot
-  pips: number; // Gain in pips
-  timestamp: string; // Full ISO timestamp
+  profit: number; 
+  pips: number; 
+  timestamp: string; 
 }
 
 export enum PlanName {
@@ -48,11 +56,10 @@ export interface Payout {
   amount: number;
   dateRequested: string;
   dateCompleted?: string;
-  status: 'Pending' | 'Completed' | 'Failed';
+  status: "Pending" | "Completed" | "Failed";
   method: string;
 }
 
-// FIX: Export the Mentor interface
 export interface Mentor {
   id: number;
   name: string;
@@ -61,12 +68,12 @@ export interface Mentor {
   profitRatio: number;
   instruments: string[];
   price: number;
-  roi: number; // Return on Investment
-  strategy: string; // Formerly 'bio'
-  rating?: number; // Average rating out of 5
-  reviewsCount?: number; // Total number of reviews
+  roi: number;
+  strategy: string;
+  rating?: number;
+  reviewsCount?: number;
   posts?: MentorPost[]; // Optional: list of posts by the mentor
-  certifications?: { name: string; url: string; }[]; // Optional: certifications or proof
+  certifications?: { name: string; url: string }[]; // Optional: certifications or proof
   recentSignals?: RecentSignal[]; // NEW: Added recent signals for performance tracking
   subscriberGrowth?: { month: string; subscribers: number }[];
   earnings?: {
@@ -76,19 +83,23 @@ export interface Mentor {
   payoutHistory?: Payout[];
   identity?: {
     idDocument: {
-        status: 'Not Submitted' | 'Pending' | 'Verified' | 'Rejected';
-        type?: "Driver's License" | 'International Passport' | 'National ID' | 'NIN Slip';
-        fileName?: string;
+      status: "Not Submitted" | "Pending" | "Verified" | "Rejected";
+      type?:
+        | "Driver's License"
+        | "International Passport"
+        | "National ID"
+        | "NIN Slip";
+      fileName?: string;
     };
     addressDocument: {
-        status: 'Not Submitted' | 'Pending' | 'Verified' | 'Rejected';
-        type?: 'Utility Bill' | 'Bank Statement';
-        fileName?: string;
+      status: "Not Submitted" | "Pending" | "Verified" | "Rejected";
+      type?: "Utility Bill" | "Bank Statement";
+      fileName?: string;
     };
     livenessCheck: {
-        status: 'Not Submitted' | 'Pending' | 'Verified' | 'Rejected';
+      status: "Not Submitted" | "Pending" | "Verified" | "Rejected";
     };
-    overallStatus: 'Not Submitted' | 'Pending' | 'Verified' | 'Rejected';
+    overallStatus: "Not Submitted" | "Pending" | "Verified" | "Rejected";
     rejectionReason?: string;
   };
   analytics?: {
@@ -102,26 +113,25 @@ export interface Mentor {
 export interface RecentSignal {
   id: string;
   instrument: string;
-  direction: 'BUY' | 'SELL';
+  direction: "BUY" | "SELL";
   entry: string;
   stopLoss: string;
   takeProfit: string;
-  outcome: 'win' | 'loss';
+  outcome: "win" | "loss";
   timestamp: string;
   pnl?: number;
 }
 
-
 export interface MentorPost {
-  id: number;
-  type: 'signal' | 'analysis';
+  mentorID: number;
+  type: "signal" | "analysis";
   title: string;
-  content: string; // reasoning for signal or body for analysis
-  imageUrl?: string; // for attached chart
+  content: string;
+  imageUrl?: string;
   timestamp: string;
   signalDetails?: {
     instrument: string;
-    direction: 'BUY' | 'SELL';
+    direction: "BUY" | "SELL";
     entry: string;
     stopLoss: string;
     takeProfit: string;
@@ -133,8 +143,8 @@ export interface MentorSubscriber {
   name: string;
   avatar: string;
   subscribedDate: string;
-  status: 'Active' | 'Cancelled';
-  ratingGiven?: number; // Rating from 1 to 5 given by this subscriber
+  status: "Active" | "Cancelled";
+  ratingGiven?: number;
 }
 
 export interface Signal {
@@ -153,13 +163,12 @@ export interface Signal {
   riskAmount?: number; // Calculated per user
 }
 
-
 // FIX: Removed 'confidence' from Omit to make it available in the TradeRecord type for analytics.
 // FIX: Removed 'technicalReasoning' from Omit to allow inclusion in TradeRecord (App.tsx uses it).
 // FIX: Removed 'takeProfit2' and 'takeProfit3' from Omit to allow their display in UI.
 export interface TradeRecord extends Signal {
   id: string; // Unique ID for the trade
-  status: 'active' | 'win' | 'loss';
+  status: "active" | "win" | "loss";
   pnl?: number; // Profit or Loss amount
   currentPrice?: number; // Live price of the instrument
   dateTaken: string;
@@ -181,7 +190,7 @@ export interface FAQ {
   answer: string;
 }
 
-export type DashboardView = 
+export type DashboardView =
   | "dashboard"
   | "ai_signals"
   | "mentors"
@@ -208,13 +217,18 @@ export interface EducationArticle {
   category: string;
   title: string;
   summary: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  type: 'article' | 'book' | 'video'; 
+  difficulty: "Beginner" | "Intermediate" | "Advanced";
+  type: "article" | "book" | "video";
   content: string; // Full content of the article or book
   videoUrl?: string; // URL for video content
 }
 
-export type NotificationType = 'signal' | 'mentor' | 'promo' | 'news' | 'app_update';
+export type NotificationType =
+  | "signal"
+  | "mentor"
+  | "promo"
+  | "news"
+  | "app_update";
 
 export interface Notification {
   id: string;

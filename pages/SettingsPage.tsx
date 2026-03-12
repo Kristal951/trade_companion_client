@@ -3,7 +3,8 @@ import CTraderSettings from "@/components/ui/CTrader";
 import NotificationSettings from "@/components/ui/NotificationSettings";
 import ProfileSettings from "@/components/ui/ProfileSettings";
 import { User } from "@/types";
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 
 interface SettingsProps {
   user: User;
@@ -20,18 +21,51 @@ const SettingsPage: React.FC<SettingsProps> = ({
   updateUser,
   loading,
 }) => {
-  const tabs = [
-    { id: "profile", label: "Profile" },
-    { id: "billing", label: "Billing" },
-    { id: "notifications", label: "Notifications" },
-    { id: "ctrader", label: "cTrader" },
-  ];
+  const baseTabs = useMemo(
+    () => [
+      { id: "profile", label: "Profile" },
+      { id: "billing", label: "Billing" },
+      { id: "notifications", label: "Notifications" },
+      { id: "ctrader", label: "cTrader" },
+    ],
+    [],
+  );
+  const tabs = useMemo(() => {
+    const t = [...baseTabs];
+    if (user.isMentor) t.push({ id: "verification", label: "Verification" });
+    return t;
+  }, [baseTabs, user.isMentor]);
 
-  if (user.isMentor) {
-    tabs.push({ id: "verification", label: "Verification" });
-  }
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isValidTab = (id: string | null) =>
+    !!id && tabs.some((t) => t.id === id);
+  const [activeTab, setActiveTab] = useState(() => {
+    const urlTab = searchParams.get("tab");
+    return isValidTab(urlTab) ? (urlTab as string) : tabs[0].id;
+  });
 
-  const [activeTab, setActiveTab] = useState(tabs[0].id);
+  useEffect(() => {
+    const urlTab = searchParams.get("tab");
+    if (isValidTab(urlTab)) {
+      setActiveTab(urlTab as string);
+    } else {
+      setSearchParams({ tab: tabs[0].id }, { replace: true });
+      setActiveTab(tabs[0].id);
+    }
+  }, [searchParams, tabs]);
+
+  useEffect(() => {
+    if (!tabs.some((t) => t.id === activeTab)) {
+      const fallback = tabs[0].id;
+      setActiveTab(fallback);
+      setSearchParams({ tab: fallback }, { replace: true });
+    }
+  }, [tabs]);
+
+  const goToTab = (id: string) => {
+    setActiveTab(id);
+    setSearchParams({ tab: id }, { replace: false });
+  };
 
   return (
     <div className="p-8 bg-light-bg min-h-screen">
@@ -40,7 +74,7 @@ const SettingsPage: React.FC<SettingsProps> = ({
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => goToTab(tab.id)}
             className={`py-2 px-4 font-medium capitalize whitespace-nowrap transition-colors ${
               activeTab === tab.id
                 ? "border-b-2 border-primary text-primary"

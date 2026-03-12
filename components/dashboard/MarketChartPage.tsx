@@ -15,7 +15,6 @@ const MarketChartPage: React.FC<MarketChartPageProps> = ({ theme }) => {
   const [chartType, setChartType] = useState<'standard' | 'deriv'>('standard');
 
   useEffect(() => {
-    // Only initialize TradingView widget if we are in 'standard' mode
     if (chartType === 'standard') {
         if (typeof TradingView === 'undefined' || !chartContainerRef.current) return;
 
@@ -40,7 +39,6 @@ const MarketChartPage: React.FC<MarketChartPageProps> = ({ theme }) => {
 
   return (
     <div className="w-full h-full bg-light-bg flex flex-col overflow-hidden">
-      {/* Header / Switcher */}
       <div className="p-4 border-b border-light-gray flex items-center justify-between bg-light-surface shadow-sm z-10 flex-shrink-0">
           <div className="flex space-x-2">
               <button 

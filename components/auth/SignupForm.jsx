@@ -43,20 +43,20 @@ const SignupForm = () => {
         "error"
       );
     }
-  };
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await signup({
+      const res = await signup({
         name: formData.name,
         email: formData.email,
         password: formData.password,
         age: Number(formData.age),
       });
-
+ 
       navigate("/auth/verify-email", {
-        state: { selectedPlan, email: formData.email, name: formData.name },
+        state: { selectedPlan, email: formData.email, name: formData.name},
       });
     } catch (err) {
       console.log(err);
@@ -138,6 +138,7 @@ const SignupForm = () => {
               selected={Dob}
               onChange={(date) => checkAge(date)}
               dateFormat="dd/MM/yyyy"
+                onFocus={() => handleFocus("dob")} 
               placeholderText="Date of Birth"
               className="w-full pl-10 p-3 bg-light-hover border border-light-gray rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-dark-text transition-all"
               showYearDropdown

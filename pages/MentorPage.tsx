@@ -1,12 +1,39 @@
-import React, {useState} from 'react';
-import { PlanName, RecentSignal, User } from '@/types';
-import { MOCK_MENTORS_LIST } from '@/utils';
-import Icon from '@/components/ui/Icon';
+import React, { useState, useEffect } from "react";
+import { PlanName, RecentSignal, User } from "@/types";
+import { MOCK_MENTORS_LIST } from "@/utils";
+import Icon from "@/components/ui/Icon";
+import useMentorStore from "@/store/mentorStore";
+import { useNavigate } from "react-router-dom";
 
 const MentorPage: React.FC<{
   user: User;
 }> = ({ onViewMentor, onViewChange, user }) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [mentors, setMentors] = useState(null);
+  const { getAllMentor, isLoading } = useMentorStore();
+  const navigate = useNavigate()
+
+  useEffect(()=>{
+    setSearchQuery('')
+  },[])
+
+  useEffect(() => {
+    const getMentors = async () => {
+      try {
+        const res = await getAllMentor();
+        setMentors(res.data.mentors);
+      } catch (error) {
+        console.error("Failed to fetch mentors", error);
+        setMentors([]); 
+      }
+    };
+
+    getMentors();
+  }, []);
+
+  const goToMentorProfile = (mentorID: string)=>{
+    navigate(`/mentor/${mentorID}`)
+  }
 
   const calculateWinRate = (signals: RecentSignal[] | undefined) => {
     if (!signals || signals.length === 0) return 0;
@@ -14,7 +41,7 @@ const MentorPage: React.FC<{
     return Math.round((wins / signals.length) * 100);
   };
 
-  const filteredMentors = MOCK_MENTORS_LIST.filter(
+  const filteredMentors = mentors?.filter(
     (mentor) =>
       mentor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       mentor.instruments.some((inst) =>
@@ -22,6 +49,14 @@ const MentorPage: React.FC<{
       ) ||
       mentor.strategy.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-8 bg-light-bg min-h-screen">
@@ -52,7 +87,6 @@ const MentorPage: React.FC<{
         </div>
       )}
 
-      {/* Search Bar */}
       <div className="mb-8 max-w-2xl relative">
         <input
           type="text"
@@ -63,13 +97,12 @@ const MentorPage: React.FC<{
         />
         <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-mid-text">
           <Icon name="search" className="w-5 h-5" />
-          {/* Note: Ensure you have a search icon in your Icon component or use a fallback */}
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredMentors.length > 0 ? (
-          filteredMentors.map((mentor) => {
+        {filteredMentors?.length > 0 ? (
+          filteredMentors?.map((mentor) => {
             const winRate = calculateWinRate(mentor.recentSignals);
             return (
               <div
@@ -124,7 +157,7 @@ const MentorPage: React.FC<{
                   </p>
                 </div>
                 <button
-                  onClick={() => onViewMentor(mentor)}
+                  onClick={() => goToMentorProfile(mentor._id)}
                   className="w-full mt-auto bg-primary hover:bg-primary-hover text-white font-semibold py-2 px-4 rounded-lg transition-colors"
                 >
                   View Profile & Posts

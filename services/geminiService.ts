@@ -1,12 +1,14 @@
-
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { PlanName } from "../types";
-import { instrumentDefinitions } from '../config/instruments';
+import { instrumentDefinitions } from "../config/instruments";
 import { fetchMarketContext, MarketContext, Candle } from "./marketDataService";
+import { saveSignalToDb } from "./signalService";
+import useAppStore from "@/store/useStore";
 
-// Helper to safely get AI instance
+const getUserId = () => useAppStore.getState().user?.id;
+
 const getAI = () => {
-  const API_KEY = process.env.API_KEY;
+  const API_KEY = import.meta.env.VITE_API_KEY;
   if (!API_KEY) {
     console.error("API_KEY environment variable not set");
     throw new Error("API_KEY not set");
@@ -14,25 +16,38 @@ const getAI = () => {
   return new GoogleGenAI({ apiKey: API_KEY });
 };
 
-const GENERATION_MODEL = 'gemini-3-pro-preview';
+const GENERATION_MODEL = "gemini-2.5-flash";
 
-// Filtered list based on user request (All Majors, All Minors, Metals, Crypto, Indices)
-// Total: 20 Instruments
 export const TARGET_INSTRUMENTS = [
-    // --- Majors (7) ---
-    'EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF', 'USD/CAD', 'AUD/USD', 'NZD/USD',
-    
-    // --- Crosses (7) ---
-    'EUR/JPY', 'GBP/JPY', 'EUR/GBP', 'AUD/JPY', 'NZD/JPY', 'AUD/NZD', 'EUR/CHF',
-    
-    // --- Commodities (2) ---
-    'XAU/USD', 'XAG/USD',
-    
-    // --- Crypto (2) ---
-    'BTC/USD', 'ETH/USD',
+  // --- Majors (7) ---
+  "EUR/USD",
+  "GBP/USD",
+  "USD/JPY",
+  "USD/CHF",
+  "USD/CAD",
+  "AUD/USD",
+  "NZD/USD",
 
-    // --- Indices (2) ---
-    'US500', 'US100'
+  // --- Crosses (7) ---
+  "EUR/JPY",
+  "GBP/JPY",
+  "EUR/GBP",
+  "AUD/JPY",
+  "NZD/JPY",
+  "AUD/NZD",
+  "EUR/CHF",
+
+  // --- Commodities (2) ---
+  "XAU/USD",
+  "XAG/USD",
+
+  // --- Crypto (2) ---
+  "BTC/USD",
+  "ETH/USD",
+
+  // --- Indices (2) ---
+  "US500",
+  "US100",
 ];
 
 // Strategy Guidelines
@@ -82,20 +97,33 @@ const STRATEGY_GUIDELINES = `
 `;
 
 // Retry Utility
-export const withRetry = async <T>(fn: () => Promise<T>, retries = 3, baseDelay = 2000): Promise<T> => {
+export const withRetry = async <T>(
+  fn: () => Promise<T>,
+  retries = 3,
+  baseDelay = 2000,
+): Promise<T> => {
   try {
     return await fn();
   } catch (error: any) {
-    if (retries > 0 && (error.status === 429 || error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED')) {
-      console.warn(`API Quota exceeded. Retrying in ${baseDelay}ms... (${retries} attempts left)`);
-      await new Promise(resolve => setTimeout(resolve, baseDelay));
+    if (
+      retries > 0 &&
+      (error.status === 429 ||
+        error.message?.includes("429") ||
+        error.status === "RESOURCE_EXHAUSTED")
+    ) {
+      console.warn(
+        `API Quota exceeded. Retrying in ${baseDelay}ms... (${retries} attempts left)`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, baseDelay));
       return withRetry(fn, retries - 1, baseDelay * 2);
     }
     throw error;
   }
 };
 
-export const classifyQuery = async (query: string): Promise<'IN_DEPTH_ANALYSIS' | 'GENERAL_SUPPORT'> => {
+export const classifyQuery = async (
+  query: string,
+): Promise<"IN_DEPTH_ANALYSIS" | "GENERAL_SUPPORT"> => {
   const systemInstruction = `You are a query classifier. Your job is to determine if a user's request requires a "Trade Setup" with specific parameters.
 
   CLASSIFICATION RULES:
@@ -119,37 +147,38 @@ export const classifyQuery = async (query: string): Promise<'IN_DEPTH_ANALYSIS' 
 
   try {
     const ai = getAI();
-    const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
-      model: GENERATION_MODEL,
-      contents: query,
-      config: {
-        systemInstruction,
-      }
-    }));
+    const response = await withRetry<GenerateContentResponse>(() =>
+      ai.models.generateContent({
+        model: GENERATION_MODEL,
+        contents: query,
+        config: {
+          systemInstruction,
+        },
+      }),
+    );
 
-    const classification = response.text ? response.text.trim() : 'GENERAL_SUPPORT';
-    if (classification === 'IN_DEPTH_ANALYSIS') {
-      return 'IN_DEPTH_ANALYSIS';
+    const classification = response.text
+      ? response.text.trim()
+      : "GENERAL_SUPPORT";
+    if (classification === "IN_DEPTH_ANALYSIS") {
+      return "IN_DEPTH_ANALYSIS";
     }
-    return 'GENERAL_SUPPORT';
+    return "GENERAL_SUPPORT";
   } catch (error) {
     console.error("Error classifying query:", error);
-    return 'GENERAL_SUPPORT';
+    return "GENERAL_SUPPORT";
   }
 };
 
 const cleanJsonString = (text: string): string => {
-    // Find the first '{' and the last '}' to extract the JSON object
-    const firstOpen = text.indexOf('{');
-    const lastClose = text.lastIndexOf('}');
-    
-    if (firstOpen !== -1 && lastClose !== -1 && firstOpen < lastClose) {
-        return text.substring(firstOpen, lastClose + 1);
-    }
-    
-    // Fallback: simple cleanup if braces are not strictly found in order
-    let clean = text.replace(/```json\n?|```/g, '');
-    return clean.trim();
+  const firstOpen = text.indexOf("{");
+  const lastClose = text.lastIndexOf("}");
+
+  if (firstOpen !== -1 && lastClose !== -1 && firstOpen < lastClose) {
+    return text.substring(firstOpen, lastClose + 1);
+  }
+  let clean = text.replace(/```json\n?|```/g, "");
+  return clean.trim();
 };
 
 // Global rotation index for scanning batches
@@ -157,130 +186,151 @@ let rotationIndex = 0;
 
 // Technical Analysis Helper
 const calculateTechnicalSummary = (candles: Candle[]) => {
-    if (candles.length < 200) {
-        return { trend: 'NEUTRAL (Insufficient Data)', sma200: 0 };
-    }
-    
-    const closes = candles.map(c => c.close);
-    const lastPrice = closes[closes.length - 1];
-    
-    // SMA 200
-    const sma200Slice = closes.slice(closes.length - 200);
-    const sma200 = sma200Slice.reduce((a, b) => a + b, 0) / 200;
-    
-    // SMA 50
-    const sma50Slice = closes.slice(closes.length - 50);
-    const sma50 = sma50Slice.reduce((a, b) => a + b, 0) / 50;
+  if (candles.length < 200) {
+    return { trend: "NEUTRAL (Insufficient Data)", sma200: 0 };
+  }
 
-    let trend = 'SIDEWAYS';
-    if (lastPrice > sma200) {
-        trend = lastPrice > sma50 ? 'STRONG BULLISH' : 'BULLISH PULLBACK';
-    } else {
-        trend = lastPrice < sma50 ? 'STRONG BEARISH' : 'BEARISH RETRACEMENT';
-    }
+  const closes = candles.map((c) => c.close);
+  const lastPrice = closes[closes.length - 1];
 
-    return { trend, sma200, sma50, lastPrice };
+  // SMA 200
+  const sma200Slice = closes.slice(closes.length - 200);
+  const sma200 = sma200Slice.reduce((a, b) => a + b, 0) / 200;
+
+  // SMA 50
+  const sma50Slice = closes.slice(closes.length - 50);
+  const sma50 = sma50Slice.reduce((a, b) => a + b, 0) / 50;
+
+  let trend = "SIDEWAYS";
+  if (lastPrice > sma200) {
+    trend = lastPrice > sma50 ? "STRONG BULLISH" : "BULLISH PULLBACK";
+  } else {
+    trend = lastPrice < sma50 ? "STRONG BEARISH" : "BEARISH RETRACEMENT";
+  }
+
+  return { trend, sma200, sma50, lastPrice };
 };
 
 // Helper to check if market is open
 const isMarketOpen = (instrument: string): boolean => {
-    const now = new Date();
-    const day = now.getUTCDay(); // 0 = Sunday, 6 = Saturday
-    const hour = now.getUTCHours();
-    
-    const def = instrumentDefinitions[instrument];
-    if (!def) return false;
+  const now = new Date();
+  const day = now.getUTCDay(); // 0 = Sunday, 6 = Saturday
+  const hour = now.getUTCHours();
 
-    // 1. Always Open: Synthetics (Deriv) & Crypto
-    // Synthetics flag
-    if (def.isDeriv) return true;
-    
-    // Explicit Crypto Check (BTC/ETH/SOL)
-    const cryptoPairs = ['BTC/USD', 'ETH/USD', 'SOL/USD'];
-    if (cryptoPairs.includes(instrument)) return true;
+  const def = instrumentDefinitions[instrument];
+  if (!def) return false;
 
-    // 2. Closed on Weekends (Forex, Metals, Indices)
-    // Saturday (6) is fully closed for FX/Metals
-    if (day === 6) return false;
-    
-    // Sunday (0) is closed until roughly 21:00 UTC (Market Open)
-    // Adjust logic: If Sunday AND hour < 21, consider closed.
-    if (day === 0 && hour < 21) return false;
+  // 1. Always Open: Synthetics (Deriv) & Crypto
+  // Synthetics flag
+  if (def.isDeriv) return true;
 
-    // Weekdays are open
-    return true;
+  // Explicit Crypto Check (BTC/ETH/SOL)
+  const cryptoPairs = ["BTC/USD", "ETH/USD", "SOL/USD"];
+  if (cryptoPairs.includes(instrument)) return true;
+
+  // 2. Closed on Weekends (Forex, Metals, Indices)
+  // Saturday (6) is fully closed for FX/Metals
+  if (day === 6) return false;
+
+  // Sunday (0) is closed until roughly 21:00 UTC (Market Open)
+  // Adjust logic: If Sunday AND hour < 21, consider closed.
+  if (day === 0 && hour < 21) return false;
+
+  // Weekdays are open
+  return true;
 };
 
-export const scanForSignals = async (userPlan: PlanName, userSettings: { balance: string; risk: string; currency: string; }): Promise<any> => {
-    // 1. Define Priority Instruments (Always scanned if open)
-    const PRIORITY_INSTRUMENTS = ['XAU/USD', 'BTC/USD'];
-    
-    // 2. Define Rotation Pool (All other instruments)
-    const ROTATION_POOL = TARGET_INSTRUMENTS.filter(inst => !PRIORITY_INSTRUMENTS.includes(inst));
-    
-    // 3. Determine Batch Construction (Hybrid Batch)
-    const BATCH_SIZE = 5;
-    const SLOTS_FOR_ROTATION = BATCH_SIZE - PRIORITY_INSTRUMENTS.length; // 3 slots
-    
-    let currentBatch = [...PRIORITY_INSTRUMENTS];
-    
-    // 4. Fill Rotating Slots
-    for (let i = 0; i < SLOTS_FOR_ROTATION; i++) {
-        const index = (rotationIndex + i) % ROTATION_POOL.length;
-        currentBatch.push(ROTATION_POOL[index]);
-    }
-    
-    // 5. Update Rotation Index for next call
-    rotationIndex = (rotationIndex + SLOTS_FOR_ROTATION) % ROTATION_POOL.length;
-    
-    // 6. Filter for Open Markets
-    const openBatch = currentBatch.filter(isMarketOpen);
+export const scanForSignals = async (
+  userPlan: PlanName,
+  userSettings: { balance: string; risk: string; currency: string },
+): Promise<any> => {
+  // 1. Define Priority Instruments (Always scanned if open)
+  const PRIORITY_INSTRUMENTS = ["XAU/USD", "BTC/USD"];
 
-    if (openBatch.length === 0) {
-        console.log(`[Hybrid AI Scanner] All instruments in batch are currently closed: ${currentBatch.join(', ')}`);
-        return { signalFound: false };
-    }
-    
-    console.log(`[Hybrid AI Scanner] Scanning open markets: ${openBatch.join(', ')}`);
+  // 2. Define Rotation Pool (All other instruments)
+  const ROTATION_POOL = TARGET_INSTRUMENTS.filter(
+    (inst) => !PRIORITY_INSTRUMENTS.includes(inst),
+  );
 
-    // Fetch 500 candles for deep analysis using filtered OPEN batch
-    const marketContextPromises = openBatch.map(inst => fetchMarketContext(inst, 500));
-    const allMarketContexts = await Promise.all(marketContextPromises);
-    
-    const marketContexts = allMarketContexts.filter(ctx => ctx.isDataReal || ctx.candles.length > 0);
+  // 3. Determine Batch Construction (Hybrid Batch)
+  const BATCH_SIZE = 5;
+  const SLOTS_FOR_ROTATION = BATCH_SIZE - PRIORITY_INSTRUMENTS.length; // 3 slots
 
-    if (marketContexts.length === 0) {
-        console.log("Scan aborted: No market data available.");
-        return { signalFound: false };
-    }
-    
-    const marketDataString = marketContexts.map((ctx: MarketContext) => {
-        // 1. Calculate Long Term Trend locally (Method A)
-        const techSummary = calculateTechnicalSummary(ctx.candles);
-        
-        // 2. Slice Data for AI Prompt (Method B - 24 Hours / 96 Candles)
-        let rawCandlesStr = "Candle Data: Unavailable (Use Google Search for Structure)";
-        if (ctx.candles && ctx.candles.length >= 5) {
-            // Take last 96 candles (approx 24h on M15)
-            const last96 = ctx.candles.slice(-96);
-            rawCandlesStr = `Raw Candles (Last 24h - M15):\n` + last96.map(c => 
-                `[${c.time.split('T')[1]?.slice(0,5)}] O:${c.open} H:${c.high} L:${c.low} C:${c.close}`
-            ).join('\n');
-        }
+  let currentBatch = [...PRIORITY_INSTRUMENTS];
 
-        // 3. Construct Hybrid Context Block
-        return `
+  // 4. Fill Rotating Slots
+  for (let i = 0; i < SLOTS_FOR_ROTATION; i++) {
+    const index = (rotationIndex + i) % ROTATION_POOL.length;
+    currentBatch.push(ROTATION_POOL[index]);
+  }
+
+  // 5. Update Rotation Index for next call
+  rotationIndex = (rotationIndex + SLOTS_FOR_ROTATION) % ROTATION_POOL.length;
+
+  // 6. Filter for Open Markets
+  const openBatch = currentBatch.filter(isMarketOpen);
+
+  if (openBatch.length === 0) {
+    console.log(
+      `[Hybrid AI Scanner] All instruments in batch are currently closed: ${currentBatch.join(", ")}`,
+    );
+    return { signalFound: false };
+  }
+
+  console.log(
+    `[Hybrid AI Scanner] Scanning open markets: ${openBatch.join(", ")}`,
+  );
+
+  // Fetch 500 candles for deep analysis using filtered OPEN batch
+  const marketContextPromises = openBatch.map((inst) =>
+    fetchMarketContext(inst, 500),
+  );
+  const allMarketContexts = await Promise.all(marketContextPromises);
+
+  const marketContexts = allMarketContexts.filter(
+    (ctx) => ctx.isDataReal || ctx.candles.length > 0,
+  );
+
+  if (marketContexts.length === 0) {
+    console.log("Scan aborted: No market data available.");
+    return { signalFound: false };
+  }
+
+  const marketDataString = marketContexts
+    .map((ctx: MarketContext) => {
+      // 1. Calculate Long Term Trend locally (Method A)
+      const techSummary = calculateTechnicalSummary(ctx.candles);
+
+      // 2. Slice Data for AI Prompt (Method B - 24 Hours / 96 Candles)
+      let rawCandlesStr =
+        "Candle Data: Unavailable (Use Google Search for Structure)";
+      if (ctx.candles && ctx.candles.length >= 5) {
+        // Take last 96 candles (approx 24h on M15)
+        const last96 = ctx.candles.slice(-96);
+        rawCandlesStr =
+          `Raw Candles (Last 24h - M15):\n` +
+          last96
+            .map(
+              (c) =>
+                `[${c.time.split("T")[1]?.slice(0, 5)}] O:${c.open} H:${c.high} L:${c.low} C:${c.close}`,
+            )
+            .join("\n");
+      }
+
+      // 3. Construct Hybrid Context Block
+      return `
 === INSTRUMENT: ${ctx.instrument} ===
 Current Price: ${ctx.currentPrice}
 MACRO TREND (Calculated on 500 candles): ${techSummary.trend}
-(Price vs 200 SMA: ${ctx.currentPrice > techSummary.sma200 ? 'ABOVE' : 'BELOW'})
+(Price vs 200 SMA: ${ctx.currentPrice > techSummary.sma200 ? "ABOVE" : "BELOW"})
 ${rawCandlesStr}
-${ctx.details ? `Details: ${ctx.details}` : ''}
+${ctx.details ? `Details: ${ctx.details}` : ""}
 ================================
 `;
-    }).join('\n');
+    })
+    .join("\n");
 
-    const patternClassifierPrompt = `You are "Olapete-Alpha", an elite algorithmic trading engine running a Hybrid 96-Candle Scan.
+  const patternClassifierPrompt = `You are "Olapete-Alpha", an elite algorithmic trading engine running a Hybrid 96-Candle Scan.
     
     **TASK:**
     Analyze the provided **Macro Trend** and **24-Hour Raw Candle Data** to find a high-probability setup.
@@ -333,7 +383,7 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
       "reason_short": "Macro Trend is Bullish. 24h price action formed a clean Bull Flag pattern retesting the 200 SMA."
     }`;
 
-    const financialAnalystPrompt = `You are a senior financial analyst validating an algorithmic trade signal.
+  const financialAnalystPrompt = `You are a senior financial analyst validating an algorithmic trade signal.
     
     **Task:**
     1.  Analyze the provided trade candidate.
@@ -354,118 +404,172 @@ ${ctx.details ? `Details: ${ctx.details}` : ''}
       "adjustment": { "sl_adjust_points": 0.0 }
     }`;
 
+  try {
+    const ai = getAI();
+
+    const patternResponse = await withRetry<GenerateContentResponse>(() =>
+      ai.models.generateContent({
+        model: GENERATION_MODEL,
+        contents: `Analyze the hybrid market data (Trend + 96 Candles) provided in system prompt. Current UTC time is ${new Date().toUTCString()}.`,
+        config: {
+          systemInstruction: patternClassifierPrompt,
+          tools: [{ googleSearch: {} }], // Keep search for extra validation if needed
+        },
+      }),
+    );
+
+    let patternResult;
     try {
-        const ai = getAI();
-        
-        const patternResponse = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
-            model: GENERATION_MODEL,
-            contents: `Analyze the hybrid market data (Trend + 96 Candles) provided in system prompt. Current UTC time is ${new Date().toUTCString()}.`,
-            config: {
-                systemInstruction: patternClassifierPrompt,
-                tools: [{ googleSearch: {} }] // Keep search for extra validation if needed
-            }
-        }));
-        
-        let patternResult;
-        try {
-            const cleanText = cleanJsonString(patternResponse.text || '');
-            patternResult = JSON.parse(cleanText);
-        } catch (jsonError) {
-            console.warn("JSON Parse Error in Pattern Classifier:", jsonError);
-            return { signalFound: false };
-        }
-
-        if (!patternResult.pass) {
-            console.log("Hybrid Scanner found no valid setups in current market conditions.");
-            return { signalFound: false };
-        }
-        
-        const instrumentProps = instrumentDefinitions[patternResult.instrument];
-        
-        const analystContent = `Analyze this setup:\n${JSON.stringify(patternResult, null, 2)}`;
-        
-        const analystResponse = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
-            model: GENERATION_MODEL,
-            contents: analystContent,
-            config: {
-                systemInstruction: financialAnalystPrompt,
-                tools: [{ googleSearch: {} }]
-            }
-        }));
-        
-        let analystResult;
-        try {
-            const cleanText = cleanJsonString(analystResponse.text || '');
-            analystResult = JSON.parse(cleanText);
-        } catch (jsonError) {
-            console.warn("JSON Parse Error in Analyst:", jsonError);
-            analystResult = { confidence: 70, reason: "Analyst validation failed format check, proceeding with pattern score." };
-        }
-
-        const patternScore = (patternResult.pattern_score || 0) * 60; 
-        const analystScore = (analystResult.confidence || 0) * 0.40;
-        
-        const finalConfidence = Math.min(100, patternScore + analystScore);
-        
-        const ACCEPTANCE_THRESHOLD = 85;
-        if (finalConfidence < ACCEPTANCE_THRESHOLD) {
-            console.log(`Signal for ${patternResult.instrument} rejected. Confidence ${finalConfidence.toFixed(2)} < ${ACCEPTANCE_THRESHOLD}.`);
-            return { signalFound: false };
-        }
-
-        // Risk Calculation Logic (Unchanged)
-        const currentEquity = parseFloat(userSettings.balance);
-        const risk_pct = parseFloat(userSettings.risk);
-        const risk_amount = currentEquity * (risk_pct / 100);
-
-        const entryPrice = parseFloat(patternResult.entryPrice);
-        const stopLoss = parseFloat(patternResult.stopLoss);
-        
-        if (isNaN(entryPrice) || isNaN(stopLoss)) return { signalFound: false };
-
-        const pip_step = instrumentProps ? instrumentDefinitions[patternResult.instrument].pipStep : 0.0001;
-        const stop_dist_price = Math.abs(entryPrice - stopLoss);
-        const stopLossInPips = stop_dist_price / pip_step;
-        
-        let pipValueInUSDForOneLot = 10;
-        const contractSize = instrumentProps ? instrumentDefinitions[patternResult.instrument].contractSize : 100000;
-        const quoteCurrency = instrumentProps ? instrumentDefinitions[patternResult.instrument].quoteCurrency : 'USD';
-
-        if (quoteCurrency === 'USD') {
-            pipValueInUSDForOneLot = pip_step * contractSize;
-        } else if (quoteCurrency === 'JPY') {
-            pipValueInUSDForOneLot = (pip_step * contractSize) / 150; 
-        }
-        
-        let lotSize = 0;
-        const totalRiskPerLot = stopLossInPips * pipValueInUSDForOneLot;
-        
-        if (totalRiskPerLot > 0) {
-            lotSize = risk_amount / totalRiskPerLot;
-        }
-
-        lotSize = Math.max(0.01, parseFloat(lotSize.toFixed(2)));
-        
-        const finalSignal = {
-            signalFound: true,
-            instrument: patternResult.instrument,
-            type: patternResult.type,
-            entryPrice: entryPrice,
-            stopLoss: stopLoss,
-            takeProfit1: parseFloat(patternResult.takeProfit1),
-            confidence: parseFloat(finalConfidence.toFixed(2)),
-            reasoning: analystResult.reason,
-            technicalReasoning: patternResult.reason_short,
-            lotSize: lotSize,
-            riskAmount: parseFloat(risk_amount.toFixed(2)),
-        };
-        
-        return finalSignal;
-
-    } catch (error) {
-        console.error("Error during the new signal generation pipeline:", error);
-        return { signalFound: false };
+      const cleanText = cleanJsonString(patternResponse.text || "");
+      patternResult = JSON.parse(cleanText);
+    } catch (jsonError) {
+      console.warn("JSON Parse Error in Pattern Classifier:", jsonError);
+      return { signalFound: false };
     }
+
+    if (!patternResult.pass) {
+      console.log(
+        "Hybrid Scanner found no valid setups in current market conditions.",
+      );
+      return { signalFound: false };
+    }
+
+    const instrumentProps = instrumentDefinitions[patternResult.instrument];
+
+    const analystContent = `Analyze this setup:\n${JSON.stringify(patternResult, null, 2)}`;
+
+    const analystResponse = await withRetry<GenerateContentResponse>(() =>
+      ai.models.generateContent({
+        model: GENERATION_MODEL,
+        contents: analystContent,
+        config: {
+          systemInstruction: financialAnalystPrompt,
+          tools: [{ googleSearch: {} }],
+        },
+      }),
+    );
+
+    let analystResult;
+    try {
+      const cleanText = cleanJsonString(analystResponse.text || "");
+      analystResult = JSON.parse(cleanText);
+    } catch (jsonError) {
+      console.warn("JSON Parse Error in Analyst:", jsonError);
+      analystResult = {
+        confidence: 70,
+        reason:
+          "Analyst validation failed format check, proceeding with pattern score.",
+      };
+    }
+
+    const patternScore = (patternResult.pattern_score || 0) * 60;
+    const analystScore = (analystResult.confidence || 0) * 0.4;
+
+    const finalConfidence = Math.min(100, patternScore + analystScore);
+
+    const ACCEPTANCE_THRESHOLD = 85;
+    if (finalConfidence < ACCEPTANCE_THRESHOLD) {
+      console.log(
+        `Signal for ${patternResult.instrument} rejected. Confidence ${finalConfidence.toFixed(2)} < ${ACCEPTANCE_THRESHOLD}.`,
+      );
+      return { signalFound: false };
+    }
+
+    // Risk Calculation Logic (Unchanged)
+    const currentEquity = parseFloat(userSettings.balance);
+    const risk_pct = parseFloat(userSettings.risk);
+    const risk_amount = currentEquity * (risk_pct / 100);
+
+    const entryPrice = parseFloat(patternResult.entryPrice);
+    const stopLoss = parseFloat(patternResult.stopLoss);
+
+    if (isNaN(entryPrice) || isNaN(stopLoss)) return { signalFound: false };
+
+    const pip_step = instrumentProps
+      ? instrumentDefinitions[patternResult.instrument].pipStep
+      : 0.0001;
+    const stop_dist_price = Math.abs(entryPrice - stopLoss);
+    const stopLossInPips = stop_dist_price / pip_step;
+
+    let pipValueInUSDForOneLot = 10;
+    const contractSize = instrumentProps
+      ? instrumentDefinitions[patternResult.instrument].contractSize
+      : 100000;
+    const quoteCurrency = instrumentProps
+      ? instrumentDefinitions[patternResult.instrument].quoteCurrency
+      : "USD";
+
+    if (quoteCurrency === "USD") {
+      pipValueInUSDForOneLot = pip_step * contractSize;
+    } else if (quoteCurrency === "JPY") {
+      pipValueInUSDForOneLot = (pip_step * contractSize) / 150;
+    }
+
+    let lotSize = 0;
+    const totalRiskPerLot = stopLossInPips * pipValueInUSDForOneLot;
+
+    if (totalRiskPerLot > 0) {
+      lotSize = risk_amount / totalRiskPerLot;
+    }
+
+    lotSize = Math.max(0.01, parseFloat(lotSize.toFixed(2)));
+
+    const finalSignal = {
+      signalFound: true,
+      instrument: patternResult.instrument,
+      type: patternResult.type,
+      entryPrice: entryPrice,
+      stopLoss: stopLoss,
+      takeProfit1: parseFloat(patternResult.takeProfit1),
+      confidence: parseFloat(finalConfidence.toFixed(2)),
+      reasoning: analystResult.reason,
+      technicalReasoning: patternResult.reason_short,
+      lotSize: lotSize,
+      riskAmount: parseFloat(risk_amount.toFixed(2)),
+    };
+
+    if (finalSignal.signalFound) {
+      const userId = useAppStore.getState().user?.id;
+
+      if (!userId) {
+        console.warn("Signal generated but not saved: missing userId");
+        return finalSignal;
+      }
+
+      try {
+        await saveSignalToDb({
+          userId,
+          instrument: finalSignal.instrument,
+          type: finalSignal.type,
+          isAI: true,
+
+          entryPrice: finalSignal.entryPrice,
+          stopLoss: finalSignal.stopLoss,
+          takeProfits: [finalSignal.takeProfit1],
+
+          confidence: finalSignal.confidence,
+          reasoning: finalSignal.reasoning,
+          technicalReasoning: finalSignal.technicalReasoning,
+
+          lotSize: finalSignal.lotSize,
+          riskAmount: finalSignal.riskAmount,
+
+          meta: {
+            plan: userPlan,
+            generatedAtUtc: new Date().toUTCString(),
+            source: "hybrid-96-candle-scan",
+          },
+        });
+      } catch (e) {
+        console.warn("Failed to save signal:", e);
+      }
+    }
+
+    return finalSignal;
+  } catch (error) {
+    console.error("Error during the new signal generation pipeline:", error);
+    return { signalFound: false };
+  }
 };
 
 export const getTradeAnalysis = async (tradeDetails: {
@@ -476,8 +580,15 @@ export const getTradeAnalysis = async (tradeDetails: {
   stopLossPrice: number;
   tpPrice: number;
 }): Promise<{ text: string; sources: any[] }> => {
-  const { instrument, timeFrame, tradeDirection, entryPrice, stopLossPrice, tpPrice } = tradeDetails;
-  
+  const {
+    instrument,
+    timeFrame,
+    tradeDirection,
+    entryPrice,
+    stopLossPrice,
+    tpPrice,
+  } = tradeDetails;
+
   const systemPrompt = `You are an expert financial analyst. 
   
   STRATEGY GUIDELINES TO CONSIDER:
@@ -495,17 +606,20 @@ Provide a brief and actionable summary in three short, direct sections:
 
   try {
     const ai = getAI();
-    const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
-      model: GENERATION_MODEL,
-      contents: userPrompt,
-      config: {
-        systemInstruction: systemPrompt,
-        tools: [{ googleSearch: {} }],
-      }
-    }));
+    const response = await withRetry<GenerateContentResponse>(() =>
+      ai.models.generateContent({
+        model: GENERATION_MODEL,
+        contents: userPrompt,
+        config: {
+          systemInstruction: systemPrompt,
+          tools: [{ googleSearch: {} }],
+        },
+      }),
+    );
 
-    const text = response.text || '';
-    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+    const text = response.text || "";
+    const groundingChunks =
+      response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
     const sources = groundingChunks
       .map((chunk: any) => chunk.web)
       .filter((web) => web && web && web.uri && web.title);

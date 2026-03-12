@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Header from "./components/ui/Header";
 import Sidebar from "./components/ui/Sidebar";
+import useAppStore from "./store/useStore";
+import useMentorStore from "./store/mentorStore";
 
 const RootLayout = ({
-  user,
   toggleTheme,
   theme,
   isSidebarCollapsed,
@@ -14,25 +15,36 @@ const RootLayout = ({
   setAccountMenuOpen,
   onLogout,
   isAccountMenuOpen,
+  showToast,
+  setIsMentorMode
 }) => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const navigate = useNavigate()
-  const toggleMenu = () => {
-    setShowMobileMenu((prev) => !prev);
-  };
+  const navigate = useNavigate();
 
-  if(!user){
-      navigate('/auth')
-  }
+  const user = useAppStore((state) => state.user);
+  const toggleMenu = () => setShowMobileMenu((prev) => !prev);
+  const {setMentorMode} = useMentorStore()
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth/signIn"); 
+      showToast?.("Authentication Failed, Please Login", "error");
+    }
+  }, [user, navigate]);
+
+  useEffect(()=>{
+    setMentorMode(false)
+  },[])
 
   return (
     <div className="w-full h-screen flex relative">
       {showMobileMenu && (
         <div
           onClick={() => setShowMobileMenu(false)}
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300 md:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
         />
       )}
+
       <Sidebar
         isSidebarCollapsed={isSidebarCollapsed}
         setIsSidebarCollapsed={setIsSidebarCollapsed}
@@ -45,10 +57,10 @@ const RootLayout = ({
         setShowMobileMenu={setShowMobileMenu}
         showMobileMenu={showMobileMenu}
         toggleMenu={toggleMenu}
+        setIsMentorMode={setIsMentorMode}
       />
-      <div
-        className={`flex-1 flex flex-col transition-all duration-300 overflow-y-scroll`}
-      >
+
+      <div className="flex-1 flex flex-col overflow-y-scroll">
         <Header
           toggleTheme={toggleTheme}
           theme={theme}

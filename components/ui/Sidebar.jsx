@@ -2,24 +2,38 @@ import React, { useEffect } from "react";
 import Icon from "./Icon";
 import SidebarNavLink from "./Navlink";
 import useAppStore from "@/store/useStore";
+import { useLocation, useNavigate } from "react-router-dom";
+import useMentorStore from "@/store/mentorStore";
 
 const Sidebar = ({
   user,
   isSidebarCollapsed,
   setIsSidebarCollapsed,
   setAccountMenuOpen,
-  isMentorMode,
   isAccountMenuOpen,
   activeTrades,
   onLogout,
   showMobileMenu,
   toggleMenu,
 }) => {
-  const loading = useAppStore((state) => state.loading);
+  const { isMentorMode, toggleMentorMode, mentor } = useMentorStore();
+  const navigate = useNavigate()
 
   useEffect(() => {
     setAccountMenuOpen(false);
   }, [setAccountMenuOpen]);
+
+  const handleSwitchMode = () => {
+    toggleMentorMode();
+
+    if (!isMentorMode) {
+      navigate("/mentor/dashboard");
+    } else {
+      navigate("/dashboard");
+    }
+
+    setAccountMenuOpen(false);
+  };
 
   return (
     <>
@@ -45,7 +59,6 @@ const Sidebar = ({
           ${isSidebarCollapsed ? "w-20" : "w-64"}
         `}
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-2 mb-8">
           {!isSidebarCollapsed && (
             <h1 className="text-2xl font-bold text-primary">Trade Companion</h1>
@@ -59,10 +72,9 @@ const Sidebar = ({
               <Icon name="close" className="w-6 h-6" />
             </button>
           )}
-          
-          {
-            !showMobileMenu  && (
- <button
+
+          {!showMobileMenu && (
+            <button
               onClick={() => setIsSidebarCollapsed((prev) => !prev)}
               className={`p-1 rounded-md hover:bg-light-hover text-mid-text ${
                 isSidebarCollapsed && "mx-auto"
@@ -73,27 +85,27 @@ const Sidebar = ({
                 className="w-6 h-6"
               />
             </button>
-            )
-          }
-          
+          )}
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 space-y-4">
           {isMentorMode ? (
             <div>
-              <p className="text-xs text-mid-text uppercase font-semibold mb-2 px-4">
-                Mentor Area
-              </p>
+              {!isSidebarCollapsed && (
+                <p className="text-xs text-mid-text uppercase font-semibold mb-2 px-4">
+                  Mentor Area
+                </p>
+              )}
 
               <SidebarNavLink
-                to="mentor_dashboard"
+                to="mentor/dashboard"
                 icon="dashboard"
                 label="Dashboard"
                 isCollapsed={isSidebarCollapsed}
               />
               <SidebarNavLink
-                to="followers"
+                to="mentor/followers"
                 icon="followers"
                 label="Followers"
                 isCollapsed={isSidebarCollapsed}
@@ -105,9 +117,15 @@ const Sidebar = ({
                 isCollapsed={isSidebarCollapsed}
               />
               <SidebarNavLink
-                to="mentor_payouts"
+                to="mentor/payouts"
                 icon="payouts"
                 label="Payouts"
+                isCollapsed={isSidebarCollapsed}
+              />
+              <SidebarNavLink
+                to={`mentor/${mentor?._id}`}
+                icon="profile"
+                label="Profile"
                 isCollapsed={isSidebarCollapsed}
               />
             </div>
@@ -127,7 +145,6 @@ const Sidebar = ({
                   icon="dashboard"
                   label="Dashboard"
                   isCollapsed={isSidebarCollapsed}
-
                 />
                 <SidebarNavLink
                   to="ai_signals"
@@ -135,28 +152,24 @@ const Sidebar = ({
                   label="AI Signals"
                   badgeCount={activeTrades.length}
                   isCollapsed={isSidebarCollapsed}
-
                 />
                 <SidebarNavLink
                   to="mentors"
                   icon="mentors"
                   label="Mentors"
                   isCollapsed={isSidebarCollapsed}
-
                 />
                 <SidebarNavLink
                   to="education"
                   icon="education"
                   label="Education"
                   isCollapsed={isSidebarCollapsed}
-
                 />
                 <SidebarNavLink
                   to="analytics"
                   icon="analytics"
                   label="Analytics"
                   isCollapsed={isSidebarCollapsed}
-
                 />
               </div>
 
@@ -174,14 +187,12 @@ const Sidebar = ({
                   icon="calculator"
                   label="Lot Size Calculator"
                   isCollapsed={isSidebarCollapsed}
-
                 />
                 <SidebarNavLink
                   to="market_chart"
                   icon="chart-bar"
                   label="Market Chart"
                   isCollapsed={isSidebarCollapsed}
-
                 />
               </div>
             </>
@@ -200,9 +211,9 @@ const Sidebar = ({
           >
             <img
               src={
-                user.avatar ||
-                user.image ||
-                `https://i.pravatar.cc/150?u=${user.email}`
+                user?.avatar ||
+                user?.image ||
+                `https://i.pravatar.cc/150?u=${user?.email}`
               }
               alt="User Avatar"
               className="w-8 h-8 rounded-full border border-light-gray"
@@ -212,9 +223,11 @@ const Sidebar = ({
               <>
                 <div className="text-left ml-3 flex-1 overflow-hidden">
                   <p className="font-semibold text-sm text-dark-text truncate">
-                    {user.name}
+                    {user?.name}
                   </p>
-                  <p className="text-xs text-mid-text truncate">{user.email}</p>
+                  <p className="text-xs text-mid-text truncate">
+                    {user?.email}
+                  </p>
                 </div>
                 <Icon
                   name="chevronDown"
@@ -242,15 +255,18 @@ const Sidebar = ({
                 Settings
               </a>
               <a
-                href="#"
+                href="/contact_us"
                 className="flex items-center px-4 py-2 text-sm text-dark-text hover:bg-light-hover"
               >
                 <Icon name="mail" className="w-5 h-5 mr-2 text-mid-text" />
                 Contact Us
               </a>
               <hr className="border-light-gray my-1" />
-              {user.isMentor ? (
-                <button className="w-full flex items-center px-4 py-2 text-sm text-primary font-semibold hover:bg-light-hover">
+              {user?.isMentor ? (
+                <button
+                  onClick={handleSwitchMode}
+                  className="w-full flex items-center px-4 py-2 text-sm text-primary font-semibold hover:bg-light-hover"
+                >
                   <Icon
                     name={isMentorMode ? "user" : "mentors"}
                     className="w-5 h-5 mr-2 text-primary"
@@ -259,7 +275,7 @@ const Sidebar = ({
                 </button>
               ) : (
                 //Todo: Use the new handleBecomeMentorClick logic here
-                <button className="w-full flex items-center px-4 py-2 text-sm text-dark-text hover:bg-light-hover">
+                <button onClick={()=> navigate(`/ApplyMentor/${user.id}`)} className="w-full flex items-center px-4 py-2 text-sm text-dark-text hover:bg-light-hover">
                   <Icon name="apply" className="w-5 h-5 mr-2 text-mid-text" />
                   Become a Mentor
                 </button>

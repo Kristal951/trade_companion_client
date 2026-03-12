@@ -1,9 +1,10 @@
 // dashboard/DashboardOverview.tsx
 import { StatCard } from "@/components/dashboard/DashboardPage";
 import Icon from "@/components/ui/Icon";
+import Spinner from "@/components/ui/Spinner";
 import { TradeRecord, User } from "@/types";
-import { MOCK_MENTOR_POSTS } from "@/utils";
-import React, { useState, useMemo, useCallback } from "react";
+import { API, MOCK_MENTOR_POSTS } from "@/utils";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ResponsiveContainer,
@@ -27,6 +28,20 @@ interface Props {
   liveEquity: number;
   floatingPnL: number;
 }
+
+type AISignal = {
+  _id: string;
+  userId: string;
+  instrument: string;
+  type: "BUY" | "SELL";
+  status: string;
+  entryPrice: number;
+  stopLoss: number;
+  takeProfits: number[];
+  confidence?: number | null;
+  createdAt?: string;
+  executedAt?: string | null;
+};
 
 const DashboardOverview: React.FC<Props> = ({
   user,
@@ -75,7 +90,7 @@ const DashboardOverview: React.FC<Props> = ({
           cx={cx}
           cy={cy}
           innerRadius={innerRadius}
-          outerRadius={numOuterRadius + 8} // Pop out
+          outerRadius={numOuterRadius + 8}
           startAngle={startAngle}
           endAngle={endAngle}
           fill={fill}
@@ -86,15 +101,55 @@ const DashboardOverview: React.FC<Props> = ({
     );
   };
 
-  const INITIAL_EQUITY_KEY = `initialEquity_${user.email}`;
+  const INITIAL_EQUITY_KEY = `initialEquity_${user?.email}`;
   const PIE_COLORS = ["#6366F1", "#A78BFA", "#60A5FA", "#34D399", "#FB7185"];
 
   const [pieActiveIndex, setPieActiveIndex] = useState(0);
 
   const initialEquity = useMemo(
     () => Number(localStorage.getItem(INITIAL_EQUITY_KEY) || 10000),
-    [INITIAL_EQUITY_KEY]
+    [INITIAL_EQUITY_KEY],
   );
+
+  const [recentAISignals, setRecentAISignals] = useState<AISignal[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const uid = user?._id || (user as any)?.id || user?.email;
+
+    if (!uid) return;
+
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        setAiLoading(true);
+        setAiError(null);
+
+        const res = await API.get(
+          `/api/signals/ai/user/${encodeURIComponent(String(uid))}?limit=5`,
+        );
+
+        const data = await res.data;
+
+        const items: AISignal[] = Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.signals)
+            ? data.signals
+            : [];
+
+        setRecentAISignals(items.slice(0, 5));
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
+        setAiError(err?.message || "Failed to fetch AI signals");
+      } finally {
+        setAiLoading(false);
+      }
+    })();
+
+    return () => controller.abort();
+  }, [user]);
 
   const chartEquityData = useMemo(() => {
     let cumulative = initialEquity;
@@ -115,7 +170,7 @@ const DashboardOverview: React.FC<Props> = ({
   }, [tradeHistory, activeTrades, initialEquity, liveEquity]);
 
   const instrumentDistribution = useMemo(() => {
-    const counts = tradeHistory.reduce((acc, t) => {
+    const counts = tradeHistory.reduce((acc: any, t) => {
       acc[t.instrument] = (acc[t.instrument] || 0) + 1;
       return acc;
     }, {});
@@ -128,39 +183,55 @@ const DashboardOverview: React.FC<Props> = ({
   }, []);
 
   const totalProfit = liveEquity - initialEquity;
+
   const winRate =
     closedTrades.length > 0
-      ? ((closedTrades.filter((t) => t.status === "win").length /
-          closedTrades.length) *
-          100).toFixed(2)
+      ? (
+          (closedTrades.filter((t) => t.status === "win").length /
+            closedTrades.length) *
+          100
+        ).toFixed(2)
       : "0";
-
-      const latestSignals = useMemo(() => {
-    const allSignals = [...activeTrades, ...tradeHistory];
-    return allSignals
-      .sort(
-        (a, b) =>
-          new Date(b.dateTaken).getTime() - new Date(a.dateTaken).getTime()
-      )
-      .slice(0, 2);
-  }, [activeTrades, tradeHistory]);
 
   const profitType = totalProfit >= 0 ? "gain" : "loss";
   const safeInitialEquity = isNaN(Number(initialEquity))
     ? 0
     : Number(initialEquity);
+
   const profitPercentage =
     safeInitialEquity > 0
       ? ((totalProfit / safeInitialEquity) * 100).toFixed(2)
       : "0.00";
-      const safeLiveEquity = isNaN(Number(liveEquity)) ? 0 : Number(liveEquity);
-    //   const totalTrades = signals.length;
+
+  const safeLiveEquity = isNaN(Number(liveEquity)) ? 0 : Number(liveEquity);
+
+  const fmtPrice = (n: number, digits = 4) =>
+    Number.isFinite(Number(n)) ? Number(n).toFixed(digits) : "-";
+
+  const statusBadge = (status?: string) => {
+    const s = String(status || "").toLowerCase();
+
+    if (["new"].includes(s)) return "bg-info/20 text-info";
+    if (["executed", "active"].includes(s))
+      return "bg-info/20 text-info animate-pulse";
+    if (["win", "closed", "tp"].includes(s))
+      return "bg-success/20 text-success";
+    if (["loss", "sl"].includes(s)) return "bg-danger/20 text-danger";
+    if (["cancelled", "expired"].includes(s)) return "bg-dark/10 text-mid-text";
+    return "bg-dark/10 text-mid-text";
+  };
+
+  const statusLabel = (status?: string) => {
+    const s = String(status || "");
+    if (!s) return "Unknown";
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  };
 
   return (
     <div className="p-4 mb-4 bg-light-bg min-h-[calc(100vh-64px)]">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div
-          onClick={() => navigate('/analytics')}
+          onClick={() => navigate("/analytics")}
           className="cursor-pointer transition-transform transform hover:scale-105"
         >
           <StatCard
@@ -186,6 +257,7 @@ const DashboardOverview: React.FC<Props> = ({
             }
           />
         </div>
+
         <div
           onClick={() => navigate("/analytics")}
           className="cursor-pointer transition-transform transform hover:scale-105"
@@ -193,11 +265,11 @@ const DashboardOverview: React.FC<Props> = ({
           <StatCard
             title="AI Signal Win Rate"
             value={`${winRate}%`}
-            // percentage={`${totalTrades} Closed Trades`}
             percentageType={parseFloat(winRate) >= 50 ? "gain" : "loss"}
             icon={<Icon name="check" className="w-5 h-5" />}
           />
         </div>
+
         <div
           onClick={() => navigate("/analytics")}
           className="cursor-pointer transition-transform transform hover:scale-105"
@@ -205,7 +277,7 @@ const DashboardOverview: React.FC<Props> = ({
           <StatCard
             title="Total P/L (Realized + Float)"
             value={`${totalProfit >= 0 ? "+" : "-"}$${Math.abs(
-              totalProfit
+              totalProfit,
             ).toLocaleString("en-US", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -214,6 +286,7 @@ const DashboardOverview: React.FC<Props> = ({
             icon={<Icon name="dashboard" className="w-5 h-5" />}
           />
         </div>
+
         <div
           onClick={() => navigate("/ai_signals")}
           className="cursor-pointer transition-transform transform hover:scale-105"
@@ -286,15 +359,24 @@ const DashboardOverview: React.FC<Props> = ({
               </AreaChart>
             </ResponsiveContainer>
           </div>
+
+          {/* ✅ Latest AI Signals (Now fetching 5) */}
           <div className="bg-light-surface p-6 rounded-xl shadow-sm border border-light-gray">
             <h3 className="text-xl font-bold text-dark-text mb-4">
               Latest AI Signals
             </h3>
-            {latestSignals.length > 0 ? (
+
+            {aiLoading ? (
+              <div className="w-full h-full flex items-center justify-center">
+                <Spinner w="5" h="5" />
+              </div>
+            ) : aiError ? (
+              <p className="text-center text-danger py-8">{aiError}</p>
+            ) : recentAISignals.length > 0 ? (
               <div className="space-y-4">
-                {latestSignals.map((signal) => (
+                {recentAISignals.map((signal) => (
                   <div
-                    key={signal.id}
+                    key={signal._id}
                     className="bg-light-hover p-4 rounded-lg border border-light-gray flex justify-between items-center"
                   >
                     <div>
@@ -302,21 +384,23 @@ const DashboardOverview: React.FC<Props> = ({
                         {signal.instrument} - {signal.type}
                       </p>
                       <p className="text-sm text-mid-text">
-                        Entry: {signal.entryPrice.toFixed(4)} | SL:{" "}
-                        {signal.stopLoss.toFixed(4)}
+                        Entry: {fmtPrice(signal.entryPrice)} | SL:{" "}
+                        {fmtPrice(signal.stopLoss)}
                       </p>
+
+                      {signal.createdAt ? (
+                        <p className="text-xs text-mid-text mt-1">
+                          {new Date(signal.createdAt).toLocaleString()}
+                        </p>
+                      ) : null}
                     </div>
+
                     <span
-                      className={`px-2 py-0.5 text-xs font-bold rounded-full ${
-                        signal.status === "active"
-                          ? "bg-info/20 text-info animate-pulse"
-                          : signal.status === "win"
-                          ? "bg-success/20 text-success"
-                          : "bg-danger/20 text-danger"
-                      }`}
+                      className={`px-2 py-0.5 text-xs font-bold rounded-full ${statusBadge(
+                        signal.status,
+                      )}`}
                     >
-                      {signal.status.charAt(0).toUpperCase() +
-                        signal.status.slice(1)}
+                      {statusLabel(signal.status)}
                     </span>
                   </div>
                 ))}
@@ -326,19 +410,26 @@ const DashboardOverview: React.FC<Props> = ({
                 No AI signals generated yet.
               </p>
             )}
-            <button
+
+            {
+              recentAISignals.length > 0 && (
+<button
               onClick={() => navigate("/ai_signals")}
               className="mt-4 w-full bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold py-2 px-4 rounded-lg transition-colors"
             >
               View All AI Signals
             </button>
+              )
+            }
           </div>
         </div>
+
         <div className="space-y-6">
           <div className="bg-light-surface p-6 rounded-xl shadow-sm border border-light-gray">
             <h3 className="text-xl font-bold text-dark-text mb-4">
               Most Traded Instruments
             </h3>
+
             {instrumentDistribution.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
@@ -362,6 +453,7 @@ const DashboardOverview: React.FC<Props> = ({
                       />
                     ))}
                   </Pie>
+
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "var(--color-surface)",
@@ -377,10 +469,12 @@ const DashboardOverview: React.FC<Props> = ({
               </p>
             )}
           </div>
+
           <div className="bg-light-surface p-6 rounded-xl shadow-sm border border-light-gray">
             <h3 className="text-xl font-bold text-dark-text mb-4">
               You are following
             </h3>
+
             <div className="space-y-4">
               {MOCK_MENTOR_POSTS.slice(0, 2).map((post) => (
                 <div
@@ -397,6 +491,7 @@ const DashboardOverview: React.FC<Props> = ({
                 </div>
               ))}
             </div>
+
             <button
               onClick={() => navigate("/mentors")}
               className="mt-4 w-full bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold py-2 px-4 rounded-lg transition-colors"

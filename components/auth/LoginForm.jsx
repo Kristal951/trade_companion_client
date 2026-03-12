@@ -6,8 +6,9 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 const LoginForm = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const { setIsLogin, onAuthSuccess, showToast, handleFocus, setRobotState} = useOutletContext();
-  const navigate = useNavigate()
+  const { setIsLogin, onAuthSuccess, showToast, handleFocus, setRobotState } =
+    useOutletContext();
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -17,7 +18,7 @@ const LoginForm = () => {
   const signIn = useAppStore((state) => state.signIn);
 
   const handleSubmit = async (e) => {
-    setRobotState('searching')
+    setRobotState("searching");
     try {
       e.preventDefault();
       const user = await signIn({
@@ -29,11 +30,25 @@ const LoginForm = () => {
         email: user.email,
         plan: user.subscribedPlan || "FREE",
         image: user.picture || user.avatar,
+        isMentor: user.isMentor,
+        subscribedPlan: user.subscribedPlan,
+        id: user._id,
+        isSubscribed: user.isSubscribed,
+        subscriptionStatus: user.subscriptionStatus,
+        subscriptionMethod: user.subscriptionMethod,
+        subscriptionInterval: user.subscriptionInterval,
+        subscriptionCurrentPeriodEnd: user.subscriptionCurrentPeriodEnd,
+        stripeCustomerId: user.stripeCustomerId,
+        cTraderConfig: {
+          accountId: user.cTraderConfig.accountId,
+          isConnected: user.cTraderConfig.isConnected,
+          autoTradeEnabled: user.cTraderConfig.autoTradeEnabled,
+        },
       });
     } catch (err) {
       console.log(err);
-      setRobotState('sad')
-       const errorMessage =
+      setRobotState("sad");
+      const errorMessage =
         err.response?.data?.error ||
         err.response?.data?.message ||
         "Authentication failed. Please try again.";
@@ -52,7 +67,7 @@ const LoginForm = () => {
             type="email"
             name="email"
             value={formData.email}
-            onFocus={()=> handleFocus('email')}
+            onFocus={() => handleFocus("email")}
             onChange={handleChange}
             placeholder="Email Address"
             className="w-full pl-10 p-3 bg-light-hover border border-light-gray rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-dark-text transition-all"
@@ -69,7 +84,7 @@ const LoginForm = () => {
             type={showPassword ? "text" : "password"}
             name="password"
             value={formData.password}
-             onFocus={()=> handleFocus('password')}
+            onFocus={() => handleFocus("password")}
             onChange={handleChange}
             placeholder="••••••••"
             className="w-full pl-10 pr-10 p-3 bg-light-hover border border-light-gray rounded-lg 
@@ -92,7 +107,7 @@ const LoginForm = () => {
           <button
             type="button"
             className="text-sm text-primary hover:underline"
-            onClick={()=> navigate('/auth/forgot-password')}
+            onClick={() => navigate("/auth/forgot-password")}
           >
             Forgot Password?
           </button>
