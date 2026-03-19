@@ -12,74 +12,74 @@ import MentorPublisher from "./MentorPublisher";
 import useMentorStore from "@/store/mentorStore";
 import MentorSubscriberCard from "../ui/MentorSubscriberCard";
 
-const MOCK_RECENT_SIGNALS_FOR_PAYOUT: RecentSignal[] = [
-  {
-    id: "p1",
-    instrument: "EUR/USD",
-    direction: "BUY",
-    entry: "1.07",
-    stopLoss: "1.068",
-    takeProfit: "1.074",
-    outcome: "win",
-    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    pnl: 400,
-  },
-  {
-    id: "p2",
-    instrument: "GBP/JPY",
-    direction: "SELL",
-    entry: "185",
-    stopLoss: "185.5",
-    takeProfit: "184",
-    outcome: "win",
-    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    pnl: 1000,
-  },
-  {
-    id: "p3",
-    instrument: "XAU/USD",
-    direction: "BUY",
-    entry: "2300",
-    stopLoss: "2290",
-    takeProfit: "2320",
-    outcome: "win",
-    timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    pnl: 2000,
-  },
-  {
-    id: "p4",
-    instrument: "USD/CAD",
-    direction: "SELL",
-    entry: "1.36",
-    stopLoss: "1.363",
-    takeProfit: "1.355",
-    outcome: "loss",
-    timestamp: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
-    pnl: -300,
-  },
-  {
-    id: "p5",
-    instrument: "BTC/USD",
-    direction: "BUY",
-    entry: "65000",
-    stopLoss: "64000",
-    takeProfit: "67000",
-    outcome: "win",
-    timestamp: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
-    pnl: 2000,
-  },
-  {
-    id: "p6",
-    instrument: "ETH/USD",
-    direction: "SELL",
-    entry: "3500",
-    stopLoss: "3600",
-    takeProfit: "3300",
-    outcome: "win",
-    timestamp: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
-    pnl: 200,
-  },
-];
+// const MOCK_RECENT_SIGNALS_FOR_PAYOUT: RecentSignal[] = [
+//   {
+//     id: "p1",
+//     instrument: "EUR/USD",
+//     direction: "BUY",
+//     entry: "1.07",
+//     stopLoss: "1.068",
+//     takeProfit: "1.074",
+//     outcome: "win",
+//     timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+//     pnl: 400,
+//   },
+//   {
+//     id: "p2",
+//     instrument: "GBP/JPY",
+//     direction: "SELL",
+//     entry: "185",
+//     stopLoss: "185.5",
+//     takeProfit: "184",
+//     outcome: "win",
+//     timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+//     pnl: 1000,
+//   },
+//   {
+//     id: "p3",
+//     instrument: "XAU/USD",
+//     direction: "BUY",
+//     entry: "2300",
+//     stopLoss: "2290",
+//     takeProfit: "2320",
+//     outcome: "win",
+//     timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+//     pnl: 2000,
+//   },
+//   {
+//     id: "p4",
+//     instrument: "USD/CAD",
+//     direction: "SELL",
+//     entry: "1.36",
+//     stopLoss: "1.363",
+//     takeProfit: "1.355",
+//     outcome: "loss",
+//     timestamp: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
+//     pnl: -300,
+//   },
+//   {
+//     id: "p5",
+//     instrument: "BTC/USD",
+//     direction: "BUY",
+//     entry: "65000",
+//     stopLoss: "64000",
+//     takeProfit: "67000",
+//     outcome: "win",
+//     timestamp: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
+//     pnl: 2000,
+//   },
+//   {
+//     id: "p6",
+//     instrument: "ETH/USD",
+//     direction: "SELL",
+//     entry: "3500",
+//     stopLoss: "3600",
+//     takeProfit: "3300",
+//     outcome: "win",
+//     timestamp: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
+//     pnl: 200,
+//   },
+// ];
 
 // const MOCK_MENTOR_PROFILE: Mentor = {
 //   id: 1,
@@ -143,7 +143,7 @@ const MentorDashboard: React.FC<MentorDashboardProps> = ({
     "publisher"
   );
   const { mentor } = useMentorStore();
-  const mentor_subscribers = mentor?.subscriberGrowth ?? [];
+  const mentor_subscribers = mentor?.subscribers ?? [];
 
   if (!mentor) {
     return (

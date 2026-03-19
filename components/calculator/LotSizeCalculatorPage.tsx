@@ -108,7 +108,7 @@ export const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({
 
       if (pipValue === 0 || isNaN(pipValue) || stopLossPips === 0) {
         throw new Error(
-          "Calculation error: Pip value is zero or invalid, or Stop-Loss is too close to Entry."
+          "Calculation error: Pip value is zero or invalid, or Stop-Loss is too close to Entry.",
         );
       }
 
@@ -135,11 +135,9 @@ export const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({
     }
   };
 
-  // Auto-update price and cross rate when instrument/currency changes
   const updateLiveValues = async () => {
     setIsUpdatingPrice(true);
     try {
-      // 1. Fetch Main Instrument Price
       const { price, isMock } = await getLivePrice(instrument);
       if (price !== null) {
         const instrumentProps = instrumentDefinitions[instrument];
@@ -147,7 +145,6 @@ export const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({
         const formattedPrice = price.toFixed(decimalPlaces);
 
         setEntryPrice(formattedPrice);
-        // Auto-set a default SL 30 pips away
         const slPrice = price - 30 * instrumentProps.pipStep;
         setStopLossPrice(slPrice.toFixed(decimalPlaces));
 
@@ -159,22 +156,15 @@ export const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({
         });
         currentLivePrice.current = price;
       }
-
-      // 2. Fetch Cross Rate if Needed
       if (isCrossRateVisible) {
         const instProps = instrumentDefinitions[instrument];
         const quote = instProps.quoteCurrency;
         const acc = accountCurrency;
 
-        // Logic: We need the value of Quote currency in Account terms. (QUOTE/ACC rate)
-        // e.g. Quote=JPY, Acc=USD. Need JPY/USD.
-
-        // Try Pair: QUOTE/ACC (e.g. EUR/USD)
         let pairToFetch = `${quote}/${acc}`;
         let invert = false;
 
         if (!instrumentDefinitions[pairToFetch]) {
-          // Try Pair: ACC/QUOTE (e.g. USD/JPY)
           pairToFetch = `${acc}/${quote}`;
           invert = true;
         }
@@ -194,7 +184,6 @@ export const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({
     }
   };
 
-  // Periodic ticker update (only updates display, not inputs, to prevent overwriting user typing)
   const fetchTickerUpdate = async () => {
     const { price, isMock } = await getLivePrice(instrument);
     const instrumentProps = instrumentDefinitions[instrument];
@@ -221,16 +210,14 @@ export const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({
     }
   };
 
-  // Initial fetch and input population on instrument change
   useEffect(() => {
     updateLiveValues();
     setLivePriceInfo(null);
     lastPrice.current = null;
   }, [instrument, accountCurrency]);
 
-  // Interval for ticker
   useEffect(() => {
-    const intervalId = setInterval(fetchTickerUpdate, 15000); // 15s updates
+    const intervalId = setInterval(fetchTickerUpdate, 15000);
     return () => clearInterval(intervalId);
   }, [instrument]);
 
@@ -270,15 +257,15 @@ export const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({
       const instrumentProps = instrumentDefinitions[results.instrument];
       const decimalPlaces = Math.max(
         2,
-        Math.ceil(-Math.log10(instrumentProps.pipStep))
+        Math.ceil(-Math.log10(instrumentProps.pipStep)),
       );
       const pipDistance = Math.abs(results.entryPrice - results.stopLossPrice);
       const tpPrice = tradeDirection.includes("BUY")
         ? parseFloat(
-            (results.entryPrice + pipDistance * 2).toFixed(decimalPlaces)
+            (results.entryPrice + pipDistance * 2).toFixed(decimalPlaces),
           )
         : parseFloat(
-            (results.entryPrice - pipDistance * 2).toFixed(decimalPlaces)
+            (results.entryPrice - pipDistance * 2).toFixed(decimalPlaces),
           );
       const analysis = await getTradeAnalysis({
         ...results,
@@ -297,7 +284,6 @@ export const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({
     }
   };
 
-  // Auto-calculate results when inputs change
   useEffect(() => {
     const handler = setTimeout(() => calculateLotSize(), 200);
     return () => clearTimeout(handler);
@@ -473,8 +459,8 @@ export const LotSizeCalculatorPage: React.FC<LotSizeCalculatorPageProps> = ({
                           .filter(
                             (k) =>
                               !["Boom", "Crash", "Jump", "Volatility"].some(
-                                (prefix) => k.startsWith(prefix)
-                              )
+                                (prefix) => k.startsWith(prefix),
+                              ),
                           )
                           .map((key) => (
                             <option key={key} value={key}>

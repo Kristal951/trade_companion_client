@@ -21,7 +21,7 @@ const ProfileSettings: React.FC<SettingsProps> = ({
     user.avatar ||
       user.image ||
       user.picture ||
-      `https://i.pravatar.cc/150?u=${user.email}`
+      `https://i.pravatar.cc/150?u=${user.email}`,
   );
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const hasChanges = displayName !== user.name || avatarFile !== null;

@@ -19,6 +19,7 @@ import Subscribe from "@/pages/SubscriptionPage";
 import { renderAuthRoutes } from "./AuthRoutes";
 import { renderMentorRoutes } from "./MentorRoutes";
 import PaymentCancelledPage from "@/pages/SubPaymentCancelled";
+import NotificationsPage from "@/pages/NotificationsPage";
 
 type Props = {
   user: any;
@@ -125,7 +126,7 @@ export default function AppRoutes({
             />
           }
         />
-
+        <Route path="notifications" element={<NotificationsPage />} />
         <Route
           path="ai_signals"
           element={

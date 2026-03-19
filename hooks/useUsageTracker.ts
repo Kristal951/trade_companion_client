@@ -69,8 +69,10 @@ export const useUsageTracker = (user: User) => {
 
   const getFeatureLimit = useCallback(
     (feature: FeatureName): number | "unlimited" => {
-      const plan = normalizePlan(user?.plan || user?.subscribedPlan || PlanName.Free);
-    
+      const plan = normalizePlan(
+        user?.plan || user?.subscribedPlan || PlanName.Free,
+      );
+
       return PLAN_LIMITS[plan][feature];
     },
     [user?.plan, user?.subscribedPlan],

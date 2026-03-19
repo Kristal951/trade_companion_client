@@ -1,4 +1,4 @@
-import React from 'react'
+import React from "react";
 
 type ToggleSwitchProps = {
   checked: boolean;
@@ -30,11 +30,9 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
           ${checked ? "translate-x-6" : "translate-x-1"}
         `}
       />
-      {label ? (
-        <span className="sr-only">{label}</span>
-      ) : null}
+      {label ? <span className="sr-only">{label}</span> : null}
     </button>
   );
 };
 
-export default ToggleSwitch
+export default ToggleSwitch;

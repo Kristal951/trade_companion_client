@@ -192,10 +192,10 @@ const Icon: React.FC<IconProps> = ({
       />
     ),
     shield: (
-<>
- <path d="M12 3l7 4v5c0 5-3.5 9-7 9s-7-4-7-9V7l7-4z" />
-  <path d="M9 12l2 2 4-4" />
-</>
+      <>
+        <path d="M12 3l7 4v5c0 5-3.5 9-7 9s-7-4-7-9V7l7-4z" />
+        <path d="M9 12l2 2 4-4" />
+      </>
     ),
     paperclip: (
       <path
@@ -356,6 +356,21 @@ const Icon: React.FC<IconProps> = ({
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+      />
+    ),
+    news: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19.5 4.5h-15A1.5 1.5 0 003 6v12a1.5 1.5 0 001.5 1.5h15A1.5 1.5 0 0021 18V6a1.5 1.5 0 00-1.5-1.5zM6.75 8.25h10.5M6.75 11.25h10.5M6.75 14.25h6"
+      />
+    ),
+
+    wallet: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M21 12V8.25A2.25 2.25 0 0018.75 6H5.25A2.25 2.25 0 003 8.25v7.5A2.25 2.25 0 005.25 18h13.5A2.25 2.25 0 0021 15.75V12zm0 0h-4.5a1.5 1.5 0 100 3H21"
       />
     ),
   };

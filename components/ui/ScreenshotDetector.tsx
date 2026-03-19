@@ -1,24 +1,26 @@
-import React, { useEffect } from 'react';
+import React, { useEffect } from "react";
 
 interface ScreenshotDetectorProps {
   onScreenshotAttempt: () => void;
   children: React.ReactNode;
 }
 
-const ScreenshotDetector: React.FC<ScreenshotDetectorProps> = ({ onScreenshotAttempt, children }) => {
+const ScreenshotDetector: React.FC<ScreenshotDetectorProps> = ({
+  onScreenshotAttempt,
+  children,
+}) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'PrintScreen') {
-        // Prevent the default action if possible (might not work in all browsers for this key)
+      if (event.key === "PrintScreen") {
         event.preventDefault();
         onScreenshotAttempt();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [onScreenshotAttempt]);
 

@@ -15,7 +15,7 @@ const EditMentorPostModal = ({ post, onClose, onEdit, showToast }) => {
       entry: "",
       stopLoss: "",
       takeProfit: "",
-    }
+    },
   );
 
   const [existingFiles, setExistingFiles] = useState(post.fileURLs || []);
@@ -27,46 +27,40 @@ const EditMentorPostModal = ({ post, onClose, onEdit, showToast }) => {
   const { editMentorPost, isEditingPost } = useMentorStore();
 
   const maxFiles = 5;
-  const fileInputRef = useRef()
+  const fileInputRef = useRef();
 
   const resetForm = () => {
-  setTitle(post.title || "");
-  setPostContent(post.content || "");
-  setSignal(
-    post.signalDetails || {
-      instrument: "EUR/USD",
-      direction: "BUY",
-      entry: "",
-      stopLoss: "",
-      takeProfit: "",
+    setTitle(post.title || "");
+    setPostContent(post.content || "");
+    setSignal(
+      post.signalDetails || {
+        instrument: "EUR/USD",
+        direction: "BUY",
+        entry: "",
+        stopLoss: "",
+        takeProfit: "",
+      },
+    );
+    previews.forEach(URL.revokeObjectURL);
+    setFiles([]);
+    setPreviews([]);
+    setExistingFiles(post.fileURLs || []);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
-  );
-  previews.forEach(URL.revokeObjectURL);
-  setFiles([]);
-  setPreviews([]);
-  setExistingFiles(post.fileURLs || []);
-
-  if (fileInputRef.current) {
-    fileInputRef.current.value = "";
-  }
-  setFullscreenImage(null);
-};
-
+    setFullscreenImage(null);
+  };
 
   const handleFilesChange = (e) => {
     const selectedFiles = Array.from(e.target.files || []);
 
-    if (
-      existingFiles.length + files.length + selectedFiles.length >
-      maxFiles
-    ) {
+    if (existingFiles.length + files.length + selectedFiles.length > maxFiles) {
       showToast(`You can only upload up to ${maxFiles} files`, "info");
       return;
     }
 
-    const newPreviews = selectedFiles.map((file) =>
-      URL.createObjectURL(file)
-    );
+    const newPreviews = selectedFiles.map((file) => URL.createObjectURL(file));
 
     setFiles((prev) => [...prev, ...selectedFiles]);
     setPreviews((prev) => [...prev, ...newPreviews]);
@@ -103,10 +97,7 @@ const EditMentorPostModal = ({ post, onClose, onEdit, showToast }) => {
         formData.append("signalDetails", JSON.stringify(signal));
       }
 
-      formData.append(
-        "existingFiles",
-        JSON.stringify(existingFiles)
-      );
+      formData.append("existingFiles", JSON.stringify(existingFiles));
 
       files.forEach((file) => {
         formData.append("files", file);
@@ -116,7 +107,7 @@ const EditMentorPostModal = ({ post, onClose, onEdit, showToast }) => {
 
       onEdit?.(res.data.post);
       showToast("Post updated successfully", "success");
-      resetForm()
+      resetForm();
       onClose();
     } catch (err) {
       console.error(err);
@@ -212,7 +203,6 @@ const EditMentorPostModal = ({ post, onClose, onEdit, showToast }) => {
             className="w-full rounded-md p-3 bg-light-hover dark:bg-gray-700"
           />
 
-          
           <label className="cursor-pointer text-primary inline-flex items-center gap-2">
             <Icon name="paperclip" className="w-5 h-5" />
             Attach Files
@@ -226,11 +216,13 @@ const EditMentorPostModal = ({ post, onClose, onEdit, showToast }) => {
             />
           </label>
 
-        
           {(existingFiles.length > 0 || previews.length > 0) && (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
               {existingFiles.map((src, i) => (
-                <div key={`existing-${i}`} className="relative group border rounded-lg border-gray-300 dark:border-gray-600">
+                <div
+                  key={`existing-${i}`}
+                  className="relative group border rounded-lg border-gray-300 dark:border-gray-600"
+                >
                   <img
                     src={src}
                     alt=""
@@ -248,7 +240,10 @@ const EditMentorPostModal = ({ post, onClose, onEdit, showToast }) => {
               ))}
 
               {previews.map((src, i) => (
-                <div key={`new-${i}`} className="relative group border rounded-lg border-gray-300 dark:border-gray-600">
+                <div
+                  key={`new-${i}`}
+                  className="relative group border rounded-lg border-gray-300 dark:border-gray-600"
+                >
                   <img
                     src={src}
                     alt=""
@@ -271,7 +266,7 @@ const EditMentorPostModal = ({ post, onClose, onEdit, showToast }) => {
             <button
               type="submit"
               disabled={!isDirty || isEditingPost}
-              className={`bg-primary text-white font-bold py-2 px-4 rounded-lg ${!isDirty ? 'cursor-not-allowed bg-opacity-40' : 'cursor-pointer'}`}
+              className={`bg-primary text-white font-bold py-2 px-4 rounded-lg ${!isDirty ? "cursor-not-allowed bg-opacity-40" : "cursor-pointer"}`}
             >
               {isEditingPost ? <Spinner h={5} w={5} /> : "Update Post"}
             </button>

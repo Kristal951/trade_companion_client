@@ -6,12 +6,18 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;
-  telegramNumber?: string;
   plan?: PlanName;
   isMentor: boolean;
   isSubscribed?: boolean;
   subscriptionStatus?: string | null;
-  subscriptionMethod?: "stripe" | "manual" | "promo" | "apple" | "google_play" | null;
+  telegram: Telegram;
+  subscriptionMethod?:
+    | "stripe"
+    | "manual"
+    | "promo"
+    | "apple"
+    | "google_play"
+    | null;
   subscriptionPriceKey?: string | null;
   subscriptionInterval?: string | null;
   subscriptionCurrentPeriodEnd?: string | null;
@@ -23,6 +29,19 @@ export interface User {
     isConnected: boolean;
     autoTradeEnabled: boolean;
   };
+  notificationSettings: NotificationSettings;
+}
+
+export interface NotificationSettings {
+  email: boolean;
+  push: boolean;
+  telegram: boolean;
+}
+
+export interface Telegram {
+  chatId: string;
+  userName: string;
+  linkedAt: string;
 }
 
 export interface Plan {
@@ -39,9 +58,9 @@ export interface TopSignal {
   type: "BUY" | "SELL";
   entryPrice: number;
   exitPrice: number;
-  profit: number; 
-  pips: number; 
-  timestamp: string; 
+  profit: number;
+  pips: number;
+  timestamp: string;
 }
 
 export enum PlanName {
@@ -130,7 +149,6 @@ export interface MentorPost {
   imageUrl?: string;
   timestamp: string;
   signalDetails?: {
-    instrument: string;
     direction: "BUY" | "SELL";
     entry: string;
     stopLoss: string;
@@ -219,22 +237,45 @@ export interface EducationArticle {
   summary: string;
   difficulty: "Beginner" | "Intermediate" | "Advanced";
   type: "article" | "book" | "video";
-  content: string; // Full content of the article or book
-  videoUrl?: string; // URL for video content
+  content: string;
+  videoUrl?: string;
 }
 
 export type NotificationType =
   | "signal"
-  | "mentor"
+  | "mentor_post"
+  | "billing"
   | "promo"
   | "news"
+  | "system"
   | "app_update";
 
+export type NotificationPriority = "low" | "normal" | "high";
+
 export interface Notification {
-  id: string;
-  message: string;
-  timestamp: string;
-  isRead: boolean;
-  linkTo: DashboardView;
+  _id: string;
+  recipient: string;
+  actor?: string | null;
   type: NotificationType;
+  title: string;
+  message: string;
+  linkTo?: string | null;
+  image?: string | null;
+  isRead: boolean;
+  readAt?: string | null;
+  priority: NotificationPriority;
+  deliveryChannels?: {
+    inApp: boolean;
+    email: boolean;
+    push: boolean;
+  };
+  meta?: {
+    mentorId?: string | null;
+    signalId?: string | null;
+    postId?: string | null;
+    subscriptionId?: string | null;
+    externalId?: string | null;
+  };
+  createdAt: string;
+  updatedAt: string;
 }

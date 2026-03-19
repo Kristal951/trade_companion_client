@@ -15,7 +15,7 @@ const MentorApplicationPage: React.FC<MentorApplicationPageProps> = ({
   onCancel,
   onForfeit,
 }) => {
-  // Pending state can be re-enabled later
+  // Todo: Pending state can be re-enabled later
   // if (user.mentorApplicationStatus === "Pending") {
   //   return <UnderReviewScreen onCancel={onCancel} />;
   // }

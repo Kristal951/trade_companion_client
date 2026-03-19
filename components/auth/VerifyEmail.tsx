@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import Icon from "../ui/Icon";
 import useAppStore from "@/store/useStore";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 

@@ -20,7 +20,7 @@ const MentorPublisher: React.FC<{
   const [previews, setPreviews] = useState<string[]>([]);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [editingPost, setEditingPost] = useState<MentorPost | null>(null);
-  const [deletingPost, setDeletingPost] = useState<MentorPost | null>(null);
+ const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
   const { showToast } = useOutletContext<{
     showToast: (msg: string, type?: string) => void;
@@ -473,7 +473,6 @@ const MentorPublisher: React.FC<{
                   </div>
                 )}
 
-                {/* Actions */}
                 <div className="flex items-center justify-between pt-2">
                   <button
                     type="button"
@@ -667,9 +666,10 @@ const MentorPublisher: React.FC<{
                   post={post}
                   showToast={showToast}
                   editingPost={editingPost}
-                  deletingPost={deletingPost}
+                  deletingPostId={deletingPostId}
                   onDelete={onDelete}
-                  setDeletingPost={setDeletingPost}
+                  setDeletingPostId={setDeletingPostId}
+                  postOwnerUserId={mentor.user}
                 />
               ))
           ) : (

@@ -140,7 +140,6 @@ const TradeCard: React.FC<{ trade: TradeRecord }> = ({ trade }) => {
           </div>
         </div>
 
-        {/* Metrics */}
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-xl bg-light-hover p-3">
             <p className="text-[11px] text-mid-text">Entry</p>
@@ -178,7 +177,6 @@ const TradeCard: React.FC<{ trade: TradeRecord }> = ({ trade }) => {
           )}
         </div>
 
-        {/* Live / Extras row */}
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {trade.status === "active" && trade.currentPrice ? (
             <div className="col-span-2 rounded-2xl border border-primary/25 bg-primary/5 p-3 shadow-sm">
@@ -245,6 +243,7 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({
   tradeHistory,
   onViewChange,
 }) => {
+  console.log(user.plan === PlanName.Free)
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const [areSettingsLocked, setAreSettingsLocked] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -371,7 +370,10 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({
 
   const CTraderStatus = () => {
     const isProOrPremium =
-      user?.plan || user?.subscribedPlan === PlanName.Pro || user?.plan || user?.subscribedPlan === PlanName.Premium;
+      user?.plan ||
+      user?.subscribedPlan === PlanName.Pro ||
+      user?.plan ||
+      user?.subscribedPlan === PlanName.Premium;
     const isConnected = user.cTraderConfig?.isConnected;
     const isAutoEnabled = user.cTraderConfig?.autoTradeEnabled;
 
@@ -504,7 +506,9 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({
   };
 
   const renderContent = () => {
-    if (user?.plan || user?.subscribedPlan === PlanName.Free) return <UpgradePrompt />;
+    if (user?.plan === PlanName.Free)
+      return <UpgradePrompt />;
+
 
     if (activeTab === "active") {
       return activeTrades.length > 0 ? (
@@ -522,7 +526,6 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({
       );
     }
 
-    // history
     return (
       <>
         <div className="rounded-2xl border border-light-gray bg-light-surface p-4 shadow-sm">
@@ -601,7 +604,6 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({
 
   return (
     <div className="min-h-screen bg-light-bg p-8">
-      {/* Confirm modal */}
       {isConfirmModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -648,7 +650,6 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({
         </div>
       )}
 
-      {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-dark-text">AI Signals</h1>
@@ -659,7 +660,7 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {user?.plan || user?.subscribedPlan  !== PlanName.Free ? (
+          {user?.plan || user?.subscribedPlan !== PlanName.Free ? (
             <StatPill
               label="Signals Today"
               value={
@@ -674,17 +675,20 @@ const AISignalsPage: React.FC<AISignalsPageProps> = ({
             value={
               <span
                 className={
-                  user?.plan || user?.subscribedPlan !== PlanName.Free ? "text-success" : "text-mid-text"
+                  user?.plan || user?.subscribedPlan !== PlanName.Free
+                    ? "text-success"
+                    : "text-mid-text"
                 }
               >
-                {user?.plan || user?.subscribedPlan !== PlanName.Free ? "Active" : "Inactive"}
+                {user?.plan || user?.subscribedPlan !== PlanName.Free
+                  ? "Active"
+                  : "Inactive"}
               </span>
             }
           />
         </div>
       </div>
 
-      {/* Settings */}
       <div className="mb-6 rounded-2xl border border-light-gray bg-light-surface p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>

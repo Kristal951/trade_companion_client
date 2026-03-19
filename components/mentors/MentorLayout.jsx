@@ -4,12 +4,8 @@ import useMentorStore from "@/store/mentorStore";
 import useAppStore from "@/store/useStore";
 
 const MentorLayout = ({ showToast }) => {
-  const {
-    getMentorByUserID,
-    setMentorMode,
-    isMentorMode,
-    isLoading,
-  } = useMentorStore();
+  const { getMentorByUserID, setMentorMode, isMentorMode, isLoading } =
+    useMentorStore();
 
   const user = useAppStore((state) => state.user);
   const navigate = useNavigate();
@@ -33,7 +29,7 @@ const MentorLayout = ({ showToast }) => {
           navigate("/dashboard", { replace: true });
           showToast(
             "Could not switch to mentor, please try again later",
-            "error"
+            "error",
           );
           return;
         }
@@ -48,13 +44,13 @@ const MentorLayout = ({ showToast }) => {
         navigate("/dashboard", { replace: true });
         showToast(
           "Could not switch to mentor, please try again later",
-          "error"
+          "error",
         );
       }
     };
 
     initMentorMode();
-  }, [user?.id]); 
+  }, [user?.id]);
 
   if (isLoading) {
     return (
@@ -64,7 +60,7 @@ const MentorLayout = ({ showToast }) => {
     );
   }
 
-  return <Outlet context={{ showToast }}/>;
+  return <Outlet context={{ showToast }} />;
 };
 
 export default MentorLayout;

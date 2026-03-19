@@ -46,7 +46,7 @@ import {
   scanForSignals,
   TARGET_INSTRUMENTS,
 } from "../../services/geminiService";
-import NotificationBell from "../ui/NotificationBell";
+import NotificationBell from "../ui/NotificationDropDown";
 import { useUsageTracker } from "../../hooks/useUsageTracker";
 import { getLivePrices } from "../../services/marketDataService";
 import { instrumentDefinitions } from "../../config/instruments";
@@ -1000,9 +1000,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             const isPremiumTier =
               user.subscribedPlan === PlanName.Pro ||
               user.subscribedPlan === PlanName.Premium;
-            if (isPremiumTier && user.telegramNumber) {
+            if (isPremiumTier && user.notificationSettings.telegram) {
               showToast(
-                `Signal for ${newTrade.instrument} also sent to Telegram: ${user.telegramNumber}.`,
+                `Signal for ${newTrade.instrument} also sent to Telegram: ${user.telegram.userName}.`,
                 "info"
               );
             }

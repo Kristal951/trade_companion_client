@@ -1,8 +1,6 @@
 import React, { useMemo } from "react";
 import DashboardOverview from "./DashboardOverview";
 import { TradeRecord, User } from "@/types";
-// import { User, TradeRecord } from "../types";
-
 
 interface Props {
   user: User;
@@ -19,10 +17,9 @@ const DashboardContainer: React.FC<Props> = ({
   liveEquity,
   floatingPnL,
 }) => {
-  // Example: filter closed trades once
   const closedTrades = useMemo(
     () => tradeHistory.filter((t) => t.status !== "active"),
-    [tradeHistory]
+    [tradeHistory],
   );
 
   return (

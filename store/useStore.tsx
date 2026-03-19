@@ -240,8 +240,29 @@ const useAppStore = create<AppState>()(
             };
           }
 
+          const incoming = userData as Partial<User>;
+
           return {
-            user: { ...state.user, ...userData },
+            user: {
+              ...state.user,
+              ...incoming,
+              telegram: {
+                ...state.user.telegram,
+                ...incoming.telegram,
+              },
+              notificationSettings: {
+                ...state.user.notificationSettings,
+                ...incoming.notificationSettings,
+              },
+              cTraderConfig: {
+                ...state.user.cTraderConfig,
+                ...incoming.cTraderConfig,
+              },
+              // lastLoginLocation: {
+              //   ...state.user.lastLoginLocation,
+              //   ...incoming.lastLoginLocation,
+              // },
+            },
             isLoggedIn: true,
           };
         }),
@@ -434,7 +455,16 @@ const useAppStore = create<AppState>()(
           }
 
           Object.entries(updates).forEach(([key, value]) => {
-            if (key !== "avatar" && value !== undefined && value !== null) {
+            if (key === "avatar" || value === undefined || value === null)
+              return;
+
+            if (
+              typeof value === "object" &&
+              !(value instanceof File) &&
+              !(value instanceof Date)
+            ) {
+              formData.append(key, JSON.stringify(value));
+            } else {
               formData.append(key, String(value));
             }
           });
@@ -797,7 +827,7 @@ const useAppStore = create<AppState>()(
             };
           }
 
-          const res = await API.post("/api/stripe/create-checkout-session", {
+          const res = await API.post("/api/stripe/checkout", {
             selectedPlan,
           });
 

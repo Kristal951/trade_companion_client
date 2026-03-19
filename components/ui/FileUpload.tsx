@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FiUpload } from "react-icons/fi"; // Feather Upload Icon
+import { FiUpload } from "react-icons/fi";
 
 const FileUpload = ({
   label,
@@ -22,9 +22,7 @@ const FileUpload = ({
         <p className="text-sm font-semibold text-dark-text leading-tight">
           {label}
         </p>
-        <p className="text-xs text-mid-text text-center">
-          {fileName ?? hint}
-        </p>
+        <p className="text-xs text-mid-text text-center">{fileName ?? hint}</p>
       </div>
 
       <input

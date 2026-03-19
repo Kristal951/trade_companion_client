@@ -5,29 +5,34 @@ import useAppStore from "@/store/useStore";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
-  const [isOpen, setIsOpen] = useState(true)
-  const navigate = useNavigate()
-  const { showToast} = useOutletContext();
+  const [isOpen, setIsOpen] = useState(true);
+  const navigate = useNavigate();
+  const { showToast } = useOutletContext();
 
   const forgotPassword = useAppStore((state) => state.forgotPassword);
-  const loading = useAppStore((state)=> state.loading)
+  const loading = useAppStore((state) => state.loading);
 
-  const handleSubmit = async(e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await forgotPassword(email)
-      showToast(res.data.message, 'success')
-      setEmail('')
+      const res = await forgotPassword(email);
+      showToast(res.data.message, "success");
+      setEmail("");
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
   };
 
   return (
-    <div className={`fixed inset-0 z-[110] ${isOpen ? 'flex' : 'hidden'} items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in-right`}>
+    <div
+      className={`fixed inset-0 z-[110] ${isOpen ? "flex" : "hidden"} items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in-right`}
+    >
       <div className=" bg-light-surface w-full max-w-md rounded-2xl shadow-2xl px-6 py-8 border border-light-gray">
         <button
-          onClick={()=> {setIsOpen(false); navigate('/auth/signIn')}}
+          onClick={() => {
+            setIsOpen(false);
+            navigate("/auth/signIn");
+          }}
           className="absolute top-4 right-4 flex items-center text-mid-text hover:text-dark-text transition-colors z-20 p-2 rounded-full hover:bg-light-hover"
         >
           <Icon name="close" className="w-6 h-6" />
@@ -62,7 +67,6 @@ const ForgotPassword = () => {
             type="submit"
             className="w-full bg-primary flex justify-center items-center hover:bg-primary-hover mt-6 disabled:opacity-50 text-white p-3 rounded-lg font-bold transition-all"
             disabled={loading || !email || !/^\S+@\S+\.\S+$/.test(email)}
-
           >
             {loading ? (
               <svg

@@ -85,7 +85,7 @@ const MentorPayoutsPage: React.FC<MentorPayoutsPageProps> = ({ showToast }) => {
     const fourWeeksAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
     const recentSignals =
       mentor.recentSignals?.filter(
-        (s) => new Date(s.createdAt) > fourWeeksAgo
+        (s) => new Date(s.createdAt) > fourWeeksAgo,
       ) || [];
 
     if (recentSignals.length === 0) {
@@ -200,9 +200,7 @@ const MentorPayoutsPage: React.FC<MentorPayoutsPageProps> = ({ showToast }) => {
                   <button
                     type="button"
                     onClick={() =>
-                      setPayoutAmount(
-                        String(mentor.earnings?.currentBalance)
-                      )
+                      setPayoutAmount(String(mentor.earnings?.currentBalance))
                     }
                     disabled={!isEligible}
                     className="bg-secondary text-white px-4 font-semibold rounded-r-md hover:bg-gray-600 disabled:bg-light-gray disabled:cursor-not-allowed"
@@ -236,7 +234,9 @@ const MentorPayoutsPage: React.FC<MentorPayoutsPageProps> = ({ showToast }) => {
                 <MentorPayoutHistoryCard payout={payout} />
               ))
             ) : (
-              <p className="text-center text-center text-mid-text py-6">No Payout Record Yet.</p>
+              <p className="text-center text-center text-mid-text py-6">
+                No Payout Record Yet.
+              </p>
             )}
           </div>
         </div>

@@ -2,7 +2,14 @@ import React from "react";
 import { NavLink as RouterNavLink } from "react-router-dom";
 import Icon from "./Icon";
 
-const SidebarNavLink = ({ icon, label, to, isCollapsed, badgeCount, onClick}) => {
+const SidebarNavLink = ({
+  icon,
+  label,
+  to,
+  isCollapsed,
+  badgeCount,
+  onClick,
+}) => {
   return (
     <RouterNavLink
       to={`/${to}`}

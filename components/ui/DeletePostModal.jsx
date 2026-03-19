@@ -7,17 +7,18 @@ const DeletePostModal = ({
   title = "Delete Post",
   message = "Are you sure you want to delete this post? This action cannot be undone.",
   confirmText = "Delete",
-  onClose,
   showToast,
-  post,
+  postId,
+  setDeletingPostId,
   onDelete
 }) => {
   const { deleteMentorPost, isDeletingPost } = useMentorStore();
 
   const handleDelete = async () => {
     try {
-      await deleteMentorPost(post._id);
-      onDelete()
+      await deleteMentorPost(postId);
+      setDeletingPostId(postId);
+      onDelete();
       showToast("Post deleted successfully", "success");
     } catch (error) {
       console.log(error);
@@ -31,7 +32,7 @@ const DeletePostModal = ({
         onClick={(e) => e.stopPropagation()}
       >
         <button
-          onClick={onClose}
+          onClick={()=> setDeletingPostId(null)}
           className="absolute top-4 right-4 hover:bg-gray-200 dark:hover:bg-gray-700 p-2 rounded-full"
         >
           <Icon name="close" className="w-6 h-6" />
@@ -47,7 +48,7 @@ const DeletePostModal = ({
         </p>
         <div className="flex gap-3">
           <button
-            onClick={onClose}
+            onClick={()=> setDeletingPostId(null)}
             disabled={isDeletingPost}
             className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg py-2 font-semibold hover:bg-gray-100 dark:hover:bg-gray-700"
           >

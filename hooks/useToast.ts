@@ -1,4 +1,3 @@
-// hooks/useToastState.ts
 import { useCallback, useState } from "react";
 
 type ToastType = "success" | "info" | "error";

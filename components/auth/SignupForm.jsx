@@ -40,10 +40,10 @@ const SignupForm = () => {
     if (calculatedAge < 18) {
       showToast(
         "You must be up to 18 years to be able to use Trade Companion",
-        "error"
+        "error",
       );
     }
-  }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,9 +54,9 @@ const SignupForm = () => {
         password: formData.password,
         age: Number(formData.age),
       });
- 
+
       navigate("/auth/verify-email", {
-        state: { selectedPlan, email: formData.email, name: formData.name},
+        state: { selectedPlan, email: formData.email, name: formData.name },
       });
     } catch (err) {
       console.log(err);
@@ -126,7 +126,6 @@ const SignupForm = () => {
         </div>
         <div className="group">
           <div className="relative">
-            {/* Calendar Icon */}
             <div
               className="absolute left-3 top-1/2 transform -translate-y-1/2 text-mid-text"
               style={{ zIndex: 100 }}
@@ -138,7 +137,7 @@ const SignupForm = () => {
               selected={Dob}
               onChange={(date) => checkAge(date)}
               dateFormat="dd/MM/yyyy"
-                onFocus={() => handleFocus("dob")} 
+              onFocus={() => handleFocus("dob")}
               placeholderText="Date of Birth"
               className="w-full pl-10 p-3 bg-light-hover border border-light-gray rounded-lg focus:ring-2 focus:ring-primary focus:outline-none text-dark-text transition-all"
               showYearDropdown

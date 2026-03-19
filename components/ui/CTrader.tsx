@@ -324,7 +324,7 @@ const CTraderSettings = ({ user, setUser, showToast }: any) => {
               {!isConnected ? (
                 <button
                   onClick={handleConnect}
-                  disabled={isConnecting}
+                  disabled={isConnecting || statusLoading}
                   className="flex items-center gap-2 px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-95 disabled:opacity-50"
                 >
                   {isConnecting ? (

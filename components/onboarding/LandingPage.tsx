@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { Plan, PlanName, Mentor, Review, FAQ } from "../../types";
+import { Plan, Mentor, Review } from "../../types";
 import Icon from "../ui/Icon";
-import { PLAN_FEATURES } from "../../config/plans";
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import Header from "./Header";
 import { fetchTopPerformer, getLivePrices } from "@/services/marketDataService";
 import { INITIAL_TICKER, ROBOT_SOLILOQUY, TICKER_SYMBOLS } from "./utils";
 import Footer from "./Footer";
-import EducationCard from "./EducationCard";
 import useAppStore from "@/store/useStore";
-import { basename } from "path";
-import PlanCard from "../ui/PlanCard";
+import Education from "./sections/Education";
+import TopMentors from "./sections/TopMentors";
+import Faq from "./sections/Faq";
+import Pricing from "./sections/Pricing";
+import Features from "./sections/Features";
 
 const MOCK_MENTORS: Mentor[] = [
   {
@@ -70,67 +70,6 @@ const MOCK_REVIEWS: Review[] = [
   },
 ];
 
-export const PlanCardSkeleton = () => {
-  return (
-    <div className="relative p-6 rounded-2xl bg-slate-900 border border-slate-800 animate-pulse">
-      <div className="h-6 w-24 bg-slate-700 rounded mb-4" />
-
-      <div className="h-10 w-32 bg-slate-700 rounded mb-6" />
-
-      <div className="space-y-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-4 w-full bg-slate-700 rounded" />
-        ))}
-      </div>
-
-      <div className="h-10 w-full bg-slate-700 rounded mt-6" />
-    </div>
-  );
-};
-
-const Faqs = [
-  {
-    q: "Can I cancel my subscription anytime?",
-    a: "Yes, you can cancel your subscription at any time from your billing settings. You will retain access to your plan's features until the end of the current billing cycle.",
-  },
-  {
-    q: "Is my financial data secure?",
-    a: "Absolutely. We use industry-standard encryption and security protocols to protect all your data. We never store sensitive payment information on our servers.",
-  },
-  {
-    q: "Is Trade Companion beginner friendly?",
-    a: "Yes. Trade Companion provides easy-to-follow BUY/SELL signals with entry price, stop loss, and take profit levels. Additionally, you can choose from professional mentors who match your trading style and goals.",
-  },
-  {
-    q: "Why is Trade Companion different?",
-    a: "Trade Companion simplifies trading by handling the analysis for you. You still place trades yourself, but the platform guides you with signals, risk-adjusted lot sizes, and mentorship support to help you succeed.",
-  },
-  {
-    q: "What more does Trade Companion offer?",
-    a: "In addition to signals, Trade Companion provides access to professional forex mentors, risk management recommendations, performance tracking, and learning resources to improve your trading skills.",
-  },
-  {
-    q: "How often will I receive signals?",
-    a: "Signal frequency depends on market conditions and your chosen mentor. On average, users receive multiple signals per week, but quality is always prioritized over quantity.",
-  },
-  {
-    q: "Can I use Trade Companion on mobile?",
-    a: "Yes. Trade Companion works seamlessly across devices, including mobile, so you can access signals and updates on the go.",
-  },
-  {
-    q: "Does Trade Companion guarantee profits?",
-    a: "No trading platform can guarantee profits. Trade Companion increases your chances of success by providing reliable signals, risk-adjusted recommendations, and mentorship—but trading always carries risk.",
-  },
-  {
-    q: "Can I choose my own mentor?",
-    a: "Absolutely. Trade Companion allows you to browse and select mentors based on their trading style, ratings, preferred pairs, and pricing.",
-  },
-  {
-    q: "Is my data safe with Trade Companion?",
-    a: "Yes. We prioritize your privacy and use industry-standard encryption to ensure your personal data and trading information remain secure.",
-  },
-];
-
 interface LandingPageProps {
   onLoginRequest: (userDetails: { name: string; email: string }) => void;
 }
@@ -144,7 +83,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
   const [soliloquyIndex, setSoliloquyIndex] = useState(0);
   const [tickerItems, setTickerItems] = useState<any[]>(INITIAL_TICKER);
   const getPlans = useAppStore((state) => state.getPlans);
-  const loading = useAppStore((state) => state.loading);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -184,7 +122,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
             }
           }
 
-          // Simulate daily change % deterministically based on symbol name since API doesn't provide it
           const hash = symbol
             .split("")
             .reduce((a, b) => a + b.charCodeAt(0), 0);
@@ -204,8 +141,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
       }
     };
 
-    fetchTicker(); // Initial fetch
-    // Update every 24 hours (86400000ms) to save API calls
+    fetchTicker();
     const interval = setInterval(fetchTicker, 86400000);
     return () => clearInterval(interval);
   }, []);
@@ -259,34 +195,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
   useEffect(() => {
     const interval = setInterval(() => {
       setSoliloquyIndex((prev) => (prev + 1) % ROBOT_SOLILOQUY.length);
-    }, 4000); // Change message every 4 seconds
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
-
-  // Auth Modal State
-
-  const cardVariant = {
-    hidden: { opacity: 0, y: 40 },
-    visible: { opacity: 1, y: 0 },
-  };
-
-  const containerVariant = {
-    hidden: {},
-    visible: {
-      transition: {
-        staggerChildren: 0.25,
-      },
-    },
-  };
-
-  const blockVariantLeft = {
-    hidden: { opacity: 0, x: -90 },
-    visible: { opacity: 1, x: 0 },
-  };
-  const blockVariantRight = {
-    hidden: { opacity: 0, x: 90 },
-    visible: { opacity: 1, x: 0 },
-  };
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
@@ -500,321 +411,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
           </div>
         </section>
 
-        <section
-          id="features"
-          className="py-24 bg-[#111827] container mx-auto px-6"
-        >
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
-              The Complete Ecosystem
-            </h2>
-            <p className="text-slate-400 max-w-2xl mx-auto">
-              Everything you need to analyze, execute, and learn in one unified
-              dashboard.
-            </p>
-          </div>
+        <Features />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {/* Feature 1: Large Square */}
-            <div className="md:col-span-2 md:row-span-2 bg-fintech-card border border-fintech-border rounded-3xl p-8 relative overflow-hidden group hover:border-neon-blue/50 transition-all duration-500">
-              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                <Icon name="signals" className="w-64 h-64 text-neon-blue" />
-              </div>
-              <div className="relative z-10">
-                <div className="w-12 h-12 bg-neon-blue/20 rounded-xl flex items-center justify-center mb-6 text-neon-blue">
-                  <Icon name="robot" className="w-6 h-6" />
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-4">
-                  AI-Driven Signal Engine
-                </h3>
-                <p className="text-slate-400 leading-relaxed mb-6">
-                  Our proprietary algorithm scans 20+ markets 24/7. It
-                  identifies structure breaks, liquidity grabs, and trend
-                  continuations, delivering actionable setups with Entry, SL,
-                  and TP directly to your dashboard.
-                </p>
-                <ul className="space-y-2 text-slate-300">
-                  <li className="flex items-center">
-                    <Icon
-                      name="check"
-                      className="w-4 h-4 text-neon-green mr-2"
-                    />{" "}
-                    85%+ Historical Accuracy
-                  </li>
-                  <li className="flex items-center">
-                    <Icon
-                      name="check"
-                      className="w-4 h-4 text-neon-green mr-2"
-                    />{" "}
-                    Multi-Timeframe Analysis
-                  </li>
-                  <li className="flex items-center">
-                    <Icon
-                      name="check"
-                      className="w-4 h-4 text-neon-green mr-2"
-                    />{" "}
-                    Instant Notifications
-                  </li>
-                </ul>
-              </div>
-            </div>
+        <Education />
 
-            {/* Feature 2: Tall Rectangle */}
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-fintech-border rounded-3xl p-8 flex flex-col justify-between hover:border-neon-green/50 transition-all duration-500">
-              <div>
-                <div className="w-12 h-12 bg-neon-green/20 rounded-xl flex items-center justify-center mb-6 text-neon-green">
-                  <Icon name="mentors" className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-2">
-                  Expert Mentorship
-                </h3>
-                <p className="text-slate-400 text-sm">
-                  Don't trade alone. Subscribe to vetted mentors, view their
-                  track records, and copy their live trades.
-                </p>
-              </div>
-              <div className="mt-6 flex -space-x-3">
-                {MOCK_MENTORS.map((m) => (
-                  <img
-                    key={m.id}
-                    src={m.avatar}
-                    className="w-10 h-10 rounded-full border-2 border-fintech-card"
-                    alt={m.name}
-                  />
-                ))}
-              </div>
-            </div>
+        <TopMentors
+          setMentorSearchQuery={setMentorSearchQuery}
+          filteredMentors={filteredMentors}
+          mentorSearchQuery={mentorSearchQuery}
+        />
 
-            {/* Feature 3: Wide Rectangle */}
-            <div className="bg-fintech-card border border-fintech-border rounded-3xl p-8 hover:border-purple-500/50 transition-all duration-500">
-              <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mb-6 text-purple-400">
-                <Icon name="education" className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">
-                Education Hub
-              </h3>
-              <p className="text-slate-400 text-sm">
-                From beginner basics to advanced institutional concepts. Video
-                courses, articles, and quizzes included.
-              </p>
-            </div>
-          </div>
-        </section>
+        <Pricing
+          normalizedPlans={normalizedPlans}
+          isYearly={isYearly}
+          setIsYearly={setIsYearly}
+        />
 
-        {/* Education Section */}
-        <section id="education" className="py-20 bg-[#111827]">
-          <div className="container mx-auto px-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: false }}
-              className="text-center mb-16"
-            >
-              <h3 className="text-3xl md:text-4xl font-bold">
-                Knowledge is Power
-              </h3>
-              <p className="text-mid-text mt-4">
-                Our education hub is designed to help you grow, no matter your
-                experience level.
-              </p>
-            </motion.div>
-
-            {/* Column Grid + Animations */}
-            <motion.div
-              variants={containerVariant}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: false }}
-              className="grid md:grid-cols-3 gap-8"
-            >
-              <EducationCard
-                cardVariant={cardVariant}
-                iconName="education"
-                title="Forex 101"
-                subText="Master the basics, from pips and lots to market structure."
-              />
-
-              <EducationCard
-                cardVariant={cardVariant}
-                iconName="analytics"
-                title=" Technical Analysis"
-                subText="Learn to read charts, identify patterns, and use indicators."
-              />
-
-              <EducationCard
-                cardVariant={cardVariant}
-                iconName="billing"
-                title=" Risk Management"
-                subText=" Discover strategies to protect your capital and trade
-                  sustainably."
-              />
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Top Mentors Section */}
-        <section id="mentors" className="py-20 bg-[#111827]">
-          <div className="container mx-auto px-6">
-            <h3 className="text-4xl font-bold text-center mb-4">
-              Meet Our Top Mentors
-            </h3>
-            <div className="max-w-xl mx-auto mb-12">
-              <input
-                type="text"
-                placeholder="Search by name or instrument (e.g., John, EUR/USD)..."
-                value={mentorSearchQuery}
-                onChange={(e) => setMentorSearchQuery(e.target.value)}
-                className="w-full px-5 py-3 bg-light-surface border border-light-gray rounded-full focus:ring-2 focus:ring-primary focus:outline-none transition-shadow shadow-sm"
-              />
-            </div>
-            {filteredMentors.length > 0 ? (
-              <div className="grid md:grid-cols-3 gap-8">
-                {filteredMentors.map((mentor) => (
-                  <div
-                    key={mentor.id}
-                    className="bg-[#111827] rounded-lg overflow-hidden text-center p-6 transform hover:-translate-y-2 transition-transform duration-300 shadow-md border border-light-gray"
-                  >
-                    <img
-                      src={mentor.avatar}
-                      alt={mentor.name}
-                      className="w-32 h-32 rounded-full mx-auto mb-4 border-4 border-primary"
-                    />
-                    <h4 className="text-xl font-bold">{mentor.name}</h4>
-                    <p className="text-primary mb-2">
-                      {mentor.experience} Years Experience
-                    </p>
-                    <div className="flex justify-around text-sm my-4">
-                      <span>
-                        <strong className="text-success">
-                          {mentor.profitRatio}%
-                        </strong>{" "}
-                        Profit Ratio
-                      </span>
-                      <span>
-                        <strong className="text-primary">
-                          ${mentor.price}
-                        </strong>
-                        /month
-                      </span>
-                    </div>
-                    <p className="text-mid-text text-sm mb-4">
-                      Trades: {mentor.instruments.join(", ")}
-                    </p>
-                    <Link
-                      to="/auth/signUp"
-                      className="w-full bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-                    >
-                      View Profile
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-mid-text mt-8">
-                No mentors found matching your search.
-              </p>
-            )}
-          </div>
-        </section>
-
-        {/* Pricing Section */}
-        <section id="pricing" className="py-20 bg-[#111827]">
-          <div className="container mx-auto px-6 text-center">
-            <h3 className="text-4xl font-bold mb-4">
-              Flexible Plans for Everyone
-            </h3>
-            <p className="text-mid-text mb-8">
-              Choose the plan that's right for your trading journey.
-            </p>
-
-            <div className="flex w-full justify-center mb-10">
-              <div className="flex items-center justify-between w-[300px] bg-slate-800/20 rounded-full p-1 relative text-sm font-semibold text-white shadow-inner">
-                <button
-                  onClick={() => setIsYearly(!isYearly)}
-                  className={`w-1/2 text-center py-2 rounded-full transition-colors duration-300 ${
-                    !isYearly ? "bg-primary text-white" : "text-white/70"
-                  }`}
-                >
-                  Monthly
-                </button>
-
-                <button
-                  onClick={() => setIsYearly(!isYearly)}
-                  className={`w-1/2 text-center py-2 rounded-full transition-colors duration-300 ${
-                    isYearly ? "bg-primary text-white" : "text-white/70"
-                  }`}
-                >
-                  Yearly{" "}
-                  <span className="ml-2 text-xs bg-success text-white px-2 py-0.5 rounded-full font-bold">
-                    Save 20%
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto mt-8">
-              {loading
-                ? Array.from({ length: 4 }).map((_, i) => (
-                    <PlanCardSkeleton key={i} />
-                  ))
-                : normalizedPlans.map((plan) => {
-                    let activePlan;
-
-                    if (plan.type === "free") {
-                      activePlan = plan.free;
-                    } else {
-                      activePlan = isYearly ? plan.yearly : plan.monthly;
-                    }
-
-                    if (!activePlan) return null;
-
-                    return (
-                      <PlanCard
-                        activePlan={activePlan}
-                        plan={plan}
-                        isYearly={isYearly}
-                      />
-                    );
-                  })}
-            </div>
-          </div>
-        </section>
-
-        {/* FAQ Section */}
-        <section id="faq" className="py-20 bg-[#111827]">
-          <div className="container mx-auto px-6 max-w-3xl">
-            <h3 className="text-4xl font-bold text-center mb-12">
-              Frequently Asked Questions
-            </h3>
-            <div className="space-y-4">
-              {Faqs.map((faq, index) => (
-                <div
-                  key={index}
-                  className="bg-[#111827] rounded-lg shadow-md border border-light-gray"
-                >
-                  <button
-                    onClick={() => toggleFaq(index)}
-                    className="w-full flex justify-between items-center text-left p-5 font-semibold"
-                  >
-                    <span>{faq.q}</span>
-                    <Icon
-                      name="chevronDown"
-                      className={`w-6 h-6 transform transition-transform ${
-                        openFaq === index ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                  {openFaq === index && (
-                    <div className="px-5 pb-5 text-mid-text">
-                      <p>{faq.a}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <Faq toggleFaq={toggleFaq} openFaq={openFaq} />
       </main>
       <Footer />
     </div>

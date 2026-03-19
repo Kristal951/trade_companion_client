@@ -20,7 +20,6 @@ const FeatureCard = ({
         grid grid-cols-1 md:grid-cols-2 gap-10 items-center
         ${reverse ? "md:flex-row-reverse" : ""}`}
     >
-      {/* Image */}
       <div className={`flex justify-center ${reverse ? "md:order-2" : ""}`}>
         <img
           src={image}
@@ -29,7 +28,6 @@ const FeatureCard = ({
         />
       </div>
 
-      {/* Text */}
       <div
         className={`flex flex-col gap-4
           text-center md:text-left

@@ -6,7 +6,7 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 const LoginForm = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const { setIsLogin, onAuthSuccess, showToast, handleFocus, setRobotState } =
+  const { onAuthSuccess, showToast, handleFocus, setRobotState } =
     useOutletContext();
   const navigate = useNavigate();
 
@@ -44,6 +44,16 @@ const LoginForm = () => {
           isConnected: user.cTraderConfig.isConnected,
           autoTradeEnabled: user.cTraderConfig.autoTradeEnabled,
         },
+        notificationSettings: user.notificationSettings || {
+          email: false,
+          push: false,
+          telegram: false,
+        },
+        telegram: user.telegram || {
+          chatId: null,
+          username: null,
+          linkedAt: null,
+        },
       });
     } catch (err) {
       console.log(err);
@@ -74,12 +84,10 @@ const LoginForm = () => {
           />
         </div>
         <div className="relative">
-          {/* LEFT lock icon */}
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-mid-text">
             <Icon name="password" className="w-6 h-6" />
           </div>
 
-          {/* INPUT */}
           <input
             type={showPassword ? "text" : "password"}
             name="password"
@@ -91,7 +99,6 @@ const LoginForm = () => {
                         focus:ring-2 focus:ring-primary focus:outline-none text-dark-text transition-all"
           />
 
-          {/* RIGHT eye toggle */}
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}

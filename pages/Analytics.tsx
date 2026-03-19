@@ -82,10 +82,10 @@ export const AnalyticsPage: React.FC<{
   ];
 
   const [tradeHistory] = useState<TradeRecord[]>(() =>
-    JSON.parse(localStorage.getItem(TRADE_HISTORY_KEY) || "[]")
+    JSON.parse(localStorage.getItem(TRADE_HISTORY_KEY) || "[]"),
   );
   const [initialEquity] = useState<number>(() =>
-    parseFloat(localStorage.getItem(INITIAL_EQUITY_KEY) || "10000")
+    parseFloat(localStorage.getItem(INITIAL_EQUITY_KEY) || "10000"),
   );
   const [pieActiveIndex, setPieActiveIndex] = useState(0);
 
@@ -93,7 +93,7 @@ export const AnalyticsPage: React.FC<{
     (_: any, index: number) => {
       setPieActiveIndex(index);
     },
-    [setPieActiveIndex]
+    [setPieActiveIndex],
   );
 
   const analyticsData = useMemo(() => {
@@ -101,7 +101,7 @@ export const AnalyticsPage: React.FC<{
       .filter((t) => t.status !== "active")
       .sort(
         (a, b) =>
-          new Date(a.dateClosed!).getTime() - new Date(b.dateClosed!).getTime()
+          new Date(a.dateClosed!).getTime() - new Date(b.dateClosed!).getTime(),
       );
 
     const equityData = [{ name: "Start", equity: initialEquity }];
@@ -114,7 +114,6 @@ export const AnalyticsPage: React.FC<{
       });
     });
 
-    // Add Live Point
     equityData.push({
       name: "Live",
       equity: parseFloat(liveEquity.toFixed(2)),
@@ -128,29 +127,34 @@ export const AnalyticsPage: React.FC<{
     }));
 
     const instrumentDistributionData = Object.entries(
-      closedTrades.reduce((acc, trade) => {
-        acc[trade.instrument] = (acc[trade.instrument] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>)
+      closedTrades.reduce(
+        (acc, trade) => {
+          acc[trade.instrument] = (acc[trade.instrument] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
     ).map(([name, value]) => ({ name, value, total: closedTrades.length }));
 
     const profitablePairsData = Object.entries(
-      closedTrades.reduce((acc, trade) => {
-        acc[trade.instrument] = (acc[trade.instrument] || 0) + (trade.pnl || 0);
-        return acc;
-      }, {} as Record<string, number>)
+      closedTrades.reduce(
+        (acc, trade) => {
+          acc[trade.instrument] =
+            (acc[trade.instrument] || 0) + (trade.pnl || 0);
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
     ).map(([name, pnl]) => ({ name, "Net P/L": pnl }));
 
-    // Stabilize random generation for volatility chart
     const volatilityData = instrumentDistributionData
       .slice(0, 6)
       .map((item) => {
-        // Generate a consistent "random" number based on the string
         let hash = 0;
         for (let i = 0; i < item.name.length; i++) {
           hash = item.name.charCodeAt(i) + ((hash << 5) - hash);
         }
-        const normalized = Math.abs(hash % 60) + 20; // 20 to 80
+        const normalized = Math.abs(hash % 60) + 20; 
         return {
           instrument: item.name,
           volatility: normalized,
@@ -178,7 +182,7 @@ export const AnalyticsPage: React.FC<{
         name,
         "Win Rate": data.total > 0 ? (data.wins / data.total) * 100 : 0,
         trades: data.total,
-      })
+      }),
     );
 
     return {
@@ -226,7 +230,6 @@ export const AnalyticsPage: React.FC<{
     return (
       <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs mt-2">
         {payload.map((entry: any, index: number) => {
-          // FIX: Ensure safe arithmetic and array access
           const item = analyticsData.instrumentDistributionData[index];
           const total = item ? item.total : 0;
           const percentage =
@@ -457,7 +460,7 @@ export const AnalyticsPage: React.FC<{
                         key={`cell-${index}`}
                         fill={PIE_COLORS[index % PIE_COLORS.length]}
                       />
-                    )
+                    ),
                   )}
                 </Pie>
                 <Legend content={<CustomPieLegend />} verticalAlign="bottom" />

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ScreenshotDetector from "./components/ui/ScreenshotDetector";
 import Toast from "./components/ui/Toast";
 import AIChatbot from "./components/widgets/AIChatWidget";
@@ -10,6 +10,10 @@ import { useAuthSession } from "./hooks/useAuthSession";
 import { useTradeMonitor } from "./hooks/useTradeMonitor";
 import { useTradeExecution } from "./hooks/useTradeExecution";
 import AppRoutes from "./components/routes/AppRoutes";
+import useNotificationSocket from "./hooks/useNotificationSocket";
+import useNotificationStore from "./store/useNotificationStore";
+import { refreshAccessToken, setAccessToken } from "./utils";
+
 export const App: React.FC = () => {
   const user = useAppStore((state) => state.user);
   const setUser = useAppStore((state) => state.setUser);
@@ -18,6 +22,10 @@ export const App: React.FC = () => {
   const loading = useAppStore((state) => state.loading);
   const IsLoggingOut = useAppStore((state) => state.IsLoggingOut);
   const addNotification = useAppStore((state) => state.addNotification);
+  const hasFetched = useNotificationStore((state) => state.hasFetched);
+  const fetchNotifications = useNotificationStore(
+    (state) => state.fetchNotifications,
+  );
 
   const [activeView] = useState<DashboardView>("dashboard");
   const [isAccountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -59,6 +67,23 @@ export const App: React.FC = () => {
     setActiveTrades,
     showToast,
   });
+
+  useNotificationSocket();
+
+  useEffect(() => {
+    if (user && !hasFetched) {
+      fetchNotifications();
+    }
+  }, [user, hasFetched, fetchNotifications]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+
+    if (token) {
+      setAccessToken(token);
+      useAppStore.setState({ accessToken: token });
+    }
+  }, []);
 
   return (
     <div className="w-full h-screen flex flex-col">

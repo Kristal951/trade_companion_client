@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import Icon from "./Icon";
-import { Plan, PlanName, User } from "@/types";
+import { Plan, User } from "@/types";
 import useAppStore from "@/store/useStore";
-import { API } from "@/utils";
-import { PlanCardSkeleton } from "../onboarding/LandingPage";
+import PlanCardSkeleton from "../onboarding/PlanCardSkeleton";
 
 type BillingCycle = "monthly" | "yearly";
 

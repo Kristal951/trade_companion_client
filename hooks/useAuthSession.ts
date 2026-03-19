@@ -10,12 +10,7 @@ type Params = {
   showToast: (message: string, type?: "success" | "info" | "error") => void;
 };
 
-export function useAuthSession({
-  user,
-  setUser,
-  logout,
-  showToast,
-}: Params) {
+export function useAuthSession({ user, setUser, logout, showToast }: Params) {
   const navigate = useNavigate();
 
   const [activeTrades, setActiveTrades] = useState<TradeRecord[]>(() => {
@@ -81,7 +76,10 @@ export function useAuthSession({
       window.location.replace("/auth/signIn");
     } catch (error) {
       console.log(error);
-      showToast("There was an error logging you out, try again later.", "error");
+      showToast(
+        "There was an error logging you out, try again later.",
+        "error",
+      );
     }
   }, [logout, showToast]);
 

@@ -411,16 +411,14 @@ const DashboardOverview: React.FC<Props> = ({
               </p>
             )}
 
-            {
-              recentAISignals.length > 0 && (
-<button
-              onClick={() => navigate("/ai_signals")}
-              className="mt-4 w-full bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-            >
-              View All AI Signals
-            </button>
-              )
-            }
+            {recentAISignals.length > 0 && (
+              <button
+                onClick={() => navigate("/ai_signals")}
+                className="mt-4 w-full bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+              >
+                View All AI Signals
+              </button>
+            )}
           </div>
         </div>
 

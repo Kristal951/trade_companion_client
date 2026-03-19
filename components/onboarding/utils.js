@@ -46,3 +46,46 @@ export const ROBOT_SOLILOQUY = [
     "I track high-impact news to keep your capital safe.",
     "Have a question? Chat with me anytime for instant analysis!"
 ];
+
+export const Faqs = [
+  {
+    q: "Can I cancel my subscription anytime?",
+    a: "Yes, you can cancel your subscription at any time from your billing settings. You will retain access to your plan's features until the end of the current billing cycle.",
+  },
+  {
+    q: "Is my financial data secure?",
+    a: "Absolutely. We use industry-standard encryption and security protocols to protect all your data. We never store sensitive payment information on our servers.",
+  },
+  {
+    q: "Is Trade Companion beginner friendly?",
+    a: "Yes. Trade Companion provides easy-to-follow BUY/SELL signals with entry price, stop loss, and take profit levels. Additionally, you can choose from professional mentors who match your trading style and goals.",
+  },
+  {
+    q: "Why is Trade Companion different?",
+    a: "Trade Companion simplifies trading by handling the analysis for you. You still place trades yourself, but the platform guides you with signals, risk-adjusted lot sizes, and mentorship support to help you succeed.",
+  },
+  {
+    q: "What more does Trade Companion offer?",
+    a: "In addition to signals, Trade Companion provides access to professional forex mentors, risk management recommendations, performance tracking, and learning resources to improve your trading skills.",
+  },
+  {
+    q: "How often will I receive signals?",
+    a: "Signal frequency depends on market conditions and your chosen mentor. On average, users receive multiple signals per week, but quality is always prioritized over quantity.",
+  },
+  {
+    q: "Can I use Trade Companion on mobile?",
+    a: "Yes. Trade Companion works seamlessly across devices, including mobile, so you can access signals and updates on the go.",
+  },
+  {
+    q: "Does Trade Companion guarantee profits?",
+    a: "No trading platform can guarantee profits. Trade Companion increases your chances of success by providing reliable signals, risk-adjusted recommendations, and mentorship—but trading always carries risk.",
+  },
+  {
+    q: "Can I choose my own mentor?",
+    a: "Absolutely. Trade Companion allows you to browse and select mentors based on their trading style, ratings, preferred pairs, and pricing.",
+  },
+  {
+    q: "Is my data safe with Trade Companion?",
+    a: "Yes. We prioritize your privacy and use industry-standard encryption to ensure your personal data and trading information remain secure.",
+  },
+];

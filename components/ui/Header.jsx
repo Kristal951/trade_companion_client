@@ -1,9 +1,15 @@
 import React, { useEffect } from "react";
-import NotificationBell from "./NotificationBell";
+import NotificationBell from "./NotificationDropDown";
 import useAppStore from "@/store/useStore";
 import { RiMenu2Line } from "react-icons/ri";
 
-const Header = ({ toggleTheme, theme, user, setShowMobileMenu, showMobileMenu}) => {
+const Header = ({
+  toggleTheme,
+  theme,
+  user,
+  setShowMobileMenu,
+  showMobileMenu,
+}) => {
   const NOTIFICATIONS_KEY = `notifications_${user?.email}`;
   const notifications = useAppStore((state) => state.notifications);
   useEffect(() => {
@@ -13,11 +19,13 @@ const Header = ({ toggleTheme, theme, user, setShowMobileMenu, showMobileMenu}) 
 
   return (
     <header className="bg-light-surface border-b border-light-gray p-4 flex justify-between items-center flex-shrink-0">
-      <button className="md:hidden p-1 rounded-md hover:bg-light-hover text-mid-text " onClick={()=> setShowMobileMenu(!showMobileMenu)}>
-        <RiMenu2Line size={25}/>
+      <button
+        className="md:hidden p-1 rounded-md hover:bg-light-hover text-mid-text "
+        onClick={() => setShowMobileMenu(!showMobileMenu)}
+      >
+        <RiMenu2Line size={25} />
       </button>
-      <h1 className="text-2xl font-bold text-dark-text capitalize">
-      </h1>
+      <h1 className="text-2xl font-bold text-dark-text capitalize"></h1>
       <div className="flex items-center space-x-4">
         <label htmlFor="theme-toggle" className="theme-toggle-label no-print">
           <input

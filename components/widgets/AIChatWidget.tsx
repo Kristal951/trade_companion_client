@@ -39,7 +39,6 @@ interface ChatMessage {
   isTradeExecuted?: boolean;
 }
 
-// --- NEW KNOWLEDGE BASE: DERIV SYNTHETICS ---
 const DERIV_KNOWLEDGE_BASE = `
 7. **DERIV SYNTHETIC INDICES EXPERTISE (SPECIALIZED DOMAIN)**
    **Core Principles:**
@@ -345,11 +344,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
   ) => {
     const def = instrumentDefinitions[instrument];
     if (!def) return null;
-
-    // Formula: Profit = PointsMoved * LotSize * ContractSize
-    // Therefore: PointsMoved = Profit / (LotSize * ContractSize)
-
-    // Ensure contract size isn't zero
     const size = def.contractSize || 1;
     const requiredPoints = targetUsd / (lotSize * size);
 
@@ -360,7 +354,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     e.preventDefault();
     if ((userInput.trim() === "" && !uploadedImage) || isLoading) return;
 
-    // --- Setup for the whole process ---
     const userQuery = userInput;
     const imageToProcess = uploadedImage;
 
@@ -374,7 +367,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     }
     setMessages((prev) => [...prev, userMessage]);
 
-    // Clear inputs
     setUserInput("");
     setUploadedImage(null);
     setIsLoading(true);
@@ -387,7 +379,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       let isPaidFeature = false;
       let analysisType: "chartAnalysis" | "inDepthAnalysis" | null = null;
 
-      // --- Classification & Usage Check ---
       if (imageToProcess) {
         isPaidFeature = true;
         analysisType = "chartAnalysis";

@@ -14,7 +14,6 @@ const Identity: React.FC = () => {
 
   return (
     <div className="animate-fade-in-right space-y-5">
-      {/* Header */}
       <div>
         <h2 className="text-lg font-bold text-dark-text">
           Step 1 · Identity Verification
@@ -24,11 +23,8 @@ const Identity: React.FC = () => {
         </p>
       </div>
 
-      {/* Content */}
       <div className="space-y-4">
-        {/* Country + ID */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Country */}
           <div>
             <label className="block text-xs font-semibold text-dark-text mb-1">
               Country of Residence
@@ -49,7 +45,6 @@ const Identity: React.FC = () => {
             </select>
           </div>
 
-          {/* Government ID */}
           <div>
             <label className="block text-xs font-semibold text-dark-text mb-1">
               Government ID
@@ -76,13 +71,11 @@ const Identity: React.FC = () => {
           </div>
         </div>
 
-        {/* Address */}
         <div>
           <span className="block text-xs font-semibold text-dark-text mb-1">
             Proof of Address
           </span>
 
-          {/* Pills */}
           <div className="flex gap-2 mb-2">
             {["Utility Bill", "Bank Statement"].map((type) => (
               <button

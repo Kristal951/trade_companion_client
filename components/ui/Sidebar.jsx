@@ -1,8 +1,7 @@
 import React, { useEffect } from "react";
 import Icon from "./Icon";
 import SidebarNavLink from "./Navlink";
-import useAppStore from "@/store/useStore";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import useMentorStore from "@/store/mentorStore";
 
 const Sidebar = ({
@@ -17,7 +16,7 @@ const Sidebar = ({
   toggleMenu,
 }) => {
   const { isMentorMode, toggleMentorMode, mentor } = useMentorStore();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   useEffect(() => {
     setAccountMenuOpen(false);
@@ -37,7 +36,6 @@ const Sidebar = ({
 
   return (
     <>
-      {/* Mobile Backdrop */}
       {showMobileMenu && (
         <div
           onClick={toggleMenu}
@@ -199,7 +197,6 @@ const Sidebar = ({
           )}
         </nav>
 
-        {/* Account Section */}
         <div className="relative mt-auto pt-4 border-t border-light-gray">
           <button
             onClick={() => {
@@ -275,7 +272,10 @@ const Sidebar = ({
                 </button>
               ) : (
                 //Todo: Use the new handleBecomeMentorClick logic here
-                <button onClick={()=> navigate(`/ApplyMentor/${user.id}`)} className="w-full flex items-center px-4 py-2 text-sm text-dark-text hover:bg-light-hover">
+                <button
+                  onClick={() => navigate(`/ApplyMentor/${user.id}`)}
+                  className="w-full flex items-center px-4 py-2 text-sm text-dark-text hover:bg-light-hover"
+                >
                   <Icon name="apply" className="w-5 h-5 mr-2 text-mid-text" />
                   Become a Mentor
                 </button>

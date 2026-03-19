@@ -244,9 +244,17 @@ const useMentorStore = create(
           const res = await API.post("/api/mentor/checkout", {
             mentorId: mentorID,
           });
+          const url = res?.data.url;
+          if (!url || typeof url !== "string") {
+            throw new Error("No checkout URL returned");
+          }
           window.location.href = res.data.url;
         } catch (err) {
           console.log(err);
+          throw new Error(
+            err?.response?.data?.message ||
+              "Failed to start mentor subscription",
+          );
         } finally {
           set({ isSubscribingToMentor: false });
         }

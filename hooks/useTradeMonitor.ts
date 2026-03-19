@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { TradeRecord } from "../types";
 import { getLivePrices } from "../services/marketDataService";
 import { instrumentDefinitions } from "../config/instruments";
-import React from 'react'
+import React from "react";
 
 type Params = {
   user: any;

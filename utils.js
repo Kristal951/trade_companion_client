@@ -7,6 +7,23 @@ export const API = axios.create({
 
 let isRefreshing = false;
 let failedQueue = [];
+let accessToken = null;
+
+export const getAccessToken = () => {
+  return accessToken || localStorage.getItem("accessToken");
+};
+
+export const refreshAccessToken = async () => {
+  const res = await axios.post(
+    "http://localhost:5000/api/user/refresh_token",
+    {},
+    { withCredentials: true },
+  );
+
+  const newAccessToken = res.data.accessToken;
+  setAccessToken(newAccessToken);
+  return newAccessToken;
+};
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach(({ resolve, reject }) => {
@@ -15,10 +32,36 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+export const setAccessToken = (token) => {
+  accessToken = token;
+
+  if (token) {
+    API.defaults.headers.common.Authorization = `Bearer ${token}`;
+  } else {
+    delete API.defaults.headers.common.Authorization;
+  }
+};
+
+export const getValidAccessToken = async () => {
+  let token = getAccessToken();
+
+  if (!token) {
+    try {
+      token = await refreshAccessToken();
+    } catch (error) {
+      setAccessToken(null);
+      throw error;
+    }
+  }
+
+  return token;
+};
+
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
     if (!originalRequest || !error.response) {
       return Promise.reject(error);
     }
@@ -30,7 +73,7 @@ API.interceptors.response.use(
       "/api/user/logout",
       "/api/user/refresh_token",
       "/api/user/verify_email",
-      "/api/user/resend_verification_code"
+      "/api/user/resend_verification_code",
     ];
 
     if (AUTH_ROUTES.some((r) => originalRequest.url?.endsWith(r))) {
@@ -38,10 +81,13 @@ API.interceptors.response.use(
     }
 
     const hasAccessToken =
-      !!API.defaults.headers.common.Authorization ||
-      !!originalRequest.headers?.Authorization;
+      !!getAccessToken() || !!originalRequest.headers?.Authorization;
 
-    if (error.response.status === 401 && !originalRequest._retry && hasAccessToken) {
+    if (
+      error.response.status === 401 &&
+      !originalRequest._retry &&
+      hasAccessToken
+    ) {
       originalRequest._retry = true;
 
       if (isRefreshing) {
@@ -59,7 +105,7 @@ API.interceptors.response.use(
         const res = await axios.post(
           "http://localhost:5000/api/user/refresh_token",
           {},
-          { withCredentials: true }
+          { withCredentials: true },
         );
 
         const newAccessToken = res.data.accessToken;
@@ -86,16 +132,8 @@ API.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
-
-export const setAccessToken = (token) => {
-  if (token) {
-    API.defaults.headers.common.Authorization = `Bearer ${token}`;
-  } else {
-    delete API.defaults.headers.common.Authorization;
-  }
-};
 
 export const updateUserAPI = (email, updates) => {
   return API.put("/api/user/update", { email, updates });

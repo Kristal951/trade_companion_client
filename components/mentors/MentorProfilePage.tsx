@@ -176,7 +176,7 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ showToast }) => {
     isSubscribingToMentor,
   } = useMentorStore();
   const params = useParams();
-  const mentorID = params.mentorID || params.id;
+  const mentorID = params.mentorId || params.id;
   const [mentor, setMentor] = useState<Mentor | null>(null);
   const [mentorPosts, setMentorPosts] = useState<MentorPost[]>([]);
   const [error, setError] = useState("");
@@ -189,13 +189,12 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ showToast }) => {
 
   const [searchParams] = useSearchParams();
   const subStatus = searchParams.get("sub");
-  console.log(mentor);
 
   const isSubscribed = !!mentor?.subscribers?.some(
     (sub) => sub.userId === userId && sub.status === "Active",
   );
 
-  const isOwnProfile = mentor?._id === userId;
+ const isOwnProfile = String(mentor?.user) === String(userId);
 
   const handleSubmitReview = async () => {
     if (rating === 0) {
@@ -226,6 +225,7 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ showToast }) => {
       try {
         const m = await getMentorByID(mentorID);
         setMentor(m);
+        console.log(m)
 
         if (m?._id) {
           const postsRes = await API.get(
@@ -258,36 +258,6 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ showToast }) => {
     run();
   }, [mentorID, subStatus, getMentorByID, showToast]);
 
-  useEffect(() => {
-    const getMentor = async () => {
-      setLoading(true);
-      try {
-        const mentor = await getMentorByID(mentorID);
-        setMentor(mentor);
-        if (mentor) {
-          try {
-            setLoading(true);
-            const posts = await API.get(
-              `/api/mentor/getAllMentorPost/${mentor._id}`,
-            );
-            setMentorPosts(posts.data.posts);
-          } catch (error) {
-            console.log(error);
-            showToast("Could not get mentor posts", "error");
-          } finally {
-            setLoading(false);
-          }
-        }
-      } catch (error) {
-        console.log(error);
-        setError("could not fetch mentor, try again");
-      } finally {
-        setLoading(false);
-      }
-    };
-    getMentor();
-  }, [mentorID, getMentorByID, showToast]);
-
   const handleSubscribeToMentor = async () => {
     if (!mentorID) {
       showToast("Invalid mentor link.", "error");
@@ -301,13 +271,6 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ showToast }) => {
 
     try {
       const res = await startMentorSubscription(mentorID);
-
-      const url = res?.url;
-      if (!url || typeof url !== "string") {
-        throw new Error("No checkout URL returned");
-      }
-
-      window.location.assign(url);
     } catch (err: any) {
       console.error(err);
       showToast(
@@ -486,6 +449,7 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ showToast }) => {
                           post={post}
                           mentorName={mentor?.name || ""}
                           showToast={showToast}
+                          userId={mentor.user}
                         />
                       ))
                   ) : (

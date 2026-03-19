@@ -39,6 +39,7 @@ export function renderMentorRoutes({
             />
           }
         />
+
         <Route path="followers" element={<FollowersPage />} />
       </Route>
     </>
