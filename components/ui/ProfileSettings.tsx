@@ -6,9 +6,18 @@ interface SettingsProps {
   user: User;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
   showToast: (message: string, type?: "success" | "info" | "error") => void;
-  updateUser: (updatedData: Partial<User>) => void;
+  updateUser: (updatedData: {
+    name?: string;
+    avatar?: File | null;
+  }) => Promise<void> | void;
   loading: boolean;
 }
+
+const getUserAvatar = (user: User) =>
+  user.avatar ||
+  user.image ||
+  user.picture ||
+  `https://i.pravatar.cc/150?u=${user.email}`;
 
 const ProfileSettings: React.FC<SettingsProps> = ({
   user,
@@ -16,106 +25,137 @@ const ProfileSettings: React.FC<SettingsProps> = ({
   showToast,
   loading,
 }) => {
-  const [displayName, setDisplayName] = useState(user.name);
-  const [avatarPreview, setAvatarPreview] = useState(
-    user.avatar ||
-      user.image ||
-      user.picture ||
-      `https://i.pravatar.cc/150?u=${user.email}`,
-  );
+  const [displayName, setDisplayName] = useState(user.name || "");
+  const [avatarPreview, setAvatarPreview] = useState(getUserAvatar(user));
+  const [originalAvatar, setOriginalAvatar] = useState(getUserAvatar(user));
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const hasChanges = displayName !== user.name || avatarFile !== null;
+
+  const hasChanges =
+    displayName.trim() !== (user.name || "").trim() || avatarFile !== null;
+
+  useEffect(() => {
+    const avatar = getUserAvatar(user);
+
+    setDisplayName(user.name || "");
+    setAvatarPreview(avatar);
+    setOriginalAvatar(avatar);
+    setAvatarFile(null);
+  }, [user]);
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setAvatarFile(file || null);
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Image must be 5MB or less.", "error");
+      return;
+    }
+
+    if (avatarPreview.startsWith("blob:")) {
+      URL.revokeObjectURL(avatarPreview);
+    }
+
     const previewUrl = URL.createObjectURL(file);
+    setAvatarFile(file);
     setAvatarPreview(previewUrl);
   };
-
-  useEffect(() => {
-    return () => {
-      if (avatarFile && avatarPreview.startsWith("blob:")) {
-        URL.revokeObjectURL(avatarPreview);
-      }
-    };
-  }, [avatarPreview, avatarFile]);
 
   const handleSave = async () => {
     try {
       await updateUser({
-        name: displayName,
+        name: displayName.trim(),
         avatar: avatarFile,
       });
+
       showToast("Profile updated successfully.", "success");
-    } catch (error) {
-      console.log(error);
-      showToast("Profile update unsuccesful.", "error");
+
+      setOriginalAvatar(avatarPreview);
       setAvatarFile(null);
-      setDisplayName(user.name);
+    } catch (error) {
+      console.error(error);
+      showToast("Profile update unsuccessful.", "error");
+
+      if (avatarPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+
+      setAvatarPreview(originalAvatar);
+      setDisplayName(user.name || "");
+      setAvatarFile(null);
     }
   };
+
   return (
-    <div className="p-6 bg-light-surface rounded-lg border border-light-gray text-dark-text space-y-6">
-      <h3 className="font-bold text-lg">My Profile</h3>
+    <div className="space-y-6 rounded-lg border border-light-gray bg-light-surface p-6 text-dark-text">
+      <h3 className="text-lg font-bold">My Profile</h3>
 
       <div className="flex items-center space-x-6">
         <div className="relative">
           <img
             src={avatarPreview}
             alt="Profile"
-            className="w-24 h-24 rounded-full object-cover border-4 border-light-hover"
+            className="h-24 w-24 rounded-full border-4 border-light-hover object-cover"
           />
+
           <label
             htmlFor="avatar-upload"
-            className="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full cursor-pointer hover:bg-primary-hover shadow-md transition-transform transform hover:scale-110"
+            className="absolute bottom-0 right-0 cursor-pointer rounded-full bg-primary p-2 text-white shadow-md transition-transform hover:scale-110 hover:bg-primary-hover"
           >
-            <Icon name="edit" className="w-4 h-4" />
-            <input
-              type="file"
-              id="avatar-upload"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+            <Icon name="edit" className="h-4 w-4" />
           </label>
+
+          <input
+            type="file"
+            id="avatar-upload"
+            accept="image/png,image/jpeg,image/jpg,image/webp"
+            className="hidden"
+            onChange={handleFileChange}
+          />
         </div>
+
         <div>
-          <p className="text-sm text-mid-text mb-1">Profile Picture</p>
-          <p className="text-xs text-mid-text">PNG, JPG up to 5MB</p>
+          <p className="mb-1 text-sm text-mid-text">Profile Picture</p>
+          <p className="text-xs text-mid-text">PNG, JPG, WEBP up to 5MB</p>
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label className="mb-1 block text-sm font-medium">
           Display Name / Username
         </label>
         <input
           type="text"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          className="w-full p-3 rounded-lg bg-light-hover border border-light-gray focus:ring-2 focus:ring-primary focus:outline-none"
+          className="w-full rounded-lg border border-light-gray bg-light-hover p-3 focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Email Address</label>
+        <label className="mb-1 block text-sm font-medium">Email Address</label>
         <input
           type="text"
           value={user.email}
           readOnly
-          className="w-full p-3 rounded-lg bg-light-hover border border-light-gray text-mid-text cursor-not-allowed"
+          className="w-full cursor-not-allowed rounded-lg border border-light-gray bg-light-hover p-3 text-mid-text"
         />
-        <p className="text-xs text-mid-text mt-1">
+        <p className="mt-1 text-xs text-mid-text">
           Email cannot be changed. Contact support for assistance.
         </p>
       </div>
 
       <button
         onClick={handleSave}
-        className="bg-primary text-white px-6 py-2.5 rounded-lg hover:bg-primary-hover font-semibold shadow-sm transition-colors"
         disabled={!hasChanges || loading}
+        className="rounded-lg bg-primary px-6 py-2.5 font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Saving..." : "Save Changes"}
       </button>

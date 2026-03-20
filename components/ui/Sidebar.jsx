@@ -126,6 +126,12 @@ const Sidebar = ({
                 label="Profile"
                 isCollapsed={isSidebarCollapsed}
               />
+              <SidebarNavLink
+                to={`mentor/settings`}
+                icon="settings"
+                label="Settings"
+                isCollapsed={isSidebarCollapsed}
+              />
             </div>
           ) : (
             <>

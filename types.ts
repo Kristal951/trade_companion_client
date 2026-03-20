@@ -163,6 +163,7 @@ export interface MentorSubscriber {
   subscribedDate: string;
   status: "Active" | "Cancelled";
   ratingGiven?: number;
+  userId: string
 }
 
 export interface Signal {

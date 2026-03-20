@@ -566,6 +566,40 @@ export const AnalyticsPage: React.FC<{
           )}
         </AnalyticsWidget>
 
+         <AnalyticsWidget title="Mentor Performance">
+          <div className="space-y-3 h-[250px] overflow-y-auto">
+            {MOCK_MENTORS_LIST.slice(0, 2).map((mentor) => (
+              <div
+                key={mentor.id}
+                className="bg-light-hover p-3 rounded-lg flex justify-between items-center"
+              >
+                <div className="flex items-center">
+                  <img
+                    src={mentor.avatar}
+                    alt={mentor.name}
+                    className="w-10 h-10 rounded-full mr-3"
+                  />
+                  <div>
+                    <p className="font-semibold text-dark-text text-sm">
+                      {mentor.name}
+                    </p>
+                    <p className="text-xs text-mid-text">
+                      {mentor.price.toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                      })}
+                      /mo - {mentor.instruments.length} Signals
+                    </p>
+                  </div>
+                </div>
+                <span className="font-bold text-success text-sm">
+                  {mentor.roi}% ROI
+                </span>
+              </div>
+            ))}
+          </div>
+        </AnalyticsWidget>
+
         <AnalyticsWidget
           title="Profit/Loss Per Trade"
           className="lg:col-span-2"
@@ -646,40 +680,6 @@ export const AnalyticsPage: React.FC<{
               height={250}
             />
           )}
-        </AnalyticsWidget>
-
-        <AnalyticsWidget title="Mentor Performance">
-          <div className="space-y-3 h-[250px] overflow-y-auto">
-            {MOCK_MENTORS_LIST.slice(0, 2).map((mentor) => (
-              <div
-                key={mentor.id}
-                className="bg-light-hover p-3 rounded-lg flex justify-between items-center"
-              >
-                <div className="flex items-center">
-                  <img
-                    src={mentor.avatar}
-                    alt={mentor.name}
-                    className="w-10 h-10 rounded-full mr-3"
-                  />
-                  <div>
-                    <p className="font-semibold text-dark-text text-sm">
-                      {mentor.name}
-                    </p>
-                    <p className="text-xs text-mid-text">
-                      {mentor.price.toLocaleString("en-US", {
-                        style: "currency",
-                        currency: "USD",
-                      })}
-                      /mo - {mentor.instruments.length} Signals
-                    </p>
-                  </div>
-                </div>
-                <span className="font-bold text-success text-sm">
-                  {mentor.roi}% ROI
-                </span>
-              </div>
-            ))}
-          </div>
         </AnalyticsWidget>
       </div>
     </div>
