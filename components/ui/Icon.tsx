@@ -57,6 +57,20 @@ const Icon: React.FC<IconProps> = ({
         d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-3.75-2.25m3.75 2.25l-2.25 3.75"
       />
     ),
+    eyesOff: (
+      <>
+        <path d="M3 3l18 18" />
+
+        <path d="M2.5 12c2.5-4.5 6.5-7 9.5-7s7 2.5 10 7c-2.5 4.5-6.5 7-9.5 7s-7-2.5-10-7z" />
+        <path d="M9.5 9.5c.8-.8 2.2-.8 3 0 .8.8.8 2.2 0 3" />
+      </>
+    ),
+    eyes: (
+      <>
+        <path d="M1 12c2.5-4.5 6.5-7 11-7s8.5 2.5 11 7c-2.5 4.5-6.5 7-11 7S3.5 16.5 1 12z" />
+        <path d="M12 9.5a2.5 2.5 0 110 5 2.5 2.5 0 010-5z" />
+      </>
+    ),
     settings: (
       <>
         <path
@@ -170,6 +184,27 @@ const Icon: React.FC<IconProps> = ({
         d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
       />
     ),
+    closedTrades: (
+      <>
+        <path
+          d="M12 2 
+           C6.48 2 2 6.48 2 12 
+           C2 17.52 6.48 22 12 22 
+           C17.52 22 22 17.52 22 12 
+           C22 6.48 17.52 2 12 2Z"
+          stroke="currentColor"
+          stroke-width="2"
+        />
+
+        <path
+          d="M7 12.5 L10 15.5 L17 8.5"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </>
+    ),
     education: (
       <path
         strokeLinecap="round"
@@ -177,12 +212,21 @@ const Icon: React.FC<IconProps> = ({
         d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
       />
     ),
+    shield: (
+      <>
+        <path d="M12 3l7 4v5c0 5-3.5 9-7 9s-7-4-7-9V7l7-4z" />
+        <path d="M9 12l2 2 4-4" />
+      </>
+    ),
     paperclip: (
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-6.364-6.364l7.927-7.928a3.375 3.375 0 014.773 4.773l-7.22 7.22a.75.75 0 01-1.06 0l-1.06-1.061a.75.75 0 010-1.06l7.22-7.221"
       />
+    ),
+    profile: (
+      <path d="M12 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4.418 0-8 2.686-8 6m16 0c0-3.314-3.582-6-8-6" />
     ),
     info: (
       <path
@@ -232,6 +276,16 @@ const Icon: React.FC<IconProps> = ({
         strokeLinejoin="round"
         d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"
       />
+    ),
+    chart: (
+      <path d="M4 11H2v3h2zm5-4H7v7h2zm5-5v12h-2V2zm-2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM6 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm-5 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1z" />
+    ),
+    "suit-case": (
+      <>
+        <rect x="3" y="7" width="18" height="13" rx="2" ry="2" />
+        <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        <line x1="12" y1="12" x2="12" y2="12" />
+      </>
     ),
     "pie-chart": (
       <>
@@ -323,6 +377,21 @@ const Icon: React.FC<IconProps> = ({
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+      />
+    ),
+    news: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19.5 4.5h-15A1.5 1.5 0 003 6v12a1.5 1.5 0 001.5 1.5h15A1.5 1.5 0 0021 18V6a1.5 1.5 0 00-1.5-1.5zM6.75 8.25h10.5M6.75 11.25h10.5M6.75 14.25h6"
+      />
+    ),
+
+    wallet: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M21 12V8.25A2.25 2.25 0 0018.75 6H5.25A2.25 2.25 0 003 8.25v7.5A2.25 2.25 0 005.25 18h13.5A2.25 2.25 0 0021 15.75V12zm0 0h-4.5a1.5 1.5 0 100 3H21"
       />
     ),
   };

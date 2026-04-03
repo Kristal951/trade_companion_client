@@ -1,18 +1,72 @@
-
-
 export interface User {
+  id: string;
+  _id?: string;
+  picture?: string;
+  subscribedPlan?: string;
   name: string;
   email: string;
   avatar?: string;
-  telegramNumber?: string;
-  subscribedPlan?: PlanName;
+  plan?: PlanName;
+  image?: string;
   isMentor: boolean;
+  isSubscribed?: boolean;
+  subscriptionStatus?: string | null;
+  telegram: Telegram;
+  subscriptionMethod?:
+    | "stripe"
+    | "manual"
+    | "promo"
+    | "apple"
+    | "google_play"
+    | null;
+  subscriptionPriceKey?: string | null;
+  subscriptionInterval?: string | null;
+  subscriptionCurrentPeriodEnd?: string | null;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  stripeCheckoutSessionId?: string | null;
+  tradeSettings?: {
+    balance: number;
+    riskPerTrade: number; 
+    maxConcurrentTrades: number;
+  };
   cTraderConfig?: {
     accountId: string;
-    accessToken: string;
     isConnected: boolean;
     autoTradeEnabled: boolean;
   };
+  notificationSettings: NotificationSettings;
+}
+
+export interface NotificationSettings {
+  email: boolean;
+  push: boolean;
+  telegram: boolean;
+}
+
+export interface Telegram {
+  chatId: string;
+  userName: string;
+  linkedAt: string;
+}
+
+export interface Plan {
+  id: string;
+  name: string;
+  amount: number;
+  features: string[];
+  currency: string;
+  interval: "monthly" | "yearly";
+}
+
+export interface TopSignal {
+  instrument: string;
+  type: "BUY" | "SELL";
+  entryPrice: number;
+  exitPrice: number;
+  profit: number;
+  pips: number;
+  timestamp: string;
 }
 
 export enum PlanName {
@@ -22,23 +76,15 @@ export enum PlanName {
   Premium = "Premium",
 }
 
-export interface Plan {
-  name: PlanName;
-  monthlyPrice: number;
-  yearlyPrice: number;
-  features: string[];
-}
-
 export interface Payout {
   id: string;
   amount: number;
   dateRequested: string;
   dateCompleted?: string;
-  status: 'Pending' | 'Completed' | 'Failed';
+  status: "Pending" | "Completed" | "Failed";
   method: string;
 }
 
-// FIX: Export the Mentor interface
 export interface Mentor {
   id: number;
   name: string;
@@ -47,12 +93,12 @@ export interface Mentor {
   profitRatio: number;
   instruments: string[];
   price: number;
-  roi: number; // Return on Investment
-  strategy: string; // Formerly 'bio'
-  rating?: number; // Average rating out of 5
-  reviewsCount?: number; // Total number of reviews
+  roi: number;
+  strategy: string;
+  rating?: number;
+  reviewsCount?: number;
   posts?: MentorPost[]; // Optional: list of posts by the mentor
-  certifications?: { name: string; url: string; }[]; // Optional: certifications or proof
+  certifications?: { name: string; url: string }[]; // Optional: certifications or proof
   recentSignals?: RecentSignal[]; // NEW: Added recent signals for performance tracking
   subscriberGrowth?: { month: string; subscribers: number }[];
   earnings?: {
@@ -62,19 +108,23 @@ export interface Mentor {
   payoutHistory?: Payout[];
   identity?: {
     idDocument: {
-        status: 'Not Submitted' | 'Pending' | 'Verified' | 'Rejected';
-        type?: "Driver's License" | 'International Passport' | 'National ID' | 'NIN Slip';
-        fileName?: string;
+      status: "Not Submitted" | "Pending" | "Verified" | "Rejected";
+      type?:
+        | "Driver's License"
+        | "International Passport"
+        | "National ID"
+        | "NIN Slip";
+      fileName?: string;
     };
     addressDocument: {
-        status: 'Not Submitted' | 'Pending' | 'Verified' | 'Rejected';
-        type?: 'Utility Bill' | 'Bank Statement';
-        fileName?: string;
+      status: "Not Submitted" | "Pending" | "Verified" | "Rejected";
+      type?: "Utility Bill" | "Bank Statement";
+      fileName?: string;
     };
     livenessCheck: {
-        status: 'Not Submitted' | 'Pending' | 'Verified' | 'Rejected';
+      status: "Not Submitted" | "Pending" | "Verified" | "Rejected";
     };
-    overallStatus: 'Not Submitted' | 'Pending' | 'Verified' | 'Rejected';
+    overallStatus: "Not Submitted" | "Pending" | "Verified" | "Rejected";
     rejectionReason?: string;
   };
   analytics?: {
@@ -88,26 +138,24 @@ export interface Mentor {
 export interface RecentSignal {
   id: string;
   instrument: string;
-  direction: 'BUY' | 'SELL';
+  direction: "BUY" | "SELL";
   entry: string;
   stopLoss: string;
   takeProfit: string;
-  outcome: 'win' | 'loss';
+  outcome: "win" | "loss";
   timestamp: string;
   pnl?: number;
 }
 
-
 export interface MentorPost {
-  id: number;
-  type: 'signal' | 'analysis';
+  mentorID: number;
+  type: "signal" | "analysis";
   title: string;
-  content: string; // reasoning for signal or body for analysis
-  imageUrl?: string; // for attached chart
+  content: string;
+  imageUrl?: string;
   timestamp: string;
   signalDetails?: {
-    instrument: string;
-    direction: 'BUY' | 'SELL';
+    direction: "BUY" | "SELL";
     entry: string;
     stopLoss: string;
     takeProfit: string;
@@ -119,8 +167,9 @@ export interface MentorSubscriber {
   name: string;
   avatar: string;
   subscribedDate: string;
-  status: 'Active' | 'Cancelled';
-  ratingGiven?: number; // Rating from 1 to 5 given by this subscriber
+  status: "Active" | "Cancelled";
+  ratingGiven?: number;
+  userId: string
 }
 
 export interface Signal {
@@ -139,13 +188,12 @@ export interface Signal {
   riskAmount?: number; // Calculated per user
 }
 
-
 // FIX: Removed 'confidence' from Omit to make it available in the TradeRecord type for analytics.
 // FIX: Removed 'technicalReasoning' from Omit to allow inclusion in TradeRecord (App.tsx uses it).
 // FIX: Removed 'takeProfit2' and 'takeProfit3' from Omit to allow their display in UI.
 export interface TradeRecord extends Signal {
   id: string; // Unique ID for the trade
-  status: 'active' | 'win' | 'loss';
+  status: "active" | "win" | "loss";
   pnl?: number; // Profit or Loss amount
   currentPrice?: number; // Live price of the instrument
   dateTaken: string;
@@ -167,7 +215,7 @@ export interface FAQ {
   answer: string;
 }
 
-export type DashboardView = 
+export type DashboardView =
   | "dashboard"
   | "ai_signals"
   | "mentors"
@@ -194,19 +242,47 @@ export interface EducationArticle {
   category: string;
   title: string;
   summary: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  type: 'article' | 'book' | 'video'; 
-  content: string; // Full content of the article or book
-  videoUrl?: string; // URL for video content
+  difficulty: "Beginner" | "Intermediate" | "Advanced";
+  type: "article" | "book" | "video";
+  content: string;
+  videoUrl?: string;
 }
 
-export type NotificationType = 'signal' | 'mentor' | 'promo' | 'news' | 'app_update';
+export type NotificationType =
+  | "signal"
+  | "mentor_post"
+  | "billing"
+  | "promo"
+  | "news"
+  | "system"
+  | "app_update";
+
+export type NotificationPriority = "low" | "normal" | "high";
 
 export interface Notification {
-  id: string;
-  message: string;
-  timestamp: string;
-  isRead: boolean;
-  linkTo: DashboardView;
+  _id: string;
+  recipient: string;
+  actor?: string | null;
   type: NotificationType;
+  title: string;
+  message: string;
+  linkTo?: string | null;
+  image?: string | null;
+  isRead: boolean;
+  readAt?: string | null;
+  priority: NotificationPriority;
+  deliveryChannels?: {
+    inApp: boolean;
+    email: boolean;
+    push: boolean;
+  };
+  meta?: {
+    mentorId?: string | null;
+    signalId?: string | null;
+    postId?: string | null;
+    subscriptionId?: string | null;
+    externalId?: string | null;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
