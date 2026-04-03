@@ -13,18 +13,13 @@ type Params = {
 export function useAuthSession({ user, setUser, logout, showToast }: Params) {
   const navigate = useNavigate();
 
-  const [activeTrades, setActiveTrades] = useState<TradeRecord[]>(() => {
-    try {
-      const email = user?.email;
-      if (!email) return [];
-      const saved = localStorage.getItem(`active_trades_${email}`);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [activeTrades, setActiveTrades] = useState<TradeRecord[]>([]);
 
-  const [tradeHistory, setTradeHistory] = useState<TradeRecord[]>([]);
+  const TRADE_HISTORY_KEY = `trade_history_${user.email}`;
+
+  const [tradeHistory, setTradeHistory] = useState<TradeRecord[]>(() =>
+    JSON.parse(localStorage.getItem(TRADE_HISTORY_KEY) || "[]"),
+  );
   const [floatingPnL, setFloatingPnL] = useState(0);
 
   useEffect(() => {
@@ -40,13 +35,28 @@ export function useAuthSession({ user, setUser, logout, showToast }: Params) {
     );
   }, [activeTrades, user]);
 
+  useEffect(() => {
+    try {
+      if (!user?.email) return;
+
+      const saved = localStorage.getItem(`active_trades_${user.email}`);
+      if (saved) {
+        setActiveTrades(JSON.parse(saved));
+      }
+    } catch (err) {
+      console.error("Failed to load active trades:", err);
+    }
+  }, [user?.email]);
+
   const EQUITY_KEY = useMemo(
     () => `currentEquity_${user?.email ?? "guest"}`,
     [user?.email],
   );
 
   const currentBalance = parseFloat(
-    localStorage.getItem(EQUITY_KEY) || "10000",
+    user?.tradeSettings?.balance?.toString() ||
+      localStorage.getItem(EQUITY_KEY) ||
+      "10000",
   );
 
   const liveEquity = currentBalance + floatingPnL;

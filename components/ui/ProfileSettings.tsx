@@ -14,10 +14,7 @@ interface SettingsProps {
 }
 
 const getUserAvatar = (user: User) =>
-  user.avatar ||
-  user.image ||
-  user.picture ||
-  `https://i.pravatar.cc/150?u=${user.email}`;
+  user.avatar || user.picture || user.image|| `https://i.pravatar.cc/150?u=${user.email}`;
 
 const ProfileSettings: React.FC<SettingsProps> = ({
   user,
@@ -25,6 +22,7 @@ const ProfileSettings: React.FC<SettingsProps> = ({
   showToast,
   loading,
 }) => {
+  console.log(user)
   const [displayName, setDisplayName] = useState(user.name || "");
   const [avatarPreview, setAvatarPreview] = useState(getUserAvatar(user));
   const [originalAvatar, setOriginalAvatar] = useState(getUserAvatar(user));

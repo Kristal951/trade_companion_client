@@ -7,6 +7,7 @@ export interface User {
   email: string;
   avatar?: string;
   plan?: PlanName;
+  image?: string;
   isMentor: boolean;
   isSubscribed?: boolean;
   subscriptionStatus?: string | null;
@@ -24,6 +25,11 @@ export interface User {
   stripeCustomerId?: string | null;
   stripeSubscriptionId?: string | null;
   stripeCheckoutSessionId?: string | null;
+  tradeSettings?: {
+    balance: number;
+    riskPerTrade: number; 
+    maxConcurrentTrades: number;
+  };
   cTraderConfig?: {
     accountId: string;
     isConnected: boolean;

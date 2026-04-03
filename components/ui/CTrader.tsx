@@ -170,9 +170,9 @@ const CTraderSettings = ({ user, setUser, showToast }: any) => {
     }
   }, [setUser]);
 
-  // useEffect(() => {
-  //   fetchStatus();
-  // }, [fetchStatus]);
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
 
   const handledLinkedRef = React.useRef(false);
   const isAutoEnabled = Boolean(user?.cTraderConfig?.autoTradeEnabled);
@@ -189,7 +189,7 @@ const CTraderSettings = ({ user, setUser, showToast }: any) => {
 
     if (linked === "success") {
       toastRef.current?.("cTrader linked successfully!", "success");
-      // fetchStatus();
+      fetchStatus();
     } else {
       toastRef.current?.("Connection failed. Please try again.", "error");
     }

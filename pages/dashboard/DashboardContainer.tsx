@@ -8,6 +8,7 @@ interface Props {
   tradeHistory: TradeRecord[];
   liveEquity: number;
   floatingPnL: number;
+  setActiveTrades: any;
 }
 
 const DashboardContainer: React.FC<Props> = ({
@@ -16,6 +17,8 @@ const DashboardContainer: React.FC<Props> = ({
   tradeHistory,
   liveEquity,
   floatingPnL,
+  setActiveTrades,
+  setTradeHistory
 }) => {
   const closedTrades = useMemo(
     () => tradeHistory.filter((t) => t.status !== "active"),
@@ -30,6 +33,8 @@ const DashboardContainer: React.FC<Props> = ({
       closedTrades={closedTrades}
       liveEquity={liveEquity}
       floatingPnL={floatingPnL}
+      setActiveTrades={setActiveTrades}
+      setTradeHistory={setTradeHistory}
     />
   );
 };

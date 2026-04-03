@@ -194,7 +194,7 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ showToast }) => {
     (sub) => sub.userId === userId && sub.status === "Active",
   );
 
- const isOwnProfile = String(mentor?.user) === String(userId);
+  const isOwnProfile = String(mentor?.user) === String(userId);
 
   const handleSubmitReview = async () => {
     if (rating === 0) {
@@ -225,7 +225,7 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ showToast }) => {
       try {
         const m = await getMentorByID(mentorID);
         setMentor(m);
-        console.log(m)
+        console.log(m);
 
         if (m?._id) {
           const postsRes = await API.get(
@@ -444,13 +444,15 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ showToast }) => {
                           new Date(a.createdAt).getTime(),
                       )
                       .map((post) => (
-                        <MentorPostCard
-                          key={post.id}
-                          post={post}
-                          mentorName={mentor?.name || ""}
-                          showToast={showToast}
-                          userId={mentor.user}
-                        />
+                        <SecureContent>
+                          <MentorPostCard
+                            key={post.id}
+                            post={post}
+                            mentorName={mentor?.name || ""}
+                            showToast={showToast}
+                            userId={mentor.user}
+                          />
+                        </SecureContent>
                       ))
                   ) : (
                     <div className="text-center py-16 text-mid-text bg-light-surface rounded-lg shadow-sm border border-light-gray">

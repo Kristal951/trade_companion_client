@@ -1,7 +1,8 @@
-// dashboard/DashboardOverview.tsx
-import { StatCard } from "@/components/dashboard/DashboardPage";
+import SignalCard from "@/components/dashboard/SignalCard";
 import Icon from "@/components/ui/Icon";
 import Spinner from "@/components/ui/Spinner";
+import { StatCard } from "@/components/ui/StatCard";
+import { useSignalStore } from "@/store/signalStore";
 import { TradeRecord, User } from "@/types";
 import { API, MOCK_MENTOR_POSTS } from "@/utils";
 import React, { useState, useMemo, useCallback, useEffect } from "react";
@@ -27,21 +28,9 @@ interface Props {
   closedTrades: TradeRecord[];
   liveEquity: number;
   floatingPnL: number;
+  setActiveTrades: React.Dispatch<React.SetStateAction<TradeRecord[]>>;
+  setTradeHistory: React.Dispatch<React.SetStateAction<TradeRecord[]>>;
 }
-
-type AISignal = {
-  _id: string;
-  userId: string;
-  instrument: string;
-  type: "BUY" | "SELL";
-  status: string;
-  entryPrice: number;
-  stopLoss: number;
-  takeProfits: number[];
-  confidence?: number | null;
-  createdAt?: string;
-  executedAt?: string | null;
-};
 
 const DashboardOverview: React.FC<Props> = ({
   user,
@@ -50,6 +39,8 @@ const DashboardOverview: React.FC<Props> = ({
   closedTrades,
   liveEquity,
   floatingPnL,
+  setActiveTrades,
+  setTradeHistory,
 }) => {
   const navigate = useNavigate();
 
@@ -65,6 +56,7 @@ const DashboardOverview: React.FC<Props> = ({
       payload,
       percent,
     } = props;
+
     const numCy = Number(cy);
     const numOuterRadius = Number(outerRadius);
     const numPercent = Number(percent);
@@ -106,58 +98,18 @@ const DashboardOverview: React.FC<Props> = ({
 
   const [pieActiveIndex, setPieActiveIndex] = useState(0);
 
-  const initialEquity = useMemo(
-    () => Number(localStorage.getItem(INITIAL_EQUITY_KEY) || 10000),
-    [INITIAL_EQUITY_KEY],
-  );
-
-  const [recentAISignals, setRecentAISignals] = useState<AISignal[]>([]);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const uid = user?._id || (user as any)?.id || user?.email;
-
-    if (!uid) return;
-
-    const controller = new AbortController();
-
-    (async () => {
-      try {
-        setAiLoading(true);
-        setAiError(null);
-
-        const res = await API.get(
-          `/api/signals/ai/user/${encodeURIComponent(String(uid))}?limit=5`,
-        );
-
-        const data = await res.data;
-
-        const items: AISignal[] = Array.isArray(data?.items)
-          ? data.items
-          : Array.isArray(data?.signals)
-            ? data.signals
-            : [];
-
-        setRecentAISignals(items.slice(0, 5));
-      } catch (err: any) {
-        if (err?.name === "AbortError") return;
-        setAiError(err?.message || "Failed to fetch AI signals");
-      } finally {
-        setAiLoading(false);
-      }
-    })();
-
-    return () => controller.abort();
-  }, [user]);
+  const initialEquity =
+    user.tradeSettings?.balance ||
+    localStorage.getItem(INITIAL_EQUITY_KEY) ||
+    10000;
 
   const chartEquityData = useMemo(() => {
     let cumulative = initialEquity;
     const data = [{ name: "Start", equity: cumulative }];
 
     tradeHistory
-      .filter((t) => t.status !== "active")
-      .forEach((trade, i) => {
+      .filter((t: any) => t.status !== "active")
+      .forEach((trade: any, i: number) => {
         cumulative += trade.pnl || 0;
         data.push({ name: `T${i + 1}`, equity: +cumulative.toFixed(2) });
       });
@@ -170,7 +122,7 @@ const DashboardOverview: React.FC<Props> = ({
   }, [tradeHistory, activeTrades, initialEquity, liveEquity]);
 
   const instrumentDistribution = useMemo(() => {
-    const counts = tradeHistory.reduce((acc: any, t) => {
+    const counts = tradeHistory.reduce((acc: any, t: any) => {
       acc[t.instrument] = (acc[t.instrument] || 0) + 1;
       return acc;
     }, {});
@@ -187,7 +139,7 @@ const DashboardOverview: React.FC<Props> = ({
   const winRate =
     closedTrades.length > 0
       ? (
-          (closedTrades.filter((t) => t.status === "win").length /
+          (closedTrades.filter((t: any) => t.status === "win").length /
             closedTrades.length) *
           100
         ).toFixed(2)
@@ -227,6 +179,22 @@ const DashboardOverview: React.FC<Props> = ({
     return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
   };
 
+  const { recentAISignals, aiLoading, aiError, loadRecentAISignals } =
+    useSignalStore();
+
+  const uid = user?._id || (user as any)?.id || user?.email;
+
+  useEffect(() => {
+    if (!uid) return;
+
+    loadRecentAISignals(String(uid));
+
+    const interval = setInterval(() => {
+      loadRecentAISignals(String(uid));
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [uid]);
   return (
     <div className="p-4 mb-4 bg-light-bg min-h-[calc(100vh-64px)]">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -360,7 +328,6 @@ const DashboardOverview: React.FC<Props> = ({
             </ResponsiveContainer>
           </div>
 
-          {/* ✅ Latest AI Signals (Now fetching 5) */}
           <div className="bg-light-surface p-6 rounded-xl shadow-sm border border-light-gray">
             <h3 className="text-xl font-bold text-dark-text mb-4">
               Latest AI Signals
@@ -375,34 +342,7 @@ const DashboardOverview: React.FC<Props> = ({
             ) : recentAISignals.length > 0 ? (
               <div className="space-y-4">
                 {recentAISignals.map((signal) => (
-                  <div
-                    key={signal._id}
-                    className="bg-light-hover p-4 rounded-lg border border-light-gray flex justify-between items-center"
-                  >
-                    <div>
-                      <p className="font-semibold text-dark-text">
-                        {signal.instrument} - {signal.type}
-                      </p>
-                      <p className="text-sm text-mid-text">
-                        Entry: {fmtPrice(signal.entryPrice)} | SL:{" "}
-                        {fmtPrice(signal.stopLoss)}
-                      </p>
-
-                      {signal.createdAt ? (
-                        <p className="text-xs text-mid-text mt-1">
-                          {new Date(signal.createdAt).toLocaleString()}
-                        </p>
-                      ) : null}
-                    </div>
-
-                    <span
-                      className={`px-2 py-0.5 text-xs font-bold rounded-full ${statusBadge(
-                        signal.status,
-                      )}`}
-                    >
-                      {statusLabel(signal.status)}
-                    </span>
-                  </div>
+                 <SignalCard key={signal._id} signal={signal} />
                 ))}
               </div>
             ) : (
@@ -433,7 +373,7 @@ const DashboardOverview: React.FC<Props> = ({
                 <PieChart>
                   <Pie
                     {...({ activeIndex: pieActiveIndex } as any)}
-                    shape={renderActiveShape}
+                    activeShape={renderActiveShape}
                     data={instrumentDistribution}
                     cx="50%"
                     cy="50%"

@@ -44,6 +44,11 @@ const LoginForm = () => {
           isConnected: user.cTraderConfig.isConnected,
           autoTradeEnabled: user.cTraderConfig.autoTradeEnabled,
         },
+        tradeSettings: {
+          balance: user.tradeSettings?.balance || 10000,
+          riskPerTrade: user.tradeSettings?.riskPerTrade || 1,
+          maxConcurrentTrades: user.tradeSettings?.maxConcurrentTrades || 3,
+        },
         notificationSettings: user.notificationSettings || {
           email: false,
           push: false,

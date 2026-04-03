@@ -5,8 +5,6 @@ import { fetchMarketContext, MarketContext, Candle } from "./marketDataService";
 import { saveSignalToDb } from "./signalService";
 import useAppStore from "@/store/useStore";
 
-const getUserId = () => useAppStore.getState().user?.id;
-
 const getAI = () => {
   const API_KEY = import.meta.env.VITE_API_KEY;
   if (!API_KEY) {
@@ -17,6 +15,45 @@ const getAI = () => {
 };
 
 const GENERATION_MODEL = "gemini-2.5-flash";
+
+const parseWithRetry = async (getResponse: () => Promise<string>, retries = 2) => {
+  for (let i = 0; i <= retries; i++) {
+    const text = await getResponse();
+    const parsed = safeParseAIResponse(text);
+
+    if (parsed) return parsed;
+
+    console.warn(`Retrying AI parse... (${i + 1})`);
+  }
+
+  return null;
+};
+
+const safeParseAIResponse = (text: string) => {
+  if (!text) return null;
+
+  try {
+    // Step 1: Remove markdown wrappers
+    let cleaned = text
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    // Step 2: Extract JSON block
+    const first = cleaned.indexOf("{");
+    const last = cleaned.lastIndexOf("}");
+
+    if (first === -1 || last === -1) return null;
+
+    cleaned = cleaned.substring(first, last + 1);
+
+    // Step 3: Try parsing
+    return JSON.parse(cleaned);
+  } catch (err) {
+    console.warn("❌ JSON parse failed:", err);
+    return null;
+  }
+};
 
 export const TARGET_INSTRUMENTS = [
   // --- Majors (7) ---
@@ -214,29 +251,29 @@ const calculateTechnicalSummary = (candles: Candle[]) => {
 // Helper to check if market is open
 const isMarketOpen = (instrument: string): boolean => {
   const now = new Date();
-  const day = now.getUTCDay(); // 0 = Sunday, 6 = Saturday
+  const day = now.getUTCDay(); // 0 = Sunday
   const hour = now.getUTCHours();
 
   const def = instrumentDefinitions[instrument];
   if (!def) return false;
 
-  // 1. Always Open: Synthetics (Deriv) & Crypto
-  // Synthetics flag
+  // ✅ 1. Crypto & Synthetic (always open)
   if (def.isDeriv) return true;
 
-  // Explicit Crypto Check (BTC/ETH/SOL)
   const cryptoPairs = ["BTC/USD", "ETH/USD", "SOL/USD"];
   if (cryptoPairs.includes(instrument)) return true;
 
-  // 2. Closed on Weekends (Forex, Metals, Indices)
-  // Saturday (6) is fully closed for FX/Metals
+  // ✅ 2. Forex / Metals / Indices
+
+  // Saturday → always closed
   if (day === 6) return false;
 
-  // Sunday (0) is closed until roughly 21:00 UTC (Market Open)
-  // Adjust logic: If Sunday AND hour < 21, consider closed.
-  if (day === 0 && hour < 21) return false;
+  // Sunday → open after ~22:00 UTC (more accurate than 21)
+  if (day === 0 && hour < 22) return false;
 
-  // Weekdays are open
+  // Friday → closes early (~21:59 UTC)
+  if (day === 5 && hour >= 22) return false;
+
   return true;
 };
 
@@ -420,8 +457,12 @@ ${ctx.details ? `Details: ${ctx.details}` : ""}
 
     let patternResult;
     try {
-      const cleanText = cleanJsonString(patternResponse.text || "");
-      patternResult = JSON.parse(cleanText);
+      const result = safeParseAIResponse(patternResponse.text || "");
+
+      if (!result) {
+        console.warn("⚠️ AI returned invalid JSON");
+        return { signalFound: false };
+      }
     } catch (jsonError) {
       console.warn("JSON Parse Error in Pattern Classifier:", jsonError);
       return { signalFound: false };

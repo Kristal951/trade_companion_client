@@ -176,6 +176,11 @@ const AuthLayout = ({ onAuthSuccess, showToast }) => {
         subscriptionInterval: user.subscriptionInterval,
         subscriptionCurrentPeriodEnd: user.subscriptionCurrentPeriodEnd,
         stripeCustomerId: user.stripeCustomerId,
+        tradeSettings: {
+          balance: user.tradeSettings?.balance || 10000,
+          riskPerTrade: user.tradeSettings?.riskPerTrade || 1,
+          maxConcurrentTrades: user.tradeSettings?.maxConcurrentTrades || 3,
+        },
         cTraderConfig: {
           accountId: user.cTraderConfig.accountId,
           isConnected: user.cTraderConfig.isConnected,

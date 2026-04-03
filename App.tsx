@@ -100,6 +100,7 @@ export const App: React.FC = () => {
             handleLoginRequest={handleLoginRequest}
             handleLogout={handleLogout}
             activeTrades={activeTrades}
+            setActiveTrades={setActiveTrades}
             tradeHistory={tradeHistory}
             floatingPnL={floatingPnL}
             liveEquity={liveEquity}
@@ -110,6 +111,7 @@ export const App: React.FC = () => {
             isAccountMenuOpen={isAccountMenuOpen}
             setAccountMenuOpen={setAccountMenuOpen}
             addNotification={addNotification}
+            setTradeHistory={setTradeHistory}
           />
         </ScreenshotDetector>
 

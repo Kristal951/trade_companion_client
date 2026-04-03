@@ -85,7 +85,7 @@ export const AnalyticsPage: React.FC<{
     JSON.parse(localStorage.getItem(TRADE_HISTORY_KEY) || "[]"),
   );
   const [initialEquity] = useState<number>(() =>
-    parseFloat(localStorage.getItem(INITIAL_EQUITY_KEY) || "10000"),
+    parseFloat(user.tradeSettings.balance || localStorage.getItem(INITIAL_EQUITY_KEY) || "10000"),
   );
   const [pieActiveIndex, setPieActiveIndex] = useState(0);
 

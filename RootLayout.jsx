@@ -16,7 +16,7 @@ const RootLayout = ({
   onLogout,
   isAccountMenuOpen,
   showToast,
-  setIsMentorMode
+  setIsMentorMode,
 }) => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const navigate = useNavigate();

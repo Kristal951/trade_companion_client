@@ -42,6 +42,8 @@ type Props = {
   isAccountMenuOpen: boolean;
   setAccountMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
   addNotification: any;
+  setActiveTrades: React.Dispatch<React.SetStateAction<boolean>>;
+  setTradeHistory: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 export default function AppRoutes({
@@ -65,6 +67,8 @@ export default function AppRoutes({
   isAccountMenuOpen,
   setAccountMenuOpen,
   addNotification,
+  setActiveTrades,
+  setTradeHistory,
 }: Props) {
   return (
     <Routes>
@@ -121,8 +125,10 @@ export default function AppRoutes({
               user={user}
               activeTrades={activeTrades}
               tradeHistory={tradeHistory}
+              setActiveTrades={setActiveTrades}
               liveEquity={liveEquity}
               floatingPnL={floatingPnL}
+              setTradeHistory={setTradeHistory}
             />
           }
         />

@@ -184,6 +184,27 @@ const Icon: React.FC<IconProps> = ({
         d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
       />
     ),
+    closedTrades: (
+      <>
+        <path
+          d="M12 2 
+           C6.48 2 2 6.48 2 12 
+           C2 17.52 6.48 22 12 22 
+           C17.52 22 22 17.52 22 12 
+           C22 6.48 17.52 2 12 2Z"
+          stroke="currentColor"
+          stroke-width="2"
+        />
+
+        <path
+          d="M7 12.5 L10 15.5 L17 8.5"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </>
+    ),
     education: (
       <path
         strokeLinecap="round"
