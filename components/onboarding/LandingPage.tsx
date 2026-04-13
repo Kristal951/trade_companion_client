@@ -212,7 +212,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
   );
 
   return (
-    <div className="bg-[#111827] min-h-screen text-white overflow-y-scroll">
+    <div className=" bg-fintech-bg min-h-screen text-white overflow-y-scroll">
       <Header />
 
       <main>
@@ -413,7 +413,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
 
         <Features />
 
-        <Education />
+        {/* <Education /> */}
 
         <TopMentors
           setMentorSearchQuery={setMentorSearchQuery}

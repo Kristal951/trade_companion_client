@@ -1,63 +1,94 @@
-import React from "react";
-import { Link } from "react-router-dom";
+
+import Icon from "@/components/ui/Icon";
+import React from "react";import { Link, useNavigate } from "react-router-dom";
 
 const TopMentors = ({
   filteredMentors,
   mentorSearchQuery,
   setMentorSearchQuery,
 }) => {
+  const navigate = useNavigate();
+
   return (
     <section id="mentors" className="py-20 bg-[#111827]">
       <div className="container mx-auto px-6">
-        <h3 className="text-4xl font-bold text-center mb-4">
-          Meet Our Top Mentors
-        </h3>
-        <div className="max-w-xl mx-auto mb-12">
-          <input
-            type="text"
-            placeholder="Search by name or instrument (e.g., John, EUR/USD)..."
-            value={mentorSearchQuery}
-            onChange={(e) => setMentorSearchQuery(e.target.value)}
-            className="w-full px-5 py-3 bg-light-surface border border-light-gray rounded-full focus:ring-2 focus:ring-primary focus:outline-none transition-shadow shadow-sm"
-          />
+        <div className="flex flex-col md:flex-row justify-between items-end mb-12">
+          <div>
+            <h2 className="text-3xl font-bold text-white mb-2">
+              Top Performing Mentors
+            </h2>
+            <p className="text-slate-400">
+              Vetted traders with verified track records.
+            </p>
+          </div>
+          <div className="mt-4 md:mt-0 relative">
+            <input
+              type="text"
+              placeholder='Find a mentor'
+              value={mentorSearchQuery}
+              onChange={(e) => setMentorSearchQuery(e.target.value)}
+              className="bg-slate-800 border border-slate-700 text-white rounded-full py-2 pl-4 pr-10 focus:ring-2 focus:ring-neon-blue focus:outline-none w-64"
+            />
+            <Icon
+              name="search"
+              className="absolute right-3 top-2.5 w-5 h-5 text-slate-500"
+            />
+          </div>
         </div>
+
         {filteredMentors.length > 0 ? (
           <div className="grid md:grid-cols-3 gap-8">
             {filteredMentors.map((mentor) => (
               <div
                 key={mentor.id}
-                className="bg-[#111827] rounded-lg overflow-hidden text-center p-6 transform hover:-translate-y-2 transition-transform duration-300 shadow-md border border-light-gray"
+                className="bg-fintech-card border border-fintech-border rounded-xl p-6 hover:shadow-2xl hover:shadow-neon-blue/5 transition-all group"
               >
-                <img
-                  src={mentor.avatar}
-                  alt={mentor.name}
-                  className="w-32 h-32 rounded-full mx-auto mb-4 border-4 border-primary"
-                />
-                <h4 className="text-xl font-bold">{mentor.name}</h4>
-                <p className="text-primary mb-2">
-                  {mentor.experience} Years Experience
-                </p>
-                <div className="flex justify-around text-sm my-4">
-                  <span>
-                    <strong className="text-success">
+                <div className="flex w-full items-center justify-between">
+                  <div className="flex gap-4 items-center">
+                    <img
+                      src={mentor.avatar}
+                      alt={mentor.name}
+                      className="w-16 h-16 rounded-full border-2 border-primary"
+                    />
+
+                    <div className="flex flex-col items-start">
+                      <h4 className="text-xl font-bold">{mentor.name}</h4>
+                      <p className="text-xs text-slate-400 uppercase tracking-wide">
+                        {mentor.experience} Years EXP
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col text-right">
+                    <strong className="text-2xl font-bold text-neon-green">
                       {mentor.profitRatio}%
-                    </strong>{" "}
-                    Profit Ratio
-                  </span>
-                  <span>
-                    <strong className="text-primary">${mentor.price}</strong>
-                    /month
-                  </span>
+                    </strong>
+                    <span className="text-xs text-slate-500">ROI (Mo)</span>
+                  </div>
                 </div>
-                <p className="text-mid-text text-sm mb-4">
-                  Trades: {mentor.instruments.join(", ")}
-                </p>
-                <Link
-                  to="/auth/signUp"
-                  className="w-full bg-primary/10 text-primary hover:bg-primary hover:text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+
+                <div className="flex w-full flex-col text-sm mt-4 gap-1">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-slate-400">Win Rate</h2>
+                    <span className="text-white font-mono">
+                      {mentor.winRate}%
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-slate-400">Instruments</h2>
+                    <span className="text-white text-right">
+                      {mentor.instruments?.join(", ") || "N/A"}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => navigate(`/mentor/${mentor.id}`)}
+                  className="mt-4 w-full py-3 rounded-lg border border-slate-700 text-white hover:bg-white hover:text-fintech-bg font-bold transition-colors"
                 >
                   View Profile
-                </Link>
+                </button>
               </div>
             ))}
           </div>

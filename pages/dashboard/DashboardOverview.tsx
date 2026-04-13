@@ -1,3 +1,5 @@
+import InstrumentPieChart from "@/components/dashboard/EquityChart";
+import MentorPostCard from "@/components/dashboard/MentorPostCard";
 import SignalCard from "@/components/dashboard/SignalCard";
 import Icon from "@/components/ui/Icon";
 import Spinner from "@/components/ui/Spinner";
@@ -39,6 +41,9 @@ const DashboardOverview: React.FC<Props> = ({
   closedTrades,
   liveEquity,
   floatingPnL,
+  getUserMentorPost,
+  dashboardMentorPosts,
+  isFetchingDashboardMentorPosts,
   setActiveTrades,
   setTradeHistory,
 }) => {
@@ -98,10 +103,15 @@ const DashboardOverview: React.FC<Props> = ({
 
   const [pieActiveIndex, setPieActiveIndex] = useState(0);
 
-  const initialEquity =
-    user.tradeSettings?.balance ||
-    localStorage.getItem(INITIAL_EQUITY_KEY) ||
-    10000;
+  const brokerBalance = user?.cTraderConfig?.isConnected
+    ? user?.cTraderConfig?.cachedBalance
+    : user?.tradeSettings?.balance;
+
+  const initialEquity = parseFloat(
+    brokerBalance?.toString() ||
+      localStorage.getItem(INITIAL_EQUITY_KEY) ||
+      "10000",
+  );
 
   const chartEquityData = useMemo(() => {
     let cumulative = initialEquity;
@@ -134,7 +144,8 @@ const DashboardOverview: React.FC<Props> = ({
     setPieActiveIndex(index);
   }, []);
 
-  const totalProfit = liveEquity - initialEquity;
+  const totalProfit =
+    user?.tradeSettings?.balance > 0 ? liveEquity - initialEquity : 0;
 
   const winRate =
     closedTrades.length > 0
@@ -156,6 +167,10 @@ const DashboardOverview: React.FC<Props> = ({
       : "0.00";
 
   const safeLiveEquity = isNaN(Number(liveEquity)) ? 0 : Number(liveEquity);
+  const safeLiveBalance = isNaN(Number(user?.tradeSettings?.balance))
+    ? 0
+    : Number(user?.tradeSettings?.balance);
+  const safeProfit = Number(totalProfit) || 0;
 
   const fmtPrice = (n: number, digits = 4) =>
     Number.isFinite(Number(n)) ? Number(n).toFixed(digits) : "-";
@@ -195,9 +210,100 @@ const DashboardOverview: React.FC<Props> = ({
 
     return () => clearInterval(interval);
   }, [uid]);
+
+  useEffect(() => {
+    if (!recentAISignals || recentAISignals.length === 0) return;
+
+    const trades: TradeRecord[] = recentAISignals.map((signal) => ({
+      id: signal._id,
+
+      status: "active",
+
+      pnl: 0,
+      currentPrice: signal.entryPrice,
+
+      // ✅ FIX: use createdAt safely
+      dateTaken: signal.createdAt ?? new Date().toISOString(),
+
+      // ✅ FIX: AISignal has executedAt (NOT dateClosed)
+      dateClosed: signal.executedAt ?? undefined,
+
+      initialEquity: liveEquity,
+      finalEquity: 0,
+
+      // ✅ FIX: takeProfits array → single number
+      takeProfit: signal.takeProfits?.[0] ?? 0,
+
+      // keep original signal if needed
+      signal,
+    }));
+
+    setActiveTrades(trades);
+  }, [recentAISignals, liveEquity, setActiveTrades]);
+
+  const sign = safeProfit > 0 ? "+" : safeProfit < 0 ? "-" : "";
+
+  const formatCurrency = (num: number) => {
+    const value = Number(num) || 0;
+    const sign = value > 0 ? "+" : value < 0 ? "-" : "";
+
+    return `${sign}$${Math.abs(value).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
+
+  useEffect(() => {
+    getUserMentorPost();
+  }, []);
+
+  const PALETTE = [
+    "#818CF8", // indigo
+    "#34D399", // green
+    "#F59E0B", // amber
+    "#EF4444", // red
+    "#60A5FA", // blue
+    "#A78BFA", // purple
+    "#F472B6", // pink
+    "#22C55E", // lime
+  ];
+
+  const hashStringToIndex = (str: string) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return Math.abs(hash);
+  };
+
+  const getPairColor = (pair: string) => {
+    const index = hashStringToIndex(pair) % PALETTE.length;
+    return PALETTE[index];
+  };
+
   return (
     <div className="p-4 mb-4 bg-light-bg min-h-[calc(100vh-64px)]">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div
+          onClick={() => navigate("/analytics")}
+          className="cursor-pointer transition-transform transform hover:scale-105"
+        >
+          <StatCard
+            title="Balance"
+            value={`$${safeLiveBalance.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`}
+            percentageType={totalProfit >= 0 ? "gain" : "loss"}
+            icon={<Icon name="wallet" className="w-6 h-6" />}
+            subValue={
+              <span className="text-blue-500 font-semibold">
+                Realized Balance
+              </span>
+            }
+          />
+        </div>
+
         <div
           onClick={() => navigate("/analytics")}
           className="cursor-pointer transition-transform transform hover:scale-105"
@@ -235,23 +341,6 @@ const DashboardOverview: React.FC<Props> = ({
             value={`${winRate}%`}
             percentageType={parseFloat(winRate) >= 50 ? "gain" : "loss"}
             icon={<Icon name="check" className="w-5 h-5" />}
-          />
-        </div>
-
-        <div
-          onClick={() => navigate("/analytics")}
-          className="cursor-pointer transition-transform transform hover:scale-105"
-        >
-          <StatCard
-            title="Total P/L (Realized + Float)"
-            value={`${totalProfit >= 0 ? "+" : "-"}$${Math.abs(
-              totalProfit,
-            ).toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}`}
-            percentageType={totalProfit >= 0 ? "gain" : "loss"}
-            icon={<Icon name="dashboard" className="w-5 h-5" />}
           />
         </div>
 
@@ -329,6 +418,7 @@ const DashboardOverview: React.FC<Props> = ({
           </div>
 
           <div className="bg-light-surface p-6 rounded-xl shadow-sm border border-light-gray">
+            {/* <div className="w-full flex items-center justify-between"> */}
             <h3 className="text-xl font-bold text-dark-text mb-4">
               Latest AI Signals
             </h3>
@@ -342,7 +432,9 @@ const DashboardOverview: React.FC<Props> = ({
             ) : recentAISignals.length > 0 ? (
               <div className="space-y-4">
                 {recentAISignals.map((signal) => (
-                 <SignalCard key={signal._id} signal={signal} />
+                  <div key={signal._id}>
+                    <SignalCard signal={signal} />
+                  </div>
                 ))}
               </div>
             ) : (
@@ -369,38 +461,9 @@ const DashboardOverview: React.FC<Props> = ({
             </h3>
 
             {instrumentDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    {...({ activeIndex: pieActiveIndex } as any)}
-                    activeShape={renderActiveShape}
-                    data={instrumentDistribution}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    onMouseEnter={onPieEnter}
-                  >
-                    {instrumentDistribution.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={PIE_COLORS[index % PIE_COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--color-surface)",
-                      border: "1px solid var(--color-border-dark)",
-                      borderRadius: "8px",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              <InstrumentPieChart
+                instrumentDistribution={instrumentDistribution}
+              />
             ) : (
               <p className="text-center text-mid-text py-16">
                 No trade history to analyze.
@@ -413,21 +476,16 @@ const DashboardOverview: React.FC<Props> = ({
               You are following
             </h3>
 
-            <div className="space-y-4">
-              {MOCK_MENTOR_POSTS.slice(0, 2).map((post) => (
-                <div
-                  key={post.id}
-                  className="bg-light-hover p-4 rounded-lg border border-light-gray"
-                >
-                  <h4 className="font-semibold text-dark-text">{post.title}</h4>
-                  <p className="text-sm text-mid-text line-clamp-2">
-                    {post.content}
-                  </p>
-                  <p className="text-xs text-mid-text mt-2">
-                    {new Date(post.timestamp).toLocaleDateString()}
-                  </p>
+            <div className="space-y-2">
+              {isFetchingDashboardMentorPosts && dashboardMentorPosts <= 0 ? (
+                <div className="w-full h-full p-4 flex items-center justify-center">
+                  <Spinner w={5} h={5} />
                 </div>
-              ))}
+              ) : (
+                dashboardMentorPosts.map((post) => (
+                  <MentorPostCard post={post} />
+                ))
+              )}
             </div>
 
             <button

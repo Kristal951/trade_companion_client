@@ -2,7 +2,6 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import useAppStore from "@/store/useStore";
 import Icon from "@/components/ui/Icon";
-import FlwSubscriptionButton from "@/components/ui/FlwSubscriptionBtn";
 import Spinner from "@/components/ui/Spinner";
 
 const Subscribe = ({ showToast }) => {
@@ -247,14 +246,6 @@ const Subscribe = ({ showToast }) => {
                   </span>
                   <span className="h-px bg-light-gray flex-1"></span>
                 </div>
-
-                <FlwSubscriptionButton
-                  name={name}
-                  email={email}
-                  planKey={planName}
-                  amount={plan.amount}
-                  planID={planId}
-                />
 
                 <button
                   onClick={() => navigate(-1)}

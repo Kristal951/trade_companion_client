@@ -13,13 +13,13 @@ import ContactUsPage from "@/pages/ContactUsPage";
 import LotSizeCalculatorPage from "../calculator/LotSizeCalculatorPage";
 import SettingsPage from "@/pages/SettingsPage";
 import MentorProfilePage from "../mentors/MentorProfilePage";
-import { EducationPage } from "../dashboard/DashboardPage";
 import { AnalyticsPage } from "@/pages/Analytics";
 import Subscribe from "@/pages/SubscriptionPage";
 import { renderAuthRoutes } from "./AuthRoutes";
 import { renderMentorRoutes } from "./MentorRoutes";
 import PaymentCancelledPage from "@/pages/SubPaymentCancelled";
 import NotificationsPage from "@/pages/NotificationsPage";
+import { EducationPage } from "@/pages/EducationPage";
 
 type Props = {
   user: any;
@@ -41,7 +41,6 @@ type Props = {
   setIsMentorMode: React.Dispatch<React.SetStateAction<boolean>>;
   isAccountMenuOpen: boolean;
   setAccountMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  addNotification: any;
   setActiveTrades: React.Dispatch<React.SetStateAction<boolean>>;
   setTradeHistory: React.Dispatch<React.SetStateAction<boolean>>;
 };
@@ -66,7 +65,6 @@ export default function AppRoutes({
   setIsMentorMode,
   isAccountMenuOpen,
   setAccountMenuOpen,
-  addNotification,
   setActiveTrades,
   setTradeHistory,
 }: Props) {
@@ -193,7 +191,6 @@ export default function AppRoutes({
         {renderMentorRoutes({
           user,
           showToast,
-          addNotification,
         })}
       </Route>
 

@@ -9,10 +9,7 @@ import { useOutletContext } from "react-router-dom";
 
 const MentorPublisher: React.FC<{
   showToast: (message: string, type?: "success" | "info" | "error") => void;
-  addNotification: (
-    notification: Omit<Notification, "id" | "timestamp" | "isRead">,
-  ) => void;
-}> = ({ addNotification }) => {
+}> = () => {
   const [postType, setPostType] = useState<"analysis" | "signal">("analysis");
   const [postContent, setPostContent] = useState("");
   const [title, setTitle] = useState("");
@@ -20,7 +17,7 @@ const MentorPublisher: React.FC<{
   const [previews, setPreviews] = useState<string[]>([]);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [editingPost, setEditingPost] = useState<MentorPost | null>(null);
- const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
   const { showToast } = useOutletContext<{
     showToast: (msg: string, type?: string) => void;
@@ -208,7 +205,8 @@ const MentorPublisher: React.FC<{
     const MAX_FILES = 5;
     const MAX_SIZE_MB = 10;
 
-    const selectedFiles = Array.from(e.target.files || []);
+    const selectedFiles: File[] = Array.from(e.target.files ?? []) as File[];
+
     if (files.length + selectedFiles.length > MAX_FILES) {
       showToast(`You can upload up to ${MAX_FILES} images`, "info");
     }
@@ -216,7 +214,7 @@ const MentorPublisher: React.FC<{
     if (!selectedFiles.length) return;
 
     const validFiles = selectedFiles.filter(
-      (file) =>
+      (file: File) =>
         file.type.startsWith("image/") &&
         file.size <= MAX_SIZE_MB * 1024 * 1024,
     );
@@ -230,7 +228,9 @@ const MentorPublisher: React.FC<{
 
     const slicedFiles = validFiles.slice(0, MAX_FILES - files.length);
 
-    const newPreviews = slicedFiles.map((file) => URL.createObjectURL(file));
+    const newPreviews = slicedFiles.map((file: File) =>
+      URL.createObjectURL(file),
+    );
 
     setFiles((prev) => [...prev, ...slicedFiles]);
     setPreviews((prev) => [...prev, ...newPreviews]);
@@ -278,12 +278,6 @@ const MentorPublisher: React.FC<{
 
     try {
       await createMentorPost(formData);
-
-      addNotification({
-        message: `New ${postType} from your mentor, ${mentor.name}.`,
-        linkTo: "mentor_profile",
-        type: "mentor",
-      });
 
       if (postType === "signal") {
         const sendToTelegram = formData.get("sendTelegram") === "on";

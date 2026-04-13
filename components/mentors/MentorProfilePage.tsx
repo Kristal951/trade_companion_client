@@ -193,6 +193,7 @@ const MentorProfilePage: React.FC<MentorProfilePageProps> = ({ showToast }) => {
   const isSubscribed = !!mentor?.subscribers?.some(
     (sub) => sub.userId === userId && sub.status === "Active",
   );
+  console.log(isSubscribed, user)
 
   const isOwnProfile = String(mentor?.user) === String(userId);
 

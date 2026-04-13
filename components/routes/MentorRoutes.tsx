@@ -8,13 +8,11 @@ import FollowersPage from "../mentors/FollowersPage";
 type MentorRoutesProps = {
   user: any;
   showToast: (message: string, type?: "success" | "info" | "error") => void;
-  addNotification: any;
 };
 
 export function renderMentorRoutes({
   user,
   showToast,
-  addNotification,
 }: MentorRoutesProps) {
   return (
     <>
@@ -24,7 +22,6 @@ export function renderMentorRoutes({
           element={
             <MentorDashboard
               user={user}
-              addNotification={addNotification}
               showToast={showToast}
             />
           }
@@ -34,7 +31,6 @@ export function renderMentorRoutes({
           element={
             <MentorPayoutsPage
               user={user}
-              addNotification={addNotification}
               showToast={showToast}
             />
           }

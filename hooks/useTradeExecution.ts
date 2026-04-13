@@ -26,7 +26,9 @@ export function useTradeExecution({
   }) => {
     if (!user) return;
 
-    if (activeTrades.some((t) => t.instrument === tradeDetails.instrument)) {
+    if (
+      activeTrades.some((t) => t.signal.instrument === tradeDetails.instrument)
+    ) {
       showToast(
         `You already have an active trade for ${tradeDetails.instrument}`,
         "error",
@@ -81,24 +83,33 @@ export function useTradeExecution({
     }
 
     const newTrade: TradeRecord = {
-      id: new Date().toISOString(),
+      id: new Date().getTime().toString(), 
       status: "active",
+      pnl: 0,
+      currentPrice: tradeDetails.entryPrice,
       dateTaken: new Date().toISOString(),
       initialEquity: currentEquity,
-      instrument: tradeDetails.instrument,
-      type: tradeDetails.type,
-      entryPrice: tradeDetails.entryPrice,
-      stopLoss: tradeDetails.stopLoss,
       takeProfit: tradeDetails.takeProfit,
-      confidence: tradeDetails.confidence,
-      reasoning: tradeDetails.reasoning,
-      lotSize,
-      riskAmount: isNaN(riskAmount) ? 0 : parseFloat(riskAmount.toFixed(2)),
-      technicalReasoning: "Manual AI Execution from Chat",
-      takeProfit1: tradeDetails.takeProfit,
-      timestamp: new Date().toISOString(),
-    };
 
+      signal: {
+        _id: `manual_${new Date().getTime()}`,
+        userId: user._id || user.id,
+        instrument: tradeDetails.instrument,
+        type: tradeDetails.type,
+        status: "executed",
+        entryPrice: tradeDetails.entryPrice,
+        stopLoss: tradeDetails.stopLoss,
+        takeProfits: [tradeDetails.takeProfit], // Expects number[]
+        confidence: tradeDetails.confidence,
+        reasoning: tradeDetails.reasoning,
+        technicalReasoning: "Manual AI Execution from Chat",
+        createdAt: new Date().toISOString(),
+        executedAt: new Date().toISOString(),
+        executedPrice: tradeDetails.entryPrice,
+        lotSize: lotSize,
+        riskAmount: isNaN(riskAmount) ? 0 : parseFloat(riskAmount.toFixed(2)),
+      },
+    };
     setActiveTrades((prev) => [newTrade, ...prev]);
     showToast(
       `${tradeDetails.instrument} ${tradeDetails.type} executed successfully!`,

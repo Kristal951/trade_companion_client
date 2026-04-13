@@ -130,14 +130,10 @@ import MentorSubscriberCard from "../ui/MentorSubscriberCard";
 interface MentorDashboardProps {
   user: User;
   showToast: (message: string, type?: "success" | "info" | "error") => void;
-  addNotification: (
-    notification: Omit<Notification, "id" | "timestamp" | "isRead">
-  ) => void;
 }
 
 const MentorDashboard: React.FC<MentorDashboardProps> = ({
   showToast,
-  addNotification,
 }) => {
   const [activeTab, setActiveTab] = useState<"publisher" | "profile">(
     "publisher"
@@ -188,7 +184,6 @@ const MentorDashboard: React.FC<MentorDashboardProps> = ({
             <MentorPublisher
               mentor={mentor}
               showToast={showToast}
-              addNotification={addNotification}
             />
           )}
           {activeTab === "profile" && (

@@ -9,6 +9,7 @@ import {
 } from "react-icons/io5";
 import { CgSpinner } from "react-icons/cg";
 import useAppStore from "@/store/useStore";
+import React from "react";
 
 export default function PaymentSuccessPage() {
   const [searchParams] = useSearchParams();
@@ -28,6 +29,12 @@ export default function PaymentSuccessPage() {
     };
   }, [sessionId, verifyStripeSession, resetPaymentState]);
 
+  const IoCheckmarkCircleIcon = IoCheckmarkCircle as React.ElementType;
+  const IoAlertCircleIcon = IoAlertCircle as React.ElementType;
+  const IoTimeOutlineIcon = IoTimeOutline as React.ElementType;
+  const IoArrowForwardIcon = IoArrowForward as React.ElementType;
+  const CgSpinnerIcon = CgSpinner as React.ElementType;
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-black/60 px-4 py-10 font-sans">
       <div className="mx-auto flex min-h-[80vh] w-full max-w-[480px] items-center justify-center">
@@ -41,7 +48,7 @@ export default function PaymentSuccessPage() {
               className="w-full rounded-[28px] bg-light-surface p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur"
             >
               <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-light-bg">
-                <CgSpinner className="h-10 w-10 animate-spin text-indigo-600" />
+                <CgSpinnerIcon className="h-10 w-10 animate-spin text-indigo-600" />
               </div>
 
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-mid-text">
@@ -67,7 +74,7 @@ export default function PaymentSuccessPage() {
             >
               <div className="text-center">
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-50 ring-8 ring-green-50/60">
-                  <IoCheckmarkCircle className="h-12 w-12 text-green-500" />
+                  <IoCheckmarkCircleIcon className="h-12 w-12 text-green-500" />
                 </div>
 
                 <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-green-600">
@@ -121,7 +128,7 @@ export default function PaymentSuccessPage() {
                   className="group flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-4 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
                 >
                   Go to Dashboard
-                  <IoArrowForward className="text-lg transition-transform group-hover:translate-x-1" />
+                  <IoArrowForwardIcon className="text-lg transition-transform group-hover:translate-x-1" />
                 </Link>
 
                 <Link
@@ -143,7 +150,7 @@ export default function PaymentSuccessPage() {
               className="w-full rounded-[28px] bg-light-surface p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur"
             >
               <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-amber-50 ring-8 ring-amber-50/60">
-                <IoTimeOutline className="h-11 w-11 text-amber-500" />
+                <IoTimeOutlineIcon className="h-11 w-11 text-amber-500" />
               </div>
 
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-amber-600">
@@ -174,7 +181,7 @@ export default function PaymentSuccessPage() {
               className="w-full rounded-[28px] bg-light-surface p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur"
             >
               <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-50 ring-8 ring-red-50/60">
-                <IoAlertCircle className="h-12 w-12 text-red-500" />
+                <IoAlertCircleIcon className="h-12 w-12 text-red-500" />
               </div>
 
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-red-500">

@@ -15,7 +15,6 @@ const Header = ({
   useEffect(() => {
     localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
   }, [notifications, NOTIFICATIONS_KEY]);
-  const addNotification = useAppStore((state) => state.addNotification);
 
   return (
     <header className="bg-light-surface border-b border-light-gray p-4 flex justify-between items-center flex-shrink-0">
@@ -69,7 +68,6 @@ const Header = ({
         </label>
         <NotificationBell
           notifications={notifications}
-          addNotification={addNotification}
         />
         <img
           src={

@@ -35,12 +35,14 @@ interface AppState {
   stripeCustomerId: string;
   processingPlan: string | null;
   isOpeningBillingPortal: boolean;
+  isFetchingDashboardMentorPosts: boolean;
 
   IsLoggingOut: boolean;
   loading: boolean;
   error: boolean;
   darkMode: boolean;
   notifications: Notification[];
+  dashboardMentorPosts: [];
 
   paymentState: PaymentState;
   paymentMessage: string;
@@ -70,11 +72,8 @@ interface AppState {
   setMentor: (mentor: Mentor | Partial<Mentor>, replace?: boolean) => void;
   clearUser: () => void;
   updateUser: (updates: Partial<User>) => Promise<void>;
+  getUserMentorPost: () => Promise<void>;
 
-  addNotification: (n: Notification) => void;
-  markNotificationRead: (id: string) => void;
-  markAllNotificationsRead: () => void;
-  clearNotifications: () => void;
   syncUserSubscription: (
     subscription: SubscriptionData,
     apiUser?: Partial<User>,
@@ -136,6 +135,8 @@ const useAppStore = create<AppState>()(
       stripeCustomerId: "",
       processingPlan: null,
       isOpeningBillingPortal: false,
+      isFetchingDashboardMentorPosts: false,
+      dashboardMentorPosts: [],
 
       IsLoggingOut: false,
       loading: false,
@@ -286,50 +287,14 @@ const useAppStore = create<AppState>()(
           accessToken: "",
         }),
 
-      addNotification: (notification) =>
-        set((s) => {
-          const exists = s.notifications.some((n) => n.id === notification.id);
-          return {
-            notifications: exists
-              ? s.notifications
-              : [...s.notifications, notification],
-          };
-        }),
-
-      markNotificationRead: (id) =>
-        set((s) => ({
-          notifications: s.notifications.map((n) =>
-            n.id === id ? { ...n, isRead: true } : n,
-          ),
-        })),
-
-      markAllNotificationsRead: () =>
-        set((s) => ({
-          notifications: s.notifications.map((n) => ({
-            ...n,
-            isRead: true,
-          })),
-        })),
-
-      clearNotifications: () => set({ notifications: [] }),
-
       signup: async (data) => {
-        const { setLoading, setError, addNotification } = get();
+        const { setLoading, setError } = get();
 
         try {
           setLoading(true);
           setError(false);
 
           await API.post("/api/user/register", data);
-
-          addNotification({
-            id: Date.now().toString(),
-            message: "Signup successful!",
-            isRead: false,
-            timestamp: new Date().toISOString(),
-            linkTo: "dashboard",
-            type: "app_update",
-          });
         } catch (err) {
           setError(true);
           throw err;
@@ -339,7 +304,7 @@ const useAppStore = create<AppState>()(
       },
 
       signIn: async (data) => {
-        const { setUser, setLoading, setError, addNotification } = get();
+        const { setUser, setLoading, setError } = get();
 
         try {
           setLoading(true);
@@ -357,28 +322,9 @@ const useAppStore = create<AppState>()(
           });
           setUser(user, true);
 
-          addNotification({
-            id: Date.now().toString(),
-            message: "SignIn successful!",
-            isRead: false,
-            timestamp: new Date().toISOString(),
-            linkTo: "dashboard",
-            type: "app_update",
-          });
-
           return user;
         } catch (err: any) {
           setError(true);
-
-          addNotification({
-            id: Date.now().toString(),
-            message: "SignIn unsuccessful!",
-            isRead: false,
-            timestamp: new Date().toISOString(),
-            linkTo: "dashboard",
-            type: "app_update",
-          });
-
           throw err;
         } finally {
           setLoading(false);
@@ -386,7 +332,7 @@ const useAppStore = create<AppState>()(
       },
 
       handleGoogleSignIn: async (data) => {
-        const { setUser, setLoading, setError, addNotification } = get();
+        const { setUser, setLoading, setError } = get();
 
         try {
           setLoading(true);
@@ -402,15 +348,6 @@ const useAppStore = create<AppState>()(
           }
 
           setUser(user ?? res.data, true);
-
-          addNotification({
-            id: Date.now().toString(),
-            message: "Google SignIn successful!",
-            isRead: false,
-            timestamp: new Date().toISOString(),
-            linkTo: "dashboard",
-            type: "app_update",
-          });
 
           return user ?? res.data;
         } catch (err) {
@@ -442,7 +379,7 @@ const useAppStore = create<AppState>()(
         }
       },
       updateUser: async (updates) => {
-        const { setUser, setLoading, setError, addNotification } = get();
+        const { setUser, setLoading, setError } = get();
 
         try {
           setLoading(true);
@@ -450,7 +387,7 @@ const useAppStore = create<AppState>()(
 
           const formData = new FormData();
 
-          if (updates.avatar instanceof File) {
+          if (updates.avatar && (updates.avatar as any) instanceof File) {
             formData.append("avatar", updates.avatar);
           }
 
@@ -476,26 +413,8 @@ const useAppStore = create<AppState>()(
           const updatedUser = res.data.user;
 
           setUser(updatedUser, true);
-
-          addNotification({
-            id: Date.now().toString(),
-            message: "Profile updated successfully!",
-            isRead: false,
-            timestamp: new Date().toISOString(),
-            linkTo: "dashboard",
-            type: "app_update",
-          });
         } catch (err) {
           setError(true);
-
-          addNotification({
-            id: Date.now().toString(),
-            message: "Profile update failed. Please try again.",
-            isRead: false,
-            timestamp: new Date().toISOString(),
-            linkTo: "dashboard",
-            type: "app_update",
-          });
 
           throw err;
         } finally {
@@ -849,6 +768,24 @@ const useAppStore = create<AppState>()(
         } finally {
           setLoading(false);
           set({ processingPlan: null });
+        }
+      },
+
+      getUserMentorPost: async () => {
+        set({ isFetchingDashboardMentorPosts: true });
+        try {
+          const res = await API.get("/api/user/my-mentor-posts");
+
+          set({ dashboardMentorPosts: res.data.posts });
+        } catch (error) {
+          console.error(
+            "Failed to fetch mentor posts:",
+            error?.response?.data || error.message,
+          );
+
+          return null;
+        } finally {
+          set({ isFetchingDashboardMentorPosts: false });
         }
       },
 

@@ -3,10 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { TARGET_INSTRUMENTS } from "@/services/geminiService";
 import { API } from "@/utils";
 import Spinner from "./Spinner";
-import useAppStore from "@/store/useStore";
 
 import {
-  BiShieldQuarter,
   BiSync,
   BiLinkAlt,
   BiUnlink,
@@ -271,6 +269,15 @@ const CTraderSettings = ({ user, setUser, showToast }: any) => {
     }, 800);
   };
 
+  const TerminalIcon = FaTerminal as React.ElementType;
+  const BiSyncIcon = BiSync as React.ElementType;
+  const BiLinkAltIcon = BiLinkAlt as React.ElementType;
+  const BiUnlinkIcon = BiUnlink as React.ElementType;
+  const BiChevronRightIcon = BiChevronRight as React.ElementType;
+  const BiSliderAltIcon = BiSliderAlt as React.ElementType;
+  const BiCheckCircleIcon = BiCheckCircle as React.ElementType;
+  const MdOutlineSecurityIcon = MdOutlineSecurity as React.ElementType;
+
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden">
@@ -279,13 +286,13 @@ const CTraderSettings = ({ user, setUser, showToast }: any) => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <FaTerminal className="text-indigo-600 w-6 h-6" />
+                <TerminalIcon className="text-indigo-600 w-6 h-6" />
                 <h3 className="font-black text-3xl tracking-tight text-slate-900 dark:text-white">
                   cTrader <span className="text-indigo-600">Terminal</span>
                 </h3>
                 {statusLoading ? (
                   <div className="flex items-center gap-2 px-3 py-1 bg-slate-200 dark:bg-slate-800 rounded-full animate-pulse">
-                    <BiSync className="animate-spin text-slate-500" />
+                    <BiSyncIcon className="animate-spin text-slate-500" />
                     <span className="text-[10px] font-bold text-slate-500 uppercase">
                       Syncing
                     </span>
@@ -316,7 +323,7 @@ const CTraderSettings = ({ user, setUser, showToast }: any) => {
                 onClick={fetchStatus}
                 className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-all text-slate-600 dark:text-slate-300"
               >
-                <BiSync
+                <BiSyncIcon
                   className={`w-5 h-5 ${statusLoading ? "animate-spin" : ""}`}
                 />
               </button>
@@ -331,7 +338,7 @@ const CTraderSettings = ({ user, setUser, showToast }: any) => {
                     <Spinner w={4} h={4} />
                   ) : (
                     <>
-                      <BiLinkAlt className="w-5 h-5" /> Connect
+                      <BiLinkAltIcon className="w-5 h-5" /> Connect
                     </>
                   )}
                 </button>
@@ -340,7 +347,7 @@ const CTraderSettings = ({ user, setUser, showToast }: any) => {
                   onClick={handleDisconnect}
                   className="flex items-center gap-2 px-6 py-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition-all font-bold"
                 >
-                  <BiUnlink className="w-5 h-5" /> Disconnect
+                  <BiUnlinkIcon className="w-5 h-5" /> Disconnect
                 </button>
               )}
             </div>
@@ -352,7 +359,7 @@ const CTraderSettings = ({ user, setUser, showToast }: any) => {
             <div className="grid md:grid-cols-2 gap-8 py-4">
               <div className="space-y-6">
                 <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <BiSliderAlt className="w-5 h-5 text-indigo-500" /> Setup
+                  <BiSliderAltIcon className="w-5 h-5 text-indigo-500" /> Setup
                   Protocol
                 </h4>
                 <div className="space-y-4">
@@ -375,7 +382,7 @@ const CTraderSettings = ({ user, setUser, showToast }: any) => {
               </div>
 
               <div className="p-8 rounded-[2rem] bg-indigo-600 text-white space-y-4 relative overflow-hidden shadow-xl">
-                <MdOutlineSecurity className="w-16 h-16 opacity-20 absolute -right-2 -top-2" />
+                <MdOutlineSecurityIcon className="w-16 h-16 opacity-20 absolute -right-2 -top-2" />
                 <h4 className="font-bold text-xl relative z-10">
                   Vault-Grade Security
                 </h4>
@@ -429,7 +436,7 @@ const CTraderSettings = ({ user, setUser, showToast }: any) => {
                             </code>
                           </div>
                           {active && (
-                            <BiCheckCircle className="w-6 h-6 text-indigo-600 animate-in zoom-in duration-300" />
+                            <BiCheckCircleIcon className="w-6 h-6 text-indigo-600 animate-in zoom-in duration-300" />
                           )}
                         </div>
 
@@ -443,7 +450,7 @@ const CTraderSettings = ({ user, setUser, showToast }: any) => {
                             </span>
                           </div>
                           {!active && (
-                            <BiChevronRight className="w-5 h-5 text-slate-300 group-hover:translate-x-1 transition-transform" />
+                            <BiChevronRightIcon className="w-5 h-5 text-slate-300 group-hover:translate-x-1 transition-transform" />
                           )}
                         </div>
                       </button>

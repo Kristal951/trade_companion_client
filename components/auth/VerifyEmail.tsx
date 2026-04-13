@@ -87,8 +87,42 @@ const VerifyEmail: React.FC<VerifyEmailProps> = () => {
         name: user.name,
         email: user.email,
         plan: user.subscribedPlan || "FREE",
-        image: user.avatar,
+        image: user.picture || user.avatar,
         isMentor: user.isMentor,
+        subscribedPlan: user.subscribedPlan,
+        id: user._id,
+        isSubscribed: user.isSubscribed,
+        subscriptionStatus: user.subscriptionStatus,
+        subscriptionMethod: user.subscriptionMethod,
+        subscriptionInterval: user.subscriptionInterval,
+        subscriptionCurrentPeriodEnd: user.subscriptionCurrentPeriodEnd,
+        stripeCustomerId: user.stripeCustomerId,
+        cTraderConfig: {
+          accountId: user.cTraderConfig.accountId,
+          isConnected: user.cTraderConfig.isConnected,
+          autoTradeEnabled: user.cTraderConfig.autoTradeEnabled,
+          cachedBalance: user.cTraderConfig.cachedBalance,
+          cachedEquity: user.cTraderConfig.cachedEquity,
+        },
+        tradeSettings: {
+          balance:
+            user.cTraderConfig?.isConnected && user.cTraderConfig?.cachedBalance
+              ? user.cTraderConfig.cachedBalance
+              : user.tradeSettings?.balance || 10000,
+
+          riskPerTrade: user.tradeSettings?.riskPerTrade || 1,
+          currency: user.tradeSettings?.currency || "USD",
+        },
+        notificationSettings: user.notificationSettings || {
+          email: false,
+          push: false,
+          telegram: false,
+        },
+        telegram: user.telegram || {
+          chatId: null,
+          username: null,
+          linkedAt: null,
+        },
       });
     } catch (error: any) {
       console.log(error);

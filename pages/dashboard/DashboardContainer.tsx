@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import DashboardOverview from "./DashboardOverview";
 import { TradeRecord, User } from "@/types";
+import useAppStore from "@/store/useStore";
 
 interface Props {
   user: User;
@@ -24,6 +25,7 @@ const DashboardContainer: React.FC<Props> = ({
     () => tradeHistory.filter((t) => t.status !== "active"),
     [tradeHistory],
   );
+  const {getUserMentorPost, dashboardMentorPosts, isFetchingDashboardMentorPosts} = useAppStore()
 
   return (
     <DashboardOverview
@@ -35,6 +37,9 @@ const DashboardContainer: React.FC<Props> = ({
       floatingPnL={floatingPnL}
       setActiveTrades={setActiveTrades}
       setTradeHistory={setTradeHistory}
+      getUserMentorPost={getUserMentorPost}
+      dashboardMentorPosts={dashboardMentorPosts}
+      isFetchingDashboardMentorPosts={isFetchingDashboardMentorPosts}
     />
   );
 };

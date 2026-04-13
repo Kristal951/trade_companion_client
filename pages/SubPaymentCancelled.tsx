@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { IoCloseCircleOutline, IoArrowForward } from "react-icons/io5";
+import React from "react";
 
 export default function PaymentCancelledPage() {
+  const IoCloseCircleOutlineIcon = IoCloseCircleOutline as React.ElementType;
+  const IoArrowForwardIcon = IoCloseCircleOutline as React.ElementType;
   return (
     <main className="relative min-h-screen overflow-hidden bg-black/60 px-4 py-10 font-sans">
       <div className="mx-auto flex min-h-[80vh] w-full max-w-[480px] items-center justify-center">
@@ -14,7 +17,7 @@ export default function PaymentCancelledPage() {
         >
           <div className="text-center">
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-amber-50 ring-8 ring-amber-50/60">
-              <IoCloseCircleOutline className="h-12 w-12 text-amber-500" />
+              <IoCloseCircleOutlineIcon className="h-12 w-12 text-amber-500" />
             </div>
 
             <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-mid-text">
@@ -37,7 +40,7 @@ export default function PaymentCancelledPage() {
               className="group flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-4 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
             >
               Return to Plans
-              <IoArrowForward className="text-lg transition-transform group-hover:translate-x-1" />
+              <IoArrowForwardIcon className="text-lg transition-transform group-hover:translate-x-1" />
             </Link>
 
             <Link
