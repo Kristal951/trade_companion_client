@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const API = axios.create({
-  baseURL: "http://localhost:5000",
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
 });
 
@@ -15,7 +15,7 @@ export const getAccessToken = () => {
 
 export const refreshAccessToken = async () => {
   const res = await axios.post(
-    "http://localhost:5000/api/user/refresh_token",
+    `${import.meta.env.VITE_API_URL}/api/user/refresh_token`,
     {},
     { withCredentials: true },
   );

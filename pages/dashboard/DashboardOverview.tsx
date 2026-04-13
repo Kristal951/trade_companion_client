@@ -350,7 +350,7 @@ const DashboardOverview: React.FC<Props> = ({
         >
           <StatCard
             title="Open Positions"
-            value={activeTrades.length.toString()}
+            value={activeTrades?.length?.toString()}
             percentage="From AI Signals"
             percentageType="info"
             icon={<Icon name="analytics" className="w-5 h-5" />}

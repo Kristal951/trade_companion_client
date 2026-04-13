@@ -129,10 +129,10 @@ const TradeCard: React.FC<{ trade: TradeRecord }> = ({ trade }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
         <Metric
           label="Entry"
-          value={trade.entryPrice.toFixed(5)}
+          value={trade?.entryPrice?.toFixed(5)}
         />
-        <Metric label="SL" value={trade.stopLoss.toFixed(5)} danger />
-        <Metric label="TP1" value={trade.takeProfit.toFixed(5)} success />
+        <Metric label="SL" value={trade?.stopLoss?.toFixed(5)} danger />
+        <Metric label="TP1" value={trade?.takeProfit?.toFixed(5)} success />
 
         {trade.status === "active" && trade.currentPrice && (
           <Metric
