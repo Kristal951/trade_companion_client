@@ -71,7 +71,7 @@ export const AnalyticsPage: React.FC<{
   floatingPnL: number;
 }> = ({ user, liveEquity, floatingPnL }) => {
   const TRADE_HISTORY_KEY = `trade_history_${user.email}`;
-  const INITIAL_EQUITY_KEY = `initialEquity_${user.email}`;
+  const INITIAL_EQUITY_KEY = user?.tradeSettings?.balance || 10000;
   const PIE_COLORS = [
     "#6366F1",
     "#A78BFA",
@@ -85,7 +85,7 @@ export const AnalyticsPage: React.FC<{
     JSON.parse(localStorage.getItem(TRADE_HISTORY_KEY) || "[]"),
   );
   const [initialEquity] = useState<number>(() =>
-    parseFloat(user.tradeSettings.balance || localStorage.getItem(INITIAL_EQUITY_KEY) || "10000"),
+    parseFloat(user.tradeSettings.balance || localStorage.getItem(INITIAL_EQUITY_KEY) || 10000),
   );
   const [pieActiveIndex, setPieActiveIndex] = useState(0);
 

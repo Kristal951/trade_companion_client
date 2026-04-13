@@ -8,7 +8,7 @@ let socket: Socket | null = null;
 
 export default function useNotificationSocket() {
   const pushRealtimeNotification = useNotificationStore(
-    (state) => state.pushRealtimeNotification
+    (state) => state.pushRealtimeNotification,
   );
 
   const accessToken = useAppStore((state) => state.accessToken);
@@ -77,6 +77,13 @@ export default function useNotificationSocket() {
     socket.on("disconnect", handleDisconnect);
     socket.on("notification:new", handleNotification);
     socket.on("connect_error", handleConnectError);
+    socket.on("trade:update", (data) => {
+      console.log("Trade update:", data);
+    });
+    socket.on("trade_update", (event) => {
+      alert('trade event received')
+      console.log("Trade update received:", event);
+    });
 
     if (!socket.connected) {
       socket.connect();
@@ -92,3 +99,5 @@ export default function useNotificationSocket() {
     };
   }, [accessToken, pushRealtimeNotification]);
 }
+
+

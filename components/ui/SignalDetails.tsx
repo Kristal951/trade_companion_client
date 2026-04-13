@@ -7,6 +7,8 @@ const SignalDetails: React.FC = ({ signal, showToast }) => {
     showToast(`Copied ${value}`, "success");
   };
 
+  const FaCopyIcon = FaCopy as React.ElementType;
+
   return (
     <div className="border border-gray-200 dark:border-gray-700 mt-6 rounded-xl p-4 bg-gray-50 dark:bg-gray-800 space-y-2">
       <div className="flex justify-between items-center">
@@ -42,7 +44,7 @@ const SignalDetails: React.FC = ({ signal, showToast }) => {
             className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
             title="Copy Entry"
           >
-            <FaCopy className="w-3 h-3" />
+            <FaCopyIcon className="w-3 h-3" />
           </button>
         </div>
       </div>
@@ -58,7 +60,7 @@ const SignalDetails: React.FC = ({ signal, showToast }) => {
             className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
             title="Copy SL"
           >
-            <FaCopy className="w-3 h-3" />
+            <FaCopyIcon className="w-3 h-3" />
           </button>
         </div>
       </div>
@@ -81,7 +83,7 @@ const SignalDetails: React.FC = ({ signal, showToast }) => {
                 className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 title={`Copy TP ${idx + 1}`}
               >
-                <FaCopy className="w-3 h-3" />
+                <FaCopyIcon className="w-3 h-3" />
               </button>
             </div>
           ))}

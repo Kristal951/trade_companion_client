@@ -6,7 +6,9 @@ const TradingExperience: React.FC<{
   setStep: (step: number) => void;
   handleBackAttempt: () => void;
 }> = ({ setStep, handleBackAttempt }) => {
-  const { formData, updateField } = useMentorApplication();
+  const onCancel = () => {};
+  const onForfeit = () => {};
+  const { formData, updateField } = useMentorApplication(onCancel, onForfeit);
 
   const isDisabled =
     !formData.tradeHistoryFile ||

@@ -4,29 +4,13 @@ import { instrumentDefinitions } from '../config/instruments';
 
 // API Key Rotation Logic for Twelve Data
 const TWELVE_DATA_KEYS = [
-    '5cf065b50cf64c3ab77a8a9927529bfb', // Original Key
-    '8b3a9763db2a4807a2e65b30a00de799', // New Key Top 1
-    '132bb44fb1ec48e8b2d3692c8720a99b', // New Key Top 2
-    '343128a9420249c5b3e191e384b66db5', // Key 1
-    '75ebcc61250444a5b38f39b9af979de4', // Key 2
-    '1053e760968e46f5b05fc8e90d38c9c0', // Key 3
-    'c36bc29240fb4bfd9aaafc96df16d6b7', // Key 4
-    '65df8f9eadfc491dac7a3db1ab2fbc98', // Key 5
-    '36a7d432423e45108264c6336b9bd692', // Key 6
-    '0dc49b6059944d4f9c7c16688d24807d', // Key 7
-    '23d84647343f491bb18471f4ea59909d', // Key 8
-    'dd88bc459de64aa4b60738b881663f43', // Key 9
-    '095caa7fe42c4bd0864ca141451c756c', // Key 10
-    '313060fa4d3c4d358394c4bc098a8b1c', // Key 11
-    '4c1485d310084de2a95400a286081859', // Key 12
-    'b71fdcc515974085a242d9aa32762ebd'  // Key 13
+
 ];
 
 let tdKeyIndex = 0;
 
 const getNextTwelveDataKey = () => {
     const key = TWELVE_DATA_KEYS[tdKeyIndex];
-    // Move to next key, loop back to 0 if at end
     tdKeyIndex = (tdKeyIndex + 1) % TWELVE_DATA_KEYS.length;
     return key;
 };
@@ -35,7 +19,6 @@ const forexAPIs = [
     { 
         name: 'Twelvedata', 
         id: 'twelvedata',
-        // Dynamically inject the rotated key into the URL
         url: (symbol: string) => `https://api.twelvedata.com/price?symbol=${symbol}&apikey=${getNextTwelveDataKey()}`, 
         parser: (data: any) => data?.price ? parseFloat(data.price) : null 
     },
@@ -73,14 +56,10 @@ export interface MarketContext {
     details?: string;
 }
 
-// --- HELPER: Synthetic Candle Generator ---
-// Used when real historical API data is unavailable (e.g. Forex free tier limitations)
-// to provide the AI with realistic structure data for analysis.
 const generateSyntheticHistory = (currentPrice: number, count: number, volatilityPips: number = 10, pipSize: number = 0.0001): Candle[] => {
     const candles: Candle[] = [];
     let open = currentPrice;
     
-    // Generate backwards from current price
     for (let i = 0; i < count; i++) {
         const time = new Date(Date.now() - i * 15 * 60 * 1000).toISOString(); // 15 min candles
         

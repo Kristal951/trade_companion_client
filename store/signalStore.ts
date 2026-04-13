@@ -11,9 +11,10 @@ type Signal = {
   confidence: number;
   status: string;
   createdAt: string;
+  isAI: boolean;
 };
 
-type AISignal = {
+export type AISignal = {
   _id: string;
   userId: string;
   instrument: string;

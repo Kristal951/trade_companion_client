@@ -21,7 +21,6 @@ export const App: React.FC = () => {
   const updateUser = useAppStore((state) => state.updateUser);
   const loading = useAppStore((state) => state.loading);
   const IsLoggingOut = useAppStore((state) => state.IsLoggingOut);
-  const addNotification = useAppStore((state) => state.addNotification);
   const hasFetched = useNotificationStore((state) => state.hasFetched);
   const fetchNotifications = useNotificationStore(
     (state) => state.fetchNotifications,
@@ -58,13 +57,6 @@ export const App: React.FC = () => {
     activeTrades,
     setActiveTrades,
     setTradeHistory,
-    showToast,
-  });
-
-  const { handleExecuteTrade } = useTradeExecution({
-    user,
-    activeTrades,
-    setActiveTrades,
     showToast,
   });
 
@@ -110,7 +102,6 @@ export const App: React.FC = () => {
             setIsMentorMode={setIsMentorMode}
             isAccountMenuOpen={isAccountMenuOpen}
             setAccountMenuOpen={setAccountMenuOpen}
-            addNotification={addNotification}
             setTradeHistory={setTradeHistory}
           />
         </ScreenshotDetector>
@@ -119,7 +110,7 @@ export const App: React.FC = () => {
           <AIChatbot
             user={user}
             activeView={activeView}
-            onExecuteTrade={handleExecuteTrade}
+
           />
         )}
 

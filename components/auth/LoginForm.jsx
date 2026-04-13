@@ -43,11 +43,17 @@ const LoginForm = () => {
           accountId: user.cTraderConfig.accountId,
           isConnected: user.cTraderConfig.isConnected,
           autoTradeEnabled: user.cTraderConfig.autoTradeEnabled,
+          cachedBalance: user.cTraderConfig.cachedBalance,
+          cachedEquity: user.cTraderConfig.cachedEquity,
         },
         tradeSettings: {
-          balance: user.tradeSettings?.balance || 10000,
+          balance:
+            user.cTraderConfig?.isConnected && user.cTraderConfig?.cachedBalance
+              ? user.cTraderConfig.cachedBalance
+              : user.tradeSettings?.balance || 10000,
+
           riskPerTrade: user.tradeSettings?.riskPerTrade || 1,
-          maxConcurrentTrades: user.tradeSettings?.maxConcurrentTrades || 3,
+          currency: user.tradeSettings?.currency || "USD",
         },
         notificationSettings: user.notificationSettings || {
           email: false,

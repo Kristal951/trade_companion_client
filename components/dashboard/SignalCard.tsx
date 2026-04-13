@@ -1,223 +1,103 @@
-import {
-  TrendingUp,
-  TrendingDown,
-  Target,
-  Shield,
-  Clock,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
-import { useState } from "react";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
 const SignalCard = ({ signal }: { signal: any }) => {
-  const [open, setOpen] = useState(false);
+  const isBuy = signal.type === "BUY";
 
-  const fmtPrice = (value?: number, digits = 4): string => {
-    if (value === null || value === undefined) return "-";
-    if (isNaN(Number(value))) return "-";
-
-    return Number(value).toFixed(digits);
+  const fmtPrice = (value?: number, digits = 5) => {
+    if (typeof value !== "number") return "-";
+    const d = value > 100 ? 2 : digits;
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: d,
+      maximumFractionDigits: d,
+    });
   };
 
-  const statusBadge = (status?: string): string => {
-    const s = String(status || "").toLowerCase();
-
-    if (s === "new") return "bg-info/20 text-info";
-    if (s === "executed" || s === "active")
-      return "bg-info/20 text-info animate-pulse";
-
-    if (["closed", "tp_hit", "win"].includes(s))
-      return "bg-success/20 text-success";
-
-    if (["sl_hit", "loss"].includes(s)) return "bg-danger/20 text-danger";
-
-    if (["cancelled", "expired"].includes(s)) return "bg-dark/10 text-mid-text";
-
-    return "bg-dark/10 text-mid-text";
+  const statusStyles: Record<string, string> = {
+    NEW: "text-slate-500",
+    ACTIVE: "text-amber-500",
+    EXECUTED: "text-amber-500",
+    WIN: "text-emerald-500",
+    TP_HIT: "text-emerald-500",
+    LOSS: "text-rose-500",
+    SL_HIT: "text-rose-500",
+    FAILED: "text-red-500"
   };
 
-  const statusLabel = (status?: string): string => {
-    if (!status) return "Unknown";
+  const status = signal.status?.toUpperCase();
+  const statusColor = statusStyles[status] || "text-slate-400";
 
-    const map: Record<string, string> = {
-      NEW: "New",
-      EXECUTED: "Executed",
-      CLOSED: "Closed",
-      EXPIRED: "Expired",
-      CANCELLED: "Cancelled",
-      TP_HIT: "Take Profit",
-      SL_HIT: "Stop Loss",
-    };
+  const formatTimeAgo = (date: string | Date) => {
+    const now = new Date();
+    const past = new Date(date);
+    const diff = Math.floor((now.getTime() - past.getTime()) / 1000);
 
-    return map[status.toUpperCase()] || status;
+    if (diff < 60) return "just now";
+
+    const minutes = Math.floor(diff / 60);
+    if (minutes < 60) return `${minutes} min${minutes > 1 ? "s" : ""} ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hr${hours > 1 ? "s" : ""} ago`;
+
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days} day${days > 1 ? "s" : ""} ago`;
+
+    return past.toLocaleDateString();
   };
 
   return (
-    <div
-      className="group bg-light-bg p-4 rounded-xl border border-light-gray hover:shadow-md hover:border-primary/30 transition-all flex flex-col gap-3 cursor-pointer"
-      onClick={() => setOpen((prev) => !prev)}
-    >
-      {/* Top Row */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {/* BUY/SELL ICON */}
-          {signal.type === "BUY" ? (
-            <TrendingUp className="w-4 h-4 text-success" />
+    <div className="group flex items-center justify-between p-4 rounded-lg bg-light-hover hover:bg-muted/40 transition">
+      <div className="flex items-center gap-3">
+        <div
+          className={`p-2 rounded-md ${isBuy ? "bg-emerald-500/10" : "bg-rose-500/10"}`}
+        >
+          {isBuy ? (
+            <TrendingUp className="w-4 h-4 text-emerald-500" />
           ) : (
-            <TrendingDown className="w-4 h-4 text-danger" />
-          )}
-
-          <span className="text-sm font-semibold text-dark-text">
-            {signal.instrument}
-          </span>
-
-          <span
-            className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-              signal.type === "BUY"
-                ? "bg-success/10 text-success"
-                : "bg-danger/10 text-danger"
-            }`}
-          >
-            {signal.type}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span
-            className={`px-2 py-0.5 text-xs font-bold rounded-full ${statusBadge(
-              signal.status,
-            )}`}
-          >
-            {statusLabel(signal.status)}
-          </span>
-
-          {open ? (
-            <ChevronUp className="w-4 h-4 text-mid-text" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-mid-text" />
+            <TrendingDown className="w-4 h-4 text-rose-500" />
           )}
         </div>
-      </div>
 
-      {/* Price Section */}
-      <div className="grid grid-cols-3 gap-3 text-sm">
-        <div className="bg-light-hover p-2 rounded-lg flex items-center gap-2">
-          <Target className="w-4 h-4 text-primary" />
-          <div>
-            <p className="text-xs text-mid-text">Entry</p>
-            <p className="font-semibold text-dark-text">
-              {fmtPrice(signal.entryPrice)}
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center">
+            <p className="text-sm font-semibold text-foreground">
+              {signal.instrument}
+              <span
+                className={`ml-2 text-xs font-medium ${isBuy ? "text-emerald-500 bg-emerald/500/20" : "text-rose-500 bg-rose-500/10"} p-1 rounded-md`}
+              >
+                {signal.type}
+              </span>
             </p>
           </div>
-        </div>
 
-        <div className="bg-light-hover p-2 rounded-lg flex items-center gap-2">
-          <Shield className="w-4 h-4 text-danger" />
-          <div>
-            <p className="text-xs text-mid-text">SL</p>
-            <p className="font-semibold text-danger">
-              {fmtPrice(signal.stopLoss)}
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-light-hover p-2 rounded-lg flex items-center gap-2">
-          <Target className="w-4 h-4 text-success" />
-
-          <div className="flex flex-col">
-            <p className="text-xs text-mid-text">TP</p>
-
-            <div className="flex items-center gap-2">
-              <p className="font-semibold text-success">
-                {signal.takeProfits?.length
-                  ? fmtPrice(signal.takeProfits[0])
-                  : "-"}
+          <div className="w-full flex gap-4 items-center">
+            <div className="pr-3 flex items-center justify-center border-r">
+              <p className="text-mid-text">
+                Entry: {fmtPrice(signal.entryPrice)}
               </p>
-
-              {/* Multiple TP indicator */}
-              {signal.takeProfits?.length > 1 && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                  +{signal.takeProfits.length - 1}
-                </span>
-              )}
+            </div>
+            <div className="pr-3 flex items-center justify-center border-r">
+              <p className="text-mid-text">SL: {fmtPrice(signal.stopLoss)}</p>
+            </div>
+            <div className="pr-3 flex items-center justify-center border-r">
+              <p className="text-mid-text">
+                TP: {fmtPrice(signal.takeProfits?.[0])}
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Extra Info */}
-      <div className="flex items-center justify-between text-xs text-mid-text">
-        <div className="flex items-center gap-3">
-          {signal.executedPrice && (
-            <span>
-              Exec:{" "}
-              <span className="text-dark-text font-medium">
-                {fmtPrice(signal.executedPrice)}
-              </span>
-            </span>
-          )}
+      <div className="text-right">
+        <p
+          className={`text-xs font-semibold uppercase tracking-wide ${statusColor}`}
+        >
+          {signal.status}
+        </p>
 
-          {signal.confidence && (
-            <span>
-              Conf:{" "}
-              <span className="text-primary font-medium">
-                {signal.confidence}%
-              </span>
-            </span>
-          )}
-        </div>
-
-        {signal.createdAt && (
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            {new Date(signal.createdAt).toLocaleDateString()}
-          </span>
-        )}
-      </div>
-
-      {/* EXPANDED SECTION */}
-      <div
-        className={`overflow-hidden transition-all duration-300 ${
-          open ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-        }`}
-      >
-        <div className="pt-3 border-t border-light-gray space-y-2 text-sm">
-          {/* All Take Profits */}
-          {signal.takeProfits?.length > 1 && (
-            <div>
-              <p className="text-xs text-mid-text mb-1">All Take Profits</p>
-              <div className="flex flex-wrap gap-2">
-                {signal.takeProfits.map((tp: number, i: number) => (
-                  <span
-                    key={i}
-                    className="px-2 py-1 text-xs bg-success/10 text-success rounded-md"
-                  >
-                    TP{i + 1}: {fmtPrice(tp)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Reasoning */}
-          {signal.reasoning && (
-            <div>
-              <p className="text-xs text-mid-text mb-1">AI Reasoning</p>
-              <p className="text-dark-text text-sm leading-relaxed">
-                {signal.reasoning}
-              </p>
-            </div>
-          )}
-
-          {signal.technicalReasoning && (
-            <div>
-              <p className="text-xs text-mid-text mb-1">Technical Analysis</p>
-              <p className="text-dark-text text-sm leading-relaxed">
-                {signal.technicalReasoning}
-              </p>
-            </div>
-          )}
-        </div>
+        <p className="text-[11px] text-muted-foreground">
+          {formatTimeAgo(signal.createdAt)}
+        </p>
       </div>
     </div>
   );

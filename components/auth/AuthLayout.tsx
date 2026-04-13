@@ -179,7 +179,7 @@ const AuthLayout = ({ onAuthSuccess, showToast }) => {
         tradeSettings: {
           balance: user.tradeSettings?.balance || 10000,
           riskPerTrade: user.tradeSettings?.riskPerTrade || 1,
-          maxConcurrentTrades: user.tradeSettings?.maxConcurrentTrades || 3,
+          currency: user.tradeSettings?.currency || "USD",
         },
         cTraderConfig: {
           accountId: user.cTraderConfig.accountId,

@@ -4,13 +4,21 @@ import FileUpload from "@/components/ui/FileUpload";
 import { useMentorApplication } from "@/store/useMentorApplication";
 
 const Identity: React.FC = () => {
-  const { formData, updateField } = useMentorApplication();
+  const onCancel =()=>{
+
+  }
+  const onForfeit =()=>{
+
+  }
+  const { formData, updateField } = useMentorApplication(onCancel, onForfeit);
 
   const isDisabled =
     !formData.country ||
     !formData.idType ||
     !formData.idFile ||
     !formData.addressFile;
+
+    const types = ["Utility Bill", "Bank Statement"] as const;
 
   return (
     <div className="animate-fade-in-right space-y-5">
@@ -66,7 +74,8 @@ const Identity: React.FC = () => {
             <FileUpload
               label={formData.idFile ? "ID selected" : "Upload ID"}
               onFileSelect={(file) => updateField("idFile", file)}
-              compact
+              // compact
+              hint=""
             />
           </div>
         </div>
@@ -77,7 +86,7 @@ const Identity: React.FC = () => {
           </span>
 
           <div className="flex gap-2 mb-2">
-            {["Utility Bill", "Bank Statement"].map((type) => (
+            {types.map((type) => (
               <button
                 key={type}
                 type="button"
@@ -101,7 +110,7 @@ const Identity: React.FC = () => {
                 : "Upload address document"
             }
             onFileSelect={(file) => updateField("addressFile", file)}
-            compact
+            // compact
                hint="Must be dated within the last 3 months and show your full name/address."
           />
 

@@ -1,3 +1,5 @@
+import { AISignal } from "./store/signalStore";
+
 export interface User {
   id: string;
   _id?: string;
@@ -27,13 +29,15 @@ export interface User {
   stripeCheckoutSessionId?: string | null;
   tradeSettings?: {
     balance: number;
-    riskPerTrade: number; 
-    maxConcurrentTrades: number;
+    riskPerTrade: number;
+    currency: number;
   };
   cTraderConfig?: {
     accountId: string;
     isConnected: boolean;
     autoTradeEnabled: boolean;
+    cachedBalance: number;
+    cachedEquity: number;
   };
   notificationSettings: NotificationSettings;
 }
@@ -169,7 +173,7 @@ export interface MentorSubscriber {
   subscribedDate: string;
   status: "Active" | "Cancelled";
   ratingGiven?: number;
-  userId: string
+  userId: string;
 }
 
 export interface Signal {
@@ -191,17 +195,23 @@ export interface Signal {
 // FIX: Removed 'confidence' from Omit to make it available in the TradeRecord type for analytics.
 // FIX: Removed 'technicalReasoning' from Omit to allow inclusion in TradeRecord (App.tsx uses it).
 // FIX: Removed 'takeProfit2' and 'takeProfit3' from Omit to allow their display in UI.
-export interface TradeRecord extends Signal {
-  id: string; // Unique ID for the trade
+export type TradeRecord = {
+  id: string;
   status: "active" | "win" | "loss";
-  pnl?: number; // Profit or Loss amount
-  currentPrice?: number; // Live price of the instrument
+
+  pnl: number;
+  currentPrice: number;
+
   dateTaken: string;
   dateClosed?: string;
-  initialEquity: number; // Equity before this trade
-  finalEquity?: number; // Equity after this trade
-  takeProfit: number; // Mapping takeProfit1 to takeProfit for consistency with old record
-}
+
+  initialEquity: number;
+  finalEquity?: number;
+
+  takeProfit: number;
+
+  signal: AISignal; 
+};
 
 export interface Review {
   id: number;

@@ -16,6 +16,7 @@ type NotificationStore = {
   hasFetched: boolean;
   loading: boolean;
   hasMore: boolean;
+  isMarkingAsRead: boolean;
 
   fetchNotifications: (page?: number, limit?: number) => Promise<void>;
   fetchUnreadCount: () => Promise<void>;
@@ -32,6 +33,7 @@ const useNotificationStore = create<NotificationStore>((set, get) => ({
   unreadCount: 0,
   hasFetched: false,
   loading: false,
+  isMarkingAsRead: false,
   hasMore: true,
 
   fetchNotifications: async (page = 1, limit = 20) => {
@@ -73,7 +75,6 @@ const useNotificationStore = create<NotificationStore>((set, get) => ({
   },
 
   pushRealtimeNotification: (notification) => {
-    console.log(notification);
     set((state) => {
       const exists = state.notifications.some(
         (item) => item._id === notification._id,
@@ -88,6 +89,7 @@ const useNotificationStore = create<NotificationStore>((set, get) => ({
     });
   },
   markAsRead: async (id) => {
+    set({ isMarkingAsRead: true });
     try {
       const res = await API.patch(`/api/notifications/${id}/read`);
       const unreadCount = res.data?.unreadCount ?? 0;
@@ -106,10 +108,13 @@ const useNotificationStore = create<NotificationStore>((set, get) => ({
       }));
     } catch (error) {
       console.error("markAsRead error:", error);
+    } finally {
+      set({ isMarkingAsRead: false });
     }
   },
 
   markAllRead: async () => {
+    set({ isMarkingAsRead: true });
     try {
       await API.patch("/api/notifications/read-all");
 
@@ -123,6 +128,8 @@ const useNotificationStore = create<NotificationStore>((set, get) => ({
       }));
     } catch (error) {
       console.error("markAllRead error:", error);
+    } finally {
+      set({ isMarkingAsRead: false });
     }
   },
 

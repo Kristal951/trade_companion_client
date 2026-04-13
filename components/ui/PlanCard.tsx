@@ -49,7 +49,7 @@ const PlanCard = ({ plan, activePlan, isYearly }) => {
                 plan.name === PlanName.Pro ? "text-neon-blue" : "text-slate-600"
               }`}
             />
-            <span className="text-slate-400">{feature}</span>
+             <span className={plan.name === PlanName.Pro ? 'text-slate-200' : 'text-slate-400'}>{feature}</span>
           </li>
         ))}
       </ul>

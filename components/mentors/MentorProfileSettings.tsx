@@ -47,7 +47,10 @@ const MentorProfileSettings: React.FC<{
 
   /* ------------------ Change Detection ------------------ */
   const normalizeCerts = (certs: any[] = []) =>
-    certs.map((c) => c.name).sort().join(",");
+    certs
+      .map((c) => c.name)
+      .sort()
+      .join(",");
 
   const hasChanges = useMemo(() => {
     if (!initialMentor) return false;
@@ -96,20 +99,18 @@ const MentorProfileSettings: React.FC<{
       .filter(
         (file) =>
           file.type.startsWith("image/") &&
-          file.size <= MAX_SIZE_MB * 1024 * 1024
+          file.size <= MAX_SIZE_MB * 1024 * 1024,
       )
       .slice(0, remainingSlots);
 
     if (validFiles.length !== files.length) {
       showToast(
         `Some files were skipped (images only, max ${MAX_SIZE_MB}MB)`,
-        "info"
+        "info",
       );
     }
 
-    const previews = validFiles.map((file) =>
-      URL.createObjectURL(file)
-    );
+    const previews = validFiles.map((file) => URL.createObjectURL(file));
 
     setCertificationFiles((prev) => [...prev, ...validFiles]);
     setCertPreviews((prev) => [...prev, ...previews]);
@@ -177,7 +178,7 @@ const MentorProfileSettings: React.FC<{
 
       const res = await API.patch(
         `/api/mentor/updateMentor/${mentor._id}`,
-        formData
+        formData,
       );
 
       setMentor(res.data.mentor, true);
@@ -228,9 +229,7 @@ const MentorProfileSettings: React.FC<{
           <FileUpload
             label="Profile Image"
             hint="Upload profile image"
-            onFileSelect={(files: File[]) =>
-              setProfileImageFile(files[0] ?? null)
-            }
+            onFileSelect={(file: File | null) => setProfileImageFile(file)}
           />
         </div>
 
@@ -321,7 +320,9 @@ const MentorProfileSettings: React.FC<{
           <FileUpload
             label="Certificates"
             hint="Upload certificate images (max 5)"
-            onFileSelect={(files) => handleCertificationFiles(files)}
+            onFileSelect={(file) => {
+              if (file) handleCertificationFiles([file]);
+            }}
           />
 
           <button

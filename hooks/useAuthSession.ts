@@ -15,7 +15,7 @@ export function useAuthSession({ user, setUser, logout, showToast }: Params) {
 
   const [activeTrades, setActiveTrades] = useState<TradeRecord[]>([]);
 
-  const TRADE_HISTORY_KEY = `trade_history_${user.email}`;
+  const TRADE_HISTORY_KEY = `trade_history_${user?.email}`;
 
   const [tradeHistory, setTradeHistory] = useState<TradeRecord[]>(() =>
     JSON.parse(localStorage.getItem(TRADE_HISTORY_KEY) || "[]"),
@@ -39,7 +39,7 @@ export function useAuthSession({ user, setUser, logout, showToast }: Params) {
     try {
       if (!user?.email) return;
 
-      const saved = localStorage.getItem(`active_trades_${user.email}`);
+      const saved = localStorage.getItem(`active_trades_${user?.email}`);
       if (saved) {
         setActiveTrades(JSON.parse(saved));
       }
@@ -54,19 +54,21 @@ export function useAuthSession({ user, setUser, logout, showToast }: Params) {
   );
 
   const currentBalance = parseFloat(
-    user?.tradeSettings?.balance?.toString() ||
-      localStorage.getItem(EQUITY_KEY) ||
-      "10000",
+    user?.tradeSettings?.balance?.toString() || 0,
   );
 
-  const liveEquity = currentBalance + floatingPnL;
-
+  const liveEquity =
+    user?.cTraderConfig?.isConnected && user?.cTraderConfig?.cachedEquity
+      ? user?.cTraderConfig?.cachedEquity
+      : currentBalance + floatingPnL;
   const handleLoginRequest = useCallback(
     (data: any) => {
       setUser(data, true);
 
       try {
-        const savedTrades = localStorage.getItem(`active_trades_${data.email}`);
+        const savedTrades = localStorage.getItem(
+          `active_trades_${data?.email}`,
+        );
         setActiveTrades(savedTrades ? JSON.parse(savedTrades) : []);
       } catch {
         setActiveTrades([]);

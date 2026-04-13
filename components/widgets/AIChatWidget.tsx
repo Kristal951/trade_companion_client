@@ -12,15 +12,6 @@ import { markSignalAsExecuted, saveSignalToDb } from "@/services/signalService";
 interface AIChatbotProps {
   user: User;
   activeView: DashboardView;
-  onExecuteTrade: (tradeDetails: {
-    instrument: string;
-    type: "BUY" | "SELL";
-    entryPrice: number;
-    stopLoss: number;
-    takeProfit: number;
-    confidence: number;
-    reasoning: string;
-  }) => void;
 }
 
 interface ChatMessage {
@@ -170,7 +161,6 @@ ${STRATEGY_CONTEXT}
 const AIChatbot: React.FC<AIChatbotProps> = ({
   user,
   activeView,
-  onExecuteTrade,
 }) => {
   const { canUseFeature, incrementUsage, getUsageInfo } = useUsageTracker(user);
   const [isOpen, setIsOpen] = useState(false);
@@ -242,38 +232,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
       };
     }
     return undefined;
-  };
-
-  const handleExecuteClick = async (
-    msgId: string,
-    tradeData: any,
-    savedSignalId?: string,
-  ) => {
-    try {
-      const execResult = await onExecuteTrade({
-        instrument: tradeData.instrument,
-        type: tradeData.type,
-        entryPrice: tradeData.entry,
-        stopLoss: tradeData.sl,
-        takeProfit: tradeData.tp,
-        confidence: 85,
-        reasoning: "Generated via AI Chat Analysis",
-      });
-
-      if (savedSignalId) {
-        await markSignalAsExecuted(savedSignalId, {
-          executedPrice: execResult?.fillPrice ?? tradeData.entry,
-          executedAt: new Date().toISOString(),
-          brokerOrderId: execResult?.orderId,
-        });
-      }
-
-      setMessages((prev) =>
-        prev.map((m) => (m.id === msgId ? { ...m, isTradeExecuted: true } : m)),
-      );
-    } catch (err) {
-      console.error("Execution failed:", err);
-    }
   };
 
   const findInstrumentInQuery = (text: string): string | null => {
@@ -618,33 +576,6 @@ INSTRUCTION:
                 </div>
               )}
             </div>
-
-            {msg.role === "model" && msg.tradeData && (
-              <div className="mt-2 animate-fade-in-right">
-                <button
-                  onClick={() =>
-                    handleExecuteClick(msg.id, msg.tradeData, msg.savedSignalID)
-                  }
-                  disabled={msg.isTradeExecuted}
-                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold shadow-md transition-all ${
-                    msg.isTradeExecuted
-                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                      : "bg-success text-white hover:bg-green-600 hover:scale-105"
-                  }`}
-                >
-                  {msg.isTradeExecuted ? (
-                    <>
-                      <Icon name="check" className="w-4 h-4 mr-2" />
-                      Trade Executed
-                    </>
-                  ) : (
-                    <>
-                      ⚡ Trade {msg.tradeData.instrument} {msg.tradeData.type}
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
           </div>
         ))}
         {isLoading && (
