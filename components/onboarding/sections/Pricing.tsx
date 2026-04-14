@@ -43,7 +43,7 @@ const Pricing = ({ isYearly, setIsYearly, normalizedPlans }) => {
             ? Array.from({ length: 4 }).map((_, i) => (
                 <PlanCardSkeleton key={i} />
               ))
-            : normalizedPlans.map((plan) => {
+            : normalizedPlans.map((plan, i) => {
                 let activePlan;
 
                 if (plan.type === "free") {
@@ -56,6 +56,7 @@ const Pricing = ({ isYearly, setIsYearly, normalizedPlans }) => {
 
                 return (
                   <PlanCard
+                    key={i}
                     activePlan={activePlan}
                     plan={plan}
                     isYearly={isYearly}

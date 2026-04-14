@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -33,19 +33,21 @@
         --color-danger: #f87171;
         --color-warning: #fbbf24;
         --color-info: #60a5fa;
-        --color-bg: #111827; 
-        --color-surface: #1f2937; 
-        --color-hover: #374151; 
-        --color-text: #f9fafb; 
-        --color-text-mid: #9ca3af; 
-        --color-border-light: #374151; 
-        --color-border-dark: #4b5563; 
+        --color-bg: #111827;
+        --color-surface: #1f2937;
+        --color-hover: #374151;
+        --color-text: #f9fafb;
+        --color-text-mid: #9ca3af;
+        --color-border-light: #374151;
+        --color-border-dark: #4b5563;
       }
 
       body {
         background-color: var(--color-bg);
         color: var(--color-text);
-        transition: background-color 0.3s ease, color 0.3s ease;
+        transition:
+          background-color 0.3s ease,
+          color 0.3s ease;
       }
 
       @media print {
@@ -81,6 +83,10 @@
         border-radius: 30px;
       }
 
+      html {
+        scroll-behavior: smooth;
+      }
+
       .theme-toggle-slider:before {
         position: absolute;
         content: "";
@@ -106,7 +112,9 @@
       .theme-toggle-icon {
         position: absolute;
         pointer-events: none;
-        transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+        transition:
+          opacity 0.4s ease-in-out,
+          transform 0.4s ease-in-out;
         width: 18px;
         height: 18px;
         top: 6px; /* (track height - icon height) / 2 */
