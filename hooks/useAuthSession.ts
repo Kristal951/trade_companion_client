@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { setAccessToken } from "../utils";
 import { TradeRecord } from "../types";
 
@@ -12,6 +12,8 @@ type Params = {
 
 export function useAuthSession({ user, setUser, logout, showToast }: Params) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const destination = location.state?.from?.pathname || "/dashboard";
 
   const [activeTrades, setActiveTrades] = useState<TradeRecord[]>([]);
 
@@ -75,7 +77,7 @@ export function useAuthSession({ user, setUser, logout, showToast }: Params) {
       }
 
       showToast(`Welcome back, ${data.name.split(" ")[0]}!`, "success");
-      navigate("/dashboard");
+      navigate(destination);
     },
     [navigate, setUser, showToast],
   );

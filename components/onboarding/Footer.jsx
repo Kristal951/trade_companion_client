@@ -1,15 +1,17 @@
+import useAppStore from "@/store/useStore";
 import React from "react";
-import Icon from "../ui/Icon";
 
 const Footer = () => {
+  const { user } = useAppStore();
+  console.log(user);
   return (
     <footer className="bg-slate-950 border-t border-slate-900 pt-16 pb-8">
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-neon-blue rounded-lg flex items-center justify-center">
-                <Icon name="signals" className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 overflow-hidden rounded-lg flex items-center justify-center">
+                <img src="/assets/logo/tradecompanion.jpg" alt="" />
               </div>
               <span className="text-xl font-bold text-white">
                 Trade Companion
@@ -24,17 +26,17 @@ const Footer = () => {
             <h4 className="text-white font-bold mb-4">Platform</h4>
             <ul className="space-y-2 text-sm text-slate-500">
               <li>
-                <a href="#" className="hover:text-neon-blue">
+                <a href="/ai_signals" className="hover:text-neon-blue">
                   AI Signals
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-neon-blue">
+                <a href="/mentors" className="hover:text-neon-blue">
                   Mentorship
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-neon-blue">
+                <a href="#pricing" className="hover:text-neon-blue">
                   Pricing
                 </a>
               </li>
@@ -44,17 +46,12 @@ const Footer = () => {
             <h4 className="text-white font-bold mb-4">Resources</h4>
             <ul className="space-y-2 text-sm text-slate-500">
               <li>
-                <a href="#" className="hover:text-neon-blue">
+                <a href="/education" className="hover:text-neon-blue">
                   Education Hub
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-neon-blue">
-                  Community
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-neon-blue">
+                <a href="contact_us" className="hover:text-neon-blue">
                   Help Center
                 </a>
               </li>
@@ -64,17 +61,17 @@ const Footer = () => {
             <h4 className="text-white font-bold mb-4">Legal</h4>
             <ul className="space-y-2 text-sm text-slate-500">
               <li>
-                <a href="#" className="hover:text-neon-blue">
+                <a href="/privacy_policy" target="_blank" className="hover:text-neon-blue">
                   Privacy Policy
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-neon-blue">
+                <a href="/terms_of_service" target="_blank" className="hover:text-neon-blue">
                   Terms of Service
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-neon-blue">
+                <a href="/risk_disclosure" target="_blank" className="hover:text-neon-blue">
                   Risk Disclosure
                 </a>
               </li>

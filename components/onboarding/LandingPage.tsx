@@ -49,27 +49,6 @@ const MOCK_MENTORS: Mentor[] = [
   },
 ];
 
-const MOCK_REVIEWS: Review[] = [
-  {
-    id: 1,
-    name: "Sarah L.",
-    avatar: "https://picsum.photos/seed/user1/100",
-    text: "The AI signals are incredibly accurate. My portfolio has seen a 20% growth in just three months!",
-  },
-  {
-    id: 2,
-    name: "David M.",
-    avatar: "https://picsum.photos/seed/user2/100",
-    text: "Subscribing to Anna's mentorship was a game-changer. Her insights are worth every penny.",
-  },
-  {
-    id: 3,
-    name: "Emily C.",
-    avatar: "https://picsum.photos/seed/user3/100",
-    text: "A fantastic platform for both new and experienced traders. The tools and community are top-notch.",
-  },
-];
-
 interface LandingPageProps {
   onLoginRequest: (userDetails: { name: string; email: string }) => void;
 }
@@ -112,16 +91,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
               symbol === "XAU/USD" ||
               symbol.includes("US500")
             ) {
-              displayPrice = price.toFixed(2);
+              displayPrice = Number(price).toFixed(2);
             } else if (symbol.includes("BTC") || symbol.includes("ETH")) {
-              displayPrice = price.toLocaleString("en-US", {
+              displayPrice = Number(price).toLocaleString("en-US", {
                 maximumFractionDigits: 2,
               });
             } else {
-              displayPrice = price.toFixed(5);
+              displayPrice = Number(price).toFixed(5);
             }
           }
 
+          // Visual flair for the "Change" column
           const hash = symbol
             .split("")
             .reduce((a, b) => a + b.charCodeAt(0), 0);
@@ -135,6 +115,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
             isPositive,
           };
         });
+
         setTickerItems(newItems);
       } catch (error) {
         console.error("Failed to update ticker", error);
@@ -142,7 +123,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
     };
 
     fetchTicker();
-    const interval = setInterval(fetchTicker, 86400000);
+
+    const ONE_HOUR = 60 * 60 * 1000;
+    const interval = setInterval(fetchTicker, ONE_HOUR);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -220,7 +204,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
           <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-neon-blue/10 rounded-full blur-[120px]"></div>
           <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-neon-green/5 rounded-full blur-[100px]"></div>
         </div>
-        <section className="relative z-10 pt-40 pb-20 container mx-auto px-6">
+        <section
+          id="Home"
+          className="relative z-10 pt-40 pb-20 container mx-auto px-6"
+        >
           <div className="flex flex-col lg:flex-row items-center gap-16">
             <div className="lg:w-1/2 text-center lg:text-left space-y-8">
               <div className="inline-flex items-center px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700 text-neon-green text-xs font-bold uppercase tracking-wide mb-2">
@@ -411,9 +398,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginRequest }) => {
           </div>
         </section>
 
-        <Features />
-
-        {/* <Education /> */}
+        <section id="features">
+          <Features />
+        </section>
 
         <TopMentors
           setMentorSearchQuery={setMentorSearchQuery}

@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import LandingPage from "../onboarding/LandingPage";
 import RootLayout from "@/RootLayout";
@@ -68,6 +68,7 @@ export default function AppRoutes({
   setActiveTrades,
   setTradeHistory,
 }: Props) {
+  const location = useLocation();
   return (
     <Routes>
       <Route
@@ -112,7 +113,7 @@ export default function AppRoutes({
               showToast={showToast}
             />
           ) : (
-            <Navigate to="/auth/signIn" replace />
+            <Navigate to="/auth/signIn" state={{ from: location }} replace />
           )
         }
       >

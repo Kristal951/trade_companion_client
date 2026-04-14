@@ -4,10 +4,12 @@ import {
   useNavigate,
   useLocation,
   useMatch,
+  Link,
 } from "react-router-dom";
 import useAppStore from "@/store/useStore";
 import { useState, useEffect } from "react";
 import { GoogleLogin } from "@react-oauth/google";
+import { ArrowLeft, Home, X } from "lucide-react";
 
 const AuthLayout = ({ onAuthSuccess, showToast }) => {
   const loading = useAppStore((state) => state.loading);
@@ -200,7 +202,7 @@ const AuthLayout = ({ onAuthSuccess, showToast }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] overflow-hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in-right">
+    <div className="fixed inset-0 z-[100] flex-col overflow-hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in-right">
       <div className="w-full md:max-w-5xl bg-transparent boder-0 md:bg-[#0f1115] rounded-[2.5rem] overflow-hidden shadow-xl md:border md:border-slate-800 flex flex-col md:flex-row relative h-full md:min-h-[650px]">
         <div className="w-full hidden md:flex md:w-1/2 relative bg-gradient-to-b from-[#1a1d26] to-[#0f1115] overflow-hidden flex flex-col items-center justify-center p-8 md:p-0 min-h-[300px] md:min-h-full transition-colors duration-700">
           <div
@@ -548,6 +550,16 @@ const AuthLayout = ({ onAuthSuccess, showToast }) => {
         </div>
 
         <div className="w-full md:w-1/2 p-2 md:p-12  md:bg-[#0f1115] relative flex flex-col justify-center">
+        <div className="w-full">
+<div className="w-full flex items-center justify-end ">
+        <Link
+          to="/"
+          className="flex text-sm gap-1 p-2 items-center text-mid-text hover:text-white hover:bg-light-hover bg-light-hover rounded-full hover:font-semibold"
+        >
+         <X/>
+        </Link>
+      </div>
+        </div>
           {isAuthForm && (
             <div className="text-center mb-8 w-full">
               <h3 className="text-2xl font-bold text-white mb-2">

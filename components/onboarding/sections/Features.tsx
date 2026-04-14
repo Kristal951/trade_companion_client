@@ -20,7 +20,7 @@ const Features = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-        <div className="md:col-span-2 md:row-span-2 bg-fintech-card border border-fintech-border rounded-3xl p-8 relative overflow-hidden group hover:border-neon-blue/50 transition-all duration-500">
+        <div className="md:col-span-2 md:row-span-2 bg-fintech-card border border-fintech-border rounded-3xl p-8 relative overflow-hidden group hover:border-neon-blue/50 hover:scale-120 transition-all duration-500">
           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
             <Icon name="signals" className="w-64 h-64 text-neon-blue" />
           </div>

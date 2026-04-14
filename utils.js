@@ -123,6 +123,7 @@ API.interceptors.response.use(
           !window.location.pathname.startsWith("/auth")
         ) {
           window.location.replace("/auth/signin");
+          console.log('loc')
         }
 
         return Promise.reject(err);

@@ -312,7 +312,6 @@ const useAppStore = create<AppState>()(
 
           const res = await API.post("/api/user/login", data);
           const { user, accessToken } = res.data;
-          console.log(user);
 
           localStorage.setItem("accessToken", accessToken);
           setAccessToken(accessToken);

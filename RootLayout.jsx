@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import Header from "./components/ui/Header";
 import Sidebar from "./components/ui/Sidebar";
 import useAppStore from "./store/useStore";
@@ -27,8 +27,8 @@ const RootLayout = ({
 
   useEffect(() => {
     if (!user) {
-      navigate("/auth/signIn"); 
-      showToast?.("Authentication Failed, Please Login", "error");
+       showToast?.("Authentication Failed, Please Login", "error");
+      return <Navigate to="/login" state={{ from: location }} replace />
     }
   }, [user, navigate]);
 
