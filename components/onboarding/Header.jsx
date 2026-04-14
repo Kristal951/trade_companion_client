@@ -42,7 +42,7 @@ const Header = () => {
       <div className="fintech-glass rounded-full px-6 py-3 flex items-center justify-between w-full max-w-5xl shadow-2xl">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 overflow-hidden rounded-lg flex items-center justify-center">
-            <img src="/assets/logo/tradecompanion.jpg" alt="" />
+            <img src="/tradecompanion.jpg" alt="" />
           </div>
           <span className="text-xl font-bold tracking-tight text-white hidden sm:block">
             Trade Companion

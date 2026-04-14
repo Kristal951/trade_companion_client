@@ -13,6 +13,7 @@ import AppRoutes from "./components/routes/AppRoutes";
 import useNotificationSocket from "./hooks/useNotificationSocket";
 import useNotificationStore from "./store/useNotificationStore";
 import { refreshAccessToken, setAccessToken } from "./utils";
+import { Analytics } from "@vercel/analytics/react";
 
 export const App: React.FC = () => {
   const user = useAppStore((state) => state.user);
@@ -81,6 +82,7 @@ export const App: React.FC = () => {
     <div className="w-full h-screen flex flex-col">
       <section className="flex-1 relative flex flex-col h-screen overflow-hidden transition-all duration-300">
         <ScreenshotDetector onScreenshotAttempt={handleScreenshotAttempt}>
+          <Analytics />
           <AppRoutes
             user={user}
             theme={theme}
@@ -106,13 +108,7 @@ export const App: React.FC = () => {
           />
         </ScreenshotDetector>
 
-        {user && (
-          <AIChatbot
-            user={user}
-            activeView={activeView}
-
-          />
-        )}
+        {user && <AIChatbot user={user} activeView={activeView} />}
 
         {toast && (
           <Toast
