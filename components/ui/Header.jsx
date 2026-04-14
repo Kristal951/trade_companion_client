@@ -10,11 +10,7 @@ const Header = ({
   setShowMobileMenu,
   showMobileMenu,
 }) => {
-  const NOTIFICATIONS_KEY = `notifications_${user?.email}`;
   const notifications = useAppStore((state) => state.notifications);
-  useEffect(() => {
-    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
-  }, [notifications, NOTIFICATIONS_KEY]);
 
   return (
     <header className="bg-light-surface border-b border-light-gray p-4 flex justify-between items-center flex-shrink-0">
@@ -66,9 +62,7 @@ const Header = ({
             </svg>
           </span>
         </label>
-        <NotificationBell
-          notifications={notifications}
-        />
+        <NotificationBell notifications={notifications} />
         <img
           src={
             user?.avatar ||
