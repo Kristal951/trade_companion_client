@@ -1,9 +1,9 @@
 import useAppStore from "@/store/useStore";
 import React from "react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
-  const { user } = useAppStore();
-  console.log(user);
+
   return (
     <footer className="bg-slate-950 border-t border-slate-900 pt-16 pb-8">
       <div className="container mx-auto px-6">
@@ -11,7 +11,7 @@ const Footer = () => {
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center space-x-2 mb-4">
               <div className="w-8 h-8 overflow-hidden rounded-lg flex items-center justify-center">
-                <img src="/assets/logo/tradecompanion.jpg" alt="" />
+                <img src="/tradecompanion.jpg" alt="" />
               </div>
               <span className="text-xl font-bold text-white">
                 Trade Companion
@@ -61,19 +61,19 @@ const Footer = () => {
             <h4 className="text-white font-bold mb-4">Legal</h4>
             <ul className="space-y-2 text-sm text-slate-500">
               <li>
-                <a href="/privacy_policy" target="_blank" className="hover:text-neon-blue">
+                <Link to="/legal/privacy" className="hover:text-neon-blue">
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/terms_of_service" target="_blank" className="hover:text-neon-blue">
+                <Link to="/legal/terms" className="hover:text-neon-blue">
                   Terms of Service
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/risk_disclosure" target="_blank" className="hover:text-neon-blue">
+                <Link to="/legal/risk" className="hover:text-neon-blue">
                   Risk Disclosure
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import LandingPage from "../onboarding/LandingPage";
 import RootLayout from "@/RootLayout";
@@ -20,6 +20,8 @@ import { renderMentorRoutes } from "./MentorRoutes";
 import PaymentCancelledPage from "@/pages/SubPaymentCancelled";
 import NotificationsPage from "@/pages/NotificationsPage";
 import { EducationPage } from "@/pages/EducationPage";
+import Legal from "@/pages/legal/Legal";
+import LegalPage from "@/pages/legal/layout";
 
 type Props = {
   user: any;
@@ -69,6 +71,11 @@ export default function AppRoutes({
   setTradeHistory,
 }: Props) {
   const location = useLocation();
+  const navigate = useNavigate()
+
+  const onBack = ()=>{
+    navigate(-1)
+  }
   return (
     <Routes>
       <Route
@@ -196,6 +203,7 @@ export default function AppRoutes({
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="legal/:tab" element={<LegalPage onBack={onBack}/>}/>
     </Routes>
   );
 }
