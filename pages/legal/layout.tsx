@@ -23,7 +23,8 @@ const LegalPage: React.FC<LegalPageProps> = ({ onBack, initialTab = 'terms' }) =
 
     return (
         <div className="p-4 sm:p-8 bg-slate-950 overflow-y-scroll animate-fade-in-right">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-5xl mx-auto"> 
+                {/* //Todo: change 5xl back to 4xl */}
                 {onBack && (
                     <button 
                         onClick={onBack}
